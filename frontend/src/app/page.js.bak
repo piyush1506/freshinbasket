@@ -1,0 +1,262 @@
+"use client";
+import Image from "next/image";
+import Link from "next/link";
+import { Squash as Hamburger } from 'hamburger-react';
+import { Swiper, SwiperSlide } from 'swiper/react';
+import 'swiper/css';
+import { Autoplay, EffectFade } from "swiper";
+import { Search, ShoppingCart, Leaf, Truck, Star, ArrowRight } from "lucide-react";
+import toast from "react-hot-toast";
+import { useState, useEffect } from "react";
+// import { Autoplay } from "swiper";
+import VegetableCard from "./components/VegetableCard";
+import Navbar from "./components/navbar";
+import Hero from "./components/hero";
+import "swiper/css/effect-fade";
+import Vegetables from "./components/vegetables";
+
+export default function Home() {
+  const review = [
+    {
+      id: 1,
+      name: 'Jane Doe',
+      comment: 'The quality of the produce is just unmatched. You can literally smell the soil and freshness the moment you open the box. It has transformed my cooking completely.',
+      rating: 5
+    },
+    {
+      id: 2,
+      name: 'John Smith',
+      comment: 'very good fruits',
+      rating: 5
+    }
+  ]
+  const [isOpen, setIsOpen] = useState(false);
+  const [quantity, setQuantity] = useState(1);
+  const [category, setCategory] = useState("Mixed Veggie Box (L)");
+
+  const [allVegetables, setAllVegetables] = useState([]);
+  const [allFruits, setAllFruits] = useState([]);
+
+  useEffect(() => {
+    const fetchProducts = async () => {
+      try {
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/products/`);
+        const data = await response.json();
+        console.log("Fetched data:", data);
+      } catch (error) {
+        console.error("Failed to fetch products:", error);
+      }
+    };
+    fetchProducts();
+  }, []);
+
+  // Use fallback if DB is empty for demo purposes
+  const vegetables = allVegetables.length > 0 ? allVegetables : [
+    {
+      id: 1,
+      image: "https://plus.unsplash.com/premium_photo-1707242994139-fd1c5ab72aac?q=80&w=774&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
+      name: "radish",
+      price: 23,
+    },
+    {
+      id: 2,
+      image: "https://images.unsplash.com/photo-1524593410820-38510f580a77?q=80&w=870&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
+      name: "broccoli",
+      price: 45,
+    }
+  ];
+
+  const fruits = allFruits.length > 0 ? allFruits : [
+    {
+      id: 1,
+      image: "https://images.unsplash.com/photo-1618897996318-5a901fa6ca71?w=700&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8MTF8fGZydWl0c3xlbnwwfHwwfHx8MA%3D%3D",
+      name: "red apple",
+      price: 35,
+    },
+    {
+      id: 2,
+      image: "https://images.unsplash.com/photo-1528825871115-3581a5387919?q=80&w=1030&auto=format&fit=crop",
+      name: "ripe banana",
+      price: 15,
+    }
+  ];
+
+  const handleIncrement = () => setQuantity((prev) => prev + 1);
+  const handleDecrement = () => setQuantity((prev) => (prev > 1 ? prev - 1 : 1));
+
+  const handlePlaceQuickOrder = async () => {
+    const orderPayload = {
+      items: [
+        {
+          name: category,
+          quantity: quantity,
+          price: 24.99
+        }
+      ]
+    };
+
+    try {
+      const response = await fetch('http://localhost:8000/api/orders/place/', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(orderPayload),
+      });
+      if (response.ok) toast.success("Order successfully received on DB!");
+    } catch (error) {
+      console.error("Failed to place order:", error);
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-[#FDFDFD] text-[#1A1A1A] font-sans">
+      {/* Header */}
+      <Navbar />
+
+      {/* Hero Section */}
+      <Hero />
+
+      {/* Features Section */}
+      <section id="about" className="py-20 px-8 md:px-16 max-w-7xl mx-auto flex flex-col md:flex-row items-center gap-12">
+        <div className="w-full md:w-1/2 relative h-[300px] md:h-[400px] rounded-3xl overflow-hidden shadow-2xl shadow-green-900/20">
+          <Image
+            src="https://images.pexels.com/photos/1084540/pexels-photo-1084540.jpeg?auto=compress&cs=tinysrgb&w=800"
+            alt="Farmer harvesting fresh vegetables in a green farm field"
+            fill
+            className="object-cover"
+          />
+        </div>
+        <div className="w-full md:w-1/2 space-y-6">
+          <h2 className="text-3xl font-bold text-green-900">Rooted in Freshness</h2>
+          <p className="text-gray-600 leading-relaxed text-sm">
+            At FreshBox, we believe that high-quality produce shouldn't be a luxury. We partner directly with local sustainable farmers to bring the harvest's best directly to your kitchen within 24 hours of picking.
+          </p>
+          <div className="flex gap-8 pt-4">
+            <div className="flex gap-3">
+              <Leaf className="w-6 h-6 text-green-600 flex-shrink-0" />
+              <div>
+                <h4 className="font-semibold text-sm">Eco-Friendly</h4>
+                <p className="text-xs text-gray-500">Zero plastic packaging.</p>
+              </div>
+            </div>
+            <div className="flex gap-3">
+              <Truck className="w-6 h-6 text-green-600 flex-shrink-0" />
+              <div>
+                <h4 className="font-semibold text-sm">Fast Delivery</h4>
+                <p className="text-xs text-gray-500">Custom time slots, right to your door step.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Products Section */}
+       <Vegetables/>
+
+      {/* Fruits Section */}
+    
+
+
+      {/* Testimonials */}
+      <section id="testimonials" className="py-16 px-8 md:px-16 text-center max-w-4xl mx-auto">
+        <h2 className="text-3xl font-bold text-green-900 mb-10">What Our Customer Say</h2>
+        <Swiper
+          slidesPerView={1}
+          loop={true}
+          autoHeight={true}
+          effect="fade"
+          fadeEffect={{ crossFade: true }}
+          speed={1200}
+          autoplay={{
+            delay: 3000,
+            disableOnInteraction: false,
+          }}
+          modules={[Autoplay, EffectFade]}
+        >
+          {review.map((item) => (
+            <SwiperSlide key={item.id}>
+              <div className="bg-white shadow-lg rounded-2xl p-6 text-center">
+                <div className="flex justify-center gap-1 mb-4">
+                  {[...Array(item.rating)].map((_, index) => (
+                    <Star
+                      key={index}
+                      className="w-5 h-5 fill-green-600 text-green-600"
+                    />
+                  ))}
+                </div>
+
+                <p className="text-lg italic text-gray-700">
+                  "{item.comment}"
+                </p>
+
+                <h4 className="font-bold text-green-900 mt-4">
+                  {item.name}
+                </h4>
+              </div>
+            </SwiperSlide>
+          ))}
+        </Swiper>
+
+      </section>
+
+      {/* Assistance Banner */}
+      <section className="px-8 md:px-16 pb-20 max-w-7xl mx-auto">
+        <div className="relative rounded-3xl overflow-hidden">
+          <Image src="https://images.pexels.com/photos/2255935/pexels-photo-2255935.jpeg?auto=compress&cs=tinysrgb&w=1500" alt="Vegetable market background" fill className="object-cover blur-sm brightness-50" />
+          <div className="relative z-10 px-10 py-16 text-center flex flex-col items-center">
+            <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">Need Personalized Assistance?</h2>
+            <p className="text-white/90 text-sm md:text-base max-w-2xl mb-8">
+              Chat with our personal shoppers directly on WhatsApp. We can help you customize your box or find specific seasonal items just for you.
+            </p>
+            <button className="bg-green-500 hover:bg-green-600 text-white font-bold py-3 px-8 rounded-full flex items-center shadow-lg transition-colors">
+              <svg className="w-6 h-6 mr-2 fill-current" viewBox="0 0 24 24"><path d="M12.031 6.172c-3.181 0-5.767 2.586-5.768 5.766-.001 1.298.38 2.27 1.019 3.287l-.582 2.128 2.182-.573c.978.58 1.911.928 3.145.929 3.178 0 5.767-2.587 5.768-5.766.001-3.187-2.575-5.77-5.764-5.771zm3.392 8.244c-.144.405-.837.774-1.17.824-.299.045-.677.063-1.092-.125-.345-.156-.841-.334-1.637-.704-1.144-.531-1.895-1.579-1.953-1.656-.058-.078-.466-.622-.466-1.189 0-.568.293-.847.399-.961.106-.114.23-.142.307-.142.076 0 .152.001.218.004.067.003.155-.027.243.187.089.214.305.748.332.812.028.064.046.139.009.214-.037.075-.056.12-.112.182-.056.062-.119.136-.168.188-.053.056-.11.115-.046.225.064.11.286.471.611.762.421.378.775.494.887.549.112.056.177.047.243-.028.067-.075.289-.333.366-.447.078-.115.155-.096.255-.058.099.038.629.297.737.35.108.053.181.08.207.123.026.043.026.248-.118.653z" /></svg>
+              Order via WhatsApp
+            </button>
+          </div>
+        </div>
+      </section>
+
+      {/* Footer */}
+      <footer className="border-t border-gray-200 bg-white pt-16 pb-8 px-8 md:px-16">
+        <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-4 gap-8 mb-12">
+          <div>
+            <div className="text-xl font-bold text-green-700 mb-4">FreshBox</div>
+            <p className="text-gray-500 text-xs leading-relaxed mb-4">
+              Sustainable, organic, and direct from our fields to your table. Your health is our harvest.
+            </p>
+          </div>
+          <div>
+            <h4 className="font-bold text-gray-900 mb-4 text-sm uppercase">Quick Links</h4>
+            <ul className="space-y-2 text-sm text-gray-500">
+              <li><Link href="#" className="hover:text-green-600">About Us</Link></li>
+              <li><Link href="#" className="hover:text-green-600">Contact</Link></li>
+              <li><Link href="#" className="hover:text-green-600">Support</Link></li>
+              <li><Link href="#" className="hover:text-green-600">Terms of Service</Link></li>
+            </ul>
+          </div>
+          <div>
+            <h4 className="font-bold text-gray-900 mb-4 text-sm uppercase">Shop</h4>
+            <ul className="space-y-2 text-sm text-gray-500">
+              <li><Link href="#" className="hover:text-green-600">All Vegetables</Link></li>
+              <li><Link href="#" className="hover:text-green-600">Seasonal Fruits</Link></li>
+              <li><Link href="#" className="hover:text-green-600">Monthly Boxes</Link></li>
+              <li><Link href="#" className="hover:text-green-600">Special Offers</Link></li>
+            </ul>
+          </div>
+          <div>
+            <h4 className="font-bold text-gray-900 mb-4 text-sm uppercase">Newsletter</h4>
+            <p className="text-gray-500 text-xs mb-4">Get seasonal recipes and farm updates.</p>
+            <div className="flex">
+              <input type="email" placeholder="Email addr..." className="bg-gray-50 border border-gray-200 rounded-l-lg px-3 py-2 text-sm w-full focus:outline-none" />
+              <button className="bg-green-900 hover:bg-green-800 text-white px-4 py-2 rounded-r-lg transition-colors">
+                <ArrowRight className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+        </div>
+        <div className="text-center text-xs text-gray-400">
+          &copy; 2026 FreshBox. Organic freshness for your kitchen.
+        </div>
+      </footer>
+    </div>
+  );
+}

@@ -1,0 +1,294 @@
+"use client";
+import { createContext, useContext, useEffect, useState } from "react";
+import { Toaster } from "react-hot-toast";
+import { getAccessToken, isAuthenticated, getUser } from "@/lib/auth";
+
+const CartContext = createContext();
+const GUEST_CART_KEY = "guest_cart";
+
+export function CartProvider({ children }) {
+  const [cartItems, setCartItems] = useState([]);
+  const [user, setUser] = useState(null);
+  const [loadingItems, setLoadingItems] = useState({});
+  const [storeSettings, setStoreSettings] = useState({
+    free_delivery_threshold: 100,
+    delivery_charge: 50,
+  });
+  const [backendTotals, setBackendTotals] = useState(null);
+
+  const formatCartItems = (cartData) => {
+    if (!cartData || !cartData.items) return [];
+    return cartData.items.map((item) => ({
+      id: Number(item.product),
+      name: item.name,
+      price: Number(item.price),
+      image_url: item.image,
+      quantity: Number(item.quantity),
+    }));
+  };
+
+  const fetchCart = async () => {
+    const token = typeof window !== "undefined" ? getAccessToken() : null;
+    if (!token) return;
+    try {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/cart/`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res.ok) {
+        const data = await res.json();
+        const cartData = Array.isArray(data) ? data[0] : data;
+        setCartItems(formatCartItems(cartData));
+        setBackendTotals(cartData);
+      }
+    } catch (e) {
+      console.error("Failed to fetch cart", e);
+    }
+  };
+
+  // Init once (no "isInitialized" state => avoids the ESLint cascading-render warning)
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    if (!isAuthenticated()) {
+      const savedCart = localStorage.getItem(GUEST_CART_KEY);
+      try {
+        const parsedCart = savedCart ? JSON.parse(savedCart) : [];
+        if (Array.isArray(parsedCart)) {
+          queueMicrotask(() => setCartItems(parsedCart));
+        }
+      } catch (e) {
+        console.error("Failed to parse cart", e);
+      }
+    }
+
+    const savedUser = getUser();
+    if (savedUser) queueMicrotask(() => setUser(savedUser));
+
+    fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/store-info/`)
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.free_delivery_threshold !== undefined) {
+          setStoreSettings(data);
+        }
+      })
+      .catch((err) => console.error("Failed to fetch store settings", err));
+
+    // If authenticated, load cart from backend
+    queueMicrotask(() => fetchCart());
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Persist guest cart to localStorage
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    if (isAuthenticated()) {
+      localStorage.removeItem(GUEST_CART_KEY);
+      return;
+    }
+    localStorage.setItem(GUEST_CART_KEY, JSON.stringify(cartItems));
+  }, [cartItems]);
+
+  const mergeCart = async (token) => {
+    const savedCart = localStorage.getItem(GUEST_CART_KEY);
+    let guestItems = [];
+    try {
+      guestItems = savedCart ? JSON.parse(savedCart) : [];
+    } catch (e) {
+      console.error("Failed to parse guest cart", e);
+    }
+
+    if (!Array.isArray(guestItems) || guestItems.length === 0) {
+      localStorage.removeItem(GUEST_CART_KEY);
+      await fetchCart();
+      return;
+    }
+
+    try {
+      for (const item of guestItems) {
+        await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/cart/add_item/`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({ product_id: item.id, quantity: Number(item.quantity) || 1 })
+        });
+      }
+      localStorage.removeItem(GUEST_CART_KEY);
+      await fetchCart();
+    } catch (e) {
+      console.error("Failed to merge guest cart", e);
+    }
+  };
+
+  const addToCart = async (product) => {
+    const previousCart = cartItems;
+    const quantityDelta = Number(product.quantity) || 1;
+
+    // Optimistic UI update
+    setCartItems((prev) => {
+      const existingIndex = prev.findIndex((item) => Number(item.id) === Number(product.id));
+      if (existingIndex > -1) {
+        const updated = [...prev];
+        const newQty = Number(updated[existingIndex].quantity) + quantityDelta;
+        if (newQty <= 0) return prev.filter((_, i) => i !== existingIndex);
+        updated[existingIndex] = { ...updated[existingIndex], quantity: newQty };
+        return updated;
+      }
+      if (quantityDelta <= 0) return prev;
+      return [...prev, { ...product, quantity: quantityDelta, id: Number(product.id) }];
+    });
+
+    let token = typeof window !== "undefined" ? getAccessToken() : null;
+    if (token) {
+      setLoadingItems((prev) => ({ ...prev, [product.id]: true }));
+      try {
+        let res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/cart/add_item/`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({ product_id: product.id, quantity: quantityDelta })
+        });
+
+        // Handle expired token
+        if (res.status === 401) {
+          const { refreshAccessToken, clearAuth } = await import("@/lib/auth");
+          const newToken = await refreshAccessToken();
+          if (newToken) {
+            // Retry with new token
+            res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/cart/add_item/`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${newToken}`
+              },
+              body: JSON.stringify({ product_id: product.id, quantity: quantityDelta })
+            });
+          } else {
+            clearAuth();
+            setUser(null);
+            // After clearing auth, the cart is now a guest cart, so we're done
+            return;
+          }
+        }
+
+        if (res.ok) {
+          const updatedCartData = await res.json();
+          setCartItems(formatCartItems(updatedCartData));
+          setBackendTotals(updatedCartData);
+        } else {
+          // If still not OK, we don't throw but we log and rollback
+          console.error("Server cart update failed", res.status);
+          setCartItems(previousCart);
+        }
+      } catch (e) {
+        console.error("Failed to add item", e);
+        setCartItems(previousCart);
+      } finally {
+        setLoadingItems((prev) => ({ ...prev, [product.id]: false }));
+      }
+    }
+  };
+
+  const removeFromCart = async (id) => {
+    const previousCart = cartItems;
+    setCartItems((prev) => prev.filter((item) => Number(item.id) !== Number(id)));
+
+    let token = typeof window !== "undefined" ? getAccessToken() : null;
+    if (token) {
+      try {
+        let res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/cart/remove_item/`, {
+          method: 'DELETE',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({ product_id: id })
+        });
+
+        if (res.status === 401) {
+          const { refreshAccessToken, clearAuth } = await import("@/lib/auth");
+          const newToken = await refreshAccessToken();
+          if (newToken) {
+            res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/cart/remove_item/`, {
+              method: 'DELETE',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${newToken}`
+              },
+              body: JSON.stringify({ product_id: id })
+            });
+          } else {
+            clearAuth();
+            setUser(null);
+            return;
+          }
+        }
+
+        if (res.ok) {
+          const updatedCartData = await res.json();
+          setCartItems(formatCartItems(updatedCartData));
+          setBackendTotals(updatedCartData);
+        } else {
+          setCartItems(previousCart);
+        }
+      } catch (e) {
+        console.error("Failed to remove item", e);
+        setCartItems(previousCart);
+      }
+    }
+  };
+
+  const clearCart = () => setCartItems([]);
+
+  const cartCount = cartItems.reduce((total, item) => total + item.quantity, 0);
+  
+  // Calculate locally for guest users, use backend values for logged in users if available
+  const subtotal = backendTotals?.subtotal !== undefined 
+      ? parseFloat(backendTotals.subtotal) 
+      : cartItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
+      
+  const freeDeliveryThreshold = backendTotals?.free_delivery_threshold !== undefined
+      ? parseFloat(backendTotals.free_delivery_threshold)
+      : parseFloat(storeSettings?.free_delivery_threshold) || 100;
+      
+  const deliveryChargeValue = parseFloat(storeSettings?.delivery_charge) || 50;
+  
+  const deliveryCharge = backendTotals?.delivery_charge !== undefined
+      ? parseFloat(backendTotals.delivery_charge)
+      : ((subtotal > 0 && subtotal <= freeDeliveryThreshold) ? deliveryChargeValue : 0);
+      
+  const grandTotal = backendTotals?.grand_total !== undefined
+      ? parseFloat(backendTotals.grand_total)
+      : subtotal + deliveryCharge;
+
+  return (
+    <CartContext.Provider value={{
+      cartItems, addToCart, removeFromCart, clearCart, cartCount,
+      loadingItems, mergeCart, user, setUser, storeSettings,
+      subtotal, deliveryCharge, grandTotal, freeDeliveryThreshold
+    }}>
+      <Toaster position="top-right"
+        toastOptions={{
+          duration: 3000,
+          style: {
+            background: '#fff',
+            color: '#1a1a1a',
+            borderRadius: '10px',
+            fontSize: '14px'
+          },
+          success: {
+            iconTheme: { primary: '#484d4aff', secondary: '#fff' }
+          }
+        }} />
+      {children}
+    </CartContext.Provider>
+  );
+}
+
+export function useCart() {
+  return useContext(CartContext);
+}
