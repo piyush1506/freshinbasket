@@ -6,6 +6,7 @@ from django.utils import timezone
 from django.db.models import Sum, Count, Q
 from datetime import timedelta
 from .models import Order, DeliveryAssignment
+from api.serializers import UserSerializer, UserUpdateSerializer
 
 
 class IsDeliveryUser(permissions.BasePermission):
@@ -254,3 +255,27 @@ class DeliveryEarningsView(APIView):
                 'earnings': total_count * COMMISSION,
             },
         })
+
+
+class DeliveryUpdateProfileView(APIView):
+    """Get and update the delivery boy's profile details."""
+    permission_classes = [permissions.IsAuthenticated, IsDeliveryUser]
+    throttle_classes = [UserRateThrottle]
+
+    def get(self, request):
+        user = request.user
+        return Response(UserSerializer(user).data)
+
+    def patch(self, request):
+        user = request.user
+        serializer = UserUpdateSerializer(
+            user,
+            data=request.data,
+            partial=True,
+            context={'request': request}
+        )
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(UserSerializer(user).data)
+
+

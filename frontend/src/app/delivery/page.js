@@ -9,6 +9,7 @@ const DeliveryMap = dynamic(() => import("../components/DeliveryMap"), {
   loading: () => <div className="w-full h-full bg-gray-100 flex items-center justify-center text-sm text-gray-500">Loading Map...</div> 
 });
 import { getAccessToken } from "@/lib/auth";
+import toast from "react-hot-toast";
 import {
   Truck,
   Navigation,
@@ -75,7 +76,6 @@ export default function DeliveryDashboard() {
   useEffect(() => {
     fetchDashboard();
     fetchAssignedOrders();
-    // Poll every 30 seconds for real-time updates
     const interval = setInterval(() => {
       fetchDashboard();
       fetchAssignedOrders();
@@ -108,6 +108,29 @@ export default function DeliveryDashboard() {
     } finally {
       setUpdatingStatus(false);
     }
+  };
+
+  const handleOpenNavigation = () => {
+    if (!navigator.geolocation) {
+      toast.error("Geolocation is not supported by your browser");
+      return;
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        const { latitude, longitude } = position.coords;
+        setdriverlocation({ lat: latitude, lng: longitude });
+        toast.success("Route created between you and the destination");
+      },
+      (error) => {
+        let msg = "Failed to get location";
+        if (error.code === 1) msg = "Location permission denied. Please enable GPS.";
+        else if (error.code === 2) msg = "Location unavailable. Try again.";
+        else if (error.code === 3) msg = "Location request timed out.";
+        toast.error(msg);
+      },
+      { enableHighAccuracy: true, timeout: 10000 }
+    );
   };
 
   const data = dashboard || {
@@ -205,6 +228,7 @@ export default function DeliveryDashboard() {
                 </div>
                 <div className="flex gap-2">
                   <button
+                    onClick={handleOpenNavigation}
                     className="flex items-center gap-2 px-5 py-2.5 bg-[#2D6A2E] text-white text-sm font-semibold rounded-xl hover:bg-[#245824] transition-all shadow-lg shadow-green-900/20"
                   >
                     <Navigation size={15} />

@@ -14,6 +14,7 @@ from orders.delivery_views import (
     DeliveryAssignedOrdersView,
     DeliveryUpdateStatusView,
     DeliveryEarningsView,
+    DeliveryUpdateProfileView,
 )
 
 router = DefaultRouter()
@@ -49,6 +50,7 @@ urlpatterns = [
     path('delivery/orders/', DeliveryAssignedOrdersView.as_view(), name='delivery_orders'),
     path('delivery/orders/<int:order_id>/status/', DeliveryUpdateStatusView.as_view(), name='delivery_update_status'),
     path('delivery/earnings/', DeliveryEarningsView.as_view(), name='delivery_earnings'),
+    path('delivery/profile/', DeliveryUpdateProfileView.as_view(), name='delivery_profile'),
 
     # Contact
     path('contact/', include([

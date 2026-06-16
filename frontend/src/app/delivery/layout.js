@@ -17,7 +17,6 @@ import {
 
 const sidebarLinks = [
   { label: "Active Deliveries", href: "/delivery", icon: Truck },
-  { label: "Route Schedule", href: "/delivery/schedule", icon: CalendarClock },
   { label: "Profile", href: "/delivery/profile", icon: UserCircle },
 ];
 
