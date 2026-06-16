@@ -426,14 +426,14 @@ export default function CartPage() {
                                   {item.size || "Standard"}
                                 </p>
                                 <div className="text-gray-900 font-semibold md:hidden mt-1">
-                                  ₹{parseInt(item.price)}
+                                  ₹{parseInt(item.price)}/{item.unit || 'kg'}
                                 </div>
                               </div>
                             </div>
 
                             {/* Price (Desktop only) */}
                             <div className="hidden md:block text-gray-900 font-semibold">
-                              ₹{parseInt(item.price)}
+                              ₹{parseInt(item.price)}/{item.unit || 'kg'}
                             </div>
 
                             {/* Mobile bottom row / Desktop columns */}

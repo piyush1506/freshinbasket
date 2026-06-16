@@ -303,7 +303,7 @@ export default function DeliveryDashboard() {
                         <div className="flex flex-wrap gap-2">
                           {data.active_delivery.items.map((item, idx) => (
                             <span key={idx} className="px-3 py-1 bg-gray-100 text-gray-700 text-xs font-medium rounded-lg">
-                              {item.quantity}x {item.name} — ₹{item.unit_price}
+                              {item.quantity} {item.unit_name || 'kg'} {item.name} — ₹{item.unit_price}
                             </span>
                           ))}
                         </div>

@@ -54,7 +54,7 @@ export default function OrderDetailModal({ isOpen, onClose, order }) {
               {order.items && order.items.map((item) => (
                 <div key={item.id} className="flex items-center justify-between px-4 py-3">
                   <div className="flex items-center gap-3">
-                    <span className="text-sm font-medium text-gray-900">{item.quantity}x</span>
+                    <span className="text-sm font-medium text-gray-900">{item.quantity} {item.unit_name || 'kg'}</span>
                     <span className="text-sm text-gray-700">{item.product_name}</span>
                   </div>
                   <span className="text-sm font-semibold text-gray-900">₹{parseInt(item.total_price || item.unit_price * item.quantity)}</span>

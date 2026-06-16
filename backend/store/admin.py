@@ -1,7 +1,7 @@
 from django.contrib import admin
 from django.utils.html import format_html
 from django.utils.timezone import now
-from .models import Category, Product, Slide, ContactQuery
+from .models import Category, Product, Slide, ContactQuery, Unit
 
 
 @admin.register(Category)
@@ -30,9 +30,16 @@ class CategoryAdmin(admin.ModelAdmin):
     image_preview.short_description = 'Image'
 
 
+@admin.register(Unit)
+class UnitAdmin(admin.ModelAdmin):
+    list_display = ('name', 'slug')
+    prepopulated_fields = {'slug': ('name',)}
+    search_fields = ('name',)
+
+
 @admin.register(Product)
 class ProductAdmin(admin.ModelAdmin):
-    list_display = ('name', 'category_list', 'price', 'stock', 'stock_status', 'image_preview', 'created_at')
+    list_display = ('name', 'category_list', 'unit', 'price', 'stock', 'stock_status', 'image_preview', 'created_at')
     list_editable = ('price', 'stock')
     list_filter = ('categories', 'created_at')
     search_fields = ('name', 'description')
@@ -41,7 +48,7 @@ class ProductAdmin(admin.ModelAdmin):
     filter_horizontal = ('categories',)
     fieldsets = (
         (None, {
-            'fields': ('categories', 'name', 'slug', 'description', 'price', 'stock')
+            'fields': ('categories', 'name', 'slug', 'description', 'price', 'stock', 'unit')
         }),
         ('Image', {
             'fields': ('image_url', 'image_preview')

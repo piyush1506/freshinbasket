@@ -1,7 +1,7 @@
 import cloudinary.uploader
 from rest_framework import serializers
 from users.models import User
-from store.models import Category, Product, Slide, ContactQuery
+from store.models import Category, Product, Slide, ContactQuery, Unit
 from orders.models import Order, OrderItem, DeliveryAssignment, Cart, CartItem
 from django.contrib.auth import authenticate
 from django.contrib.auth.password_validation import validate_password as django_validate_password
@@ -129,15 +129,26 @@ class CategorySerializer(serializers.ModelSerializer):
         return None
 
 
+class UnitSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Unit
+        fields = ('id', 'name', 'slug')
+
+
 class ProductSerializer(serializers.ModelSerializer):
     category_names = serializers.SerializerMethodField()
     image = serializers.ImageField(write_only=True, required=False)
     image_url = serializers.SerializerMethodField()
+    unit = UnitSerializer(read_only=True)
+    unit_id = serializers.PrimaryKeyRelatedField(
+        queryset=Unit.objects.all(), source='unit', write_only=True, required=False, allow_null=True
+    )
 
     class Meta:
         model = Product
         fields = (
             'id', 'name', 'slug', 'description', 'price', 'stock',
+            'unit', 'unit_id',
             'image', 'image_url', 'created_at', 'updated_at',
             'categories', 'category_names',
         )
@@ -192,10 +203,16 @@ class ProductSerializer(serializers.ModelSerializer):
 
 class SearchProductSerializer(serializers.ModelSerializer):
     image_url = serializers.SerializerMethodField()
+    unit = serializers.SerializerMethodField()
 
     class Meta:
         model = Product
-        fields = ('id', 'name', 'price', 'stock', 'image_url')
+        fields = ('id', 'name', 'price', 'stock', 'image_url', 'unit')
+
+    def get_unit(self, obj):
+        if obj.unit:
+            return obj.unit.name
+        return 'kg'
 
     def get_image_url(self, obj):
         if obj.image_url and hasattr(obj.image_url, 'url'):
@@ -208,7 +225,7 @@ class OrderItemSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = OrderItem
-        fields = ('id', 'product', 'product_name', 'quantity', 'unit_price', 'total_price')
+        fields = ('id', 'product', 'product_name', 'quantity', 'unit_name', 'unit_price', 'total_price')
 
 
 class OrderSerializer(serializers.ModelSerializer):
@@ -242,15 +259,21 @@ class CartItemSerializer(serializers.ModelSerializer):
     price = serializers.ReadOnlyField(source='product.price')
     image = serializers.SerializerMethodField()
     total_price = serializers.SerializerMethodField()
+    unit = serializers.SerializerMethodField()
+
+    class Meta:
+        model = CartItem
+        fields = ('id', 'product', 'name', 'price', 'image', 'quantity', 'unit', 'total_price')
 
     def get_image(self, obj):
         if obj.product.image_url and hasattr(obj.product.image_url, 'url'):
             return get_transformed_cloudinary_url(obj.product.image_url.url, width=100)
         return None
 
-    class Meta:
-        model = CartItem
-        fields = ('id', 'product', 'name', 'price', 'image', 'quantity', 'total_price')
+    def get_unit(self, obj):
+        if obj.product.unit:
+            return obj.product.unit.name
+        return 'kg'
 
     def get_total_price(self, obj):
         return obj.quantity * obj.product.price

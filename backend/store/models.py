@@ -1,5 +1,6 @@
 from django.db import models
 from django.conf import settings
+from django.utils.text import slugify
 
 
 class ContactQuery(models.Model):
@@ -36,6 +37,33 @@ class Category(models.Model):
     def __str__(self):
         return self.name
 
+    def save(self, *args, **kwargs):
+        if not self.slug:
+            self.slug = slugify(self.name)
+        orig_slug = self.slug
+        counter = 1
+        while Category.objects.filter(slug=self.slug).exclude(pk=self.pk).exists():
+            self.slug = f"{orig_slug}-{counter}"
+            counter += 1
+        super().save(*args, **kwargs)
+
+
+class Unit(models.Model):
+    name = models.CharField(max_length=50, unique=True, help_text="e.g. kg, 250g, 1 piece, bunch")
+    slug = models.SlugField(unique=True)
+
+    class Meta:
+        verbose_name = 'Unit'
+        verbose_name_plural = 'Units'
+
+    def __str__(self):
+        return self.name
+
+    def save(self, *args, **kwargs):
+        if not self.slug:
+            self.slug = slugify(self.name)
+        super().save(*args, **kwargs)
+
 
 class Product(models.Model):
     categories = models.ManyToManyField(Category, related_name='products')
@@ -44,12 +72,23 @@ class Product(models.Model):
     description = models.TextField()
     price = models.DecimalField(max_digits=10, decimal_places=2)
     stock = models.PositiveIntegerField(default=0)
+    unit = models.ForeignKey(Unit, on_delete=models.SET_NULL, null=True, blank=True, help_text="Unit of measurement (e.g. kg, piece, 250g)")
     image_url = models.ImageField(upload_to='products/', blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
         return self.name
+
+    def save(self, *args, **kwargs):
+        if not self.slug:
+            self.slug = slugify(self.name)
+        orig_slug = self.slug
+        counter = 1
+        while Product.objects.filter(slug=self.slug).exclude(pk=self.pk).exists():
+            self.slug = f"{orig_slug}-{counter}"
+            counter += 1
+        super().save(*args, **kwargs)
 
 
 class Slide(models.Model):

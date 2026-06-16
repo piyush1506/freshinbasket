@@ -84,6 +84,7 @@ class DeliveryDashboardView(APIView):
                     {
                         'name': item.product_name,
                         'quantity': item.quantity,
+                        'unit_name': item.unit_name or 'kg',
                         'unit_price': str(item.unit_price),
                     }
                     for item in items
@@ -145,6 +146,7 @@ class DeliveryAssignedOrdersView(APIView):
                     {
                         'name': item.product_name,
                         'quantity': item.quantity,
+                        'unit_name': item.unit_name or 'kg',
                         'unit_price': str(item.unit_price),
                     }
                     for item in items

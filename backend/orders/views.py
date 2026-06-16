@@ -146,6 +146,7 @@ class VerifyPaymentView(APIView):
                     product=item.product,
                     product_name=item.product.name,
                     quantity=item.quantity,
+                    unit_name=item.product.unit.name if item.product.unit else 'kg',
                     unit_price=item.product.price
                 )
                 Product.objects.filter(id=item.product.id).update(
@@ -236,6 +237,7 @@ class CreateCODOrderView(APIView):
                 product=item.product,
                 product_name=item.product.name,
                 quantity=item.quantity,
+                unit_name=item.product.unit.name if item.product.unit else 'kg',
                 unit_price=item.product.price
             )
             Product.objects.filter(id=item.product.id).update(

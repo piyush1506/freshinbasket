@@ -250,7 +250,7 @@ export default function OrdersPage() {
                                                             <div className="mt-4 space-y-1">
                                                                 {order.items && order.items.map(item => (
                                                                     <p key={item.id} className="text-sm text-gray-600 leading-relaxed">
-                                                                        {item.quantity}x {item.product_name}
+                                                                        {item.quantity} {item.unit_name || 'kg'} {item.product_name}
                                                                     </p>
                                                                 ))}
                                                             </div>

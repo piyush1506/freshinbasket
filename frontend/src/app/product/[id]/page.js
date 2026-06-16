@@ -73,6 +73,7 @@ export default function ProductDetailPage() {
           price: product.price,
           image_url: product.image_url,
           quantity: delta,
+          unit: product.unit?.name || 'kg',
         });
         toast.success(cartQty > 0 ? "Cart updated!" : "Added to cart!");
       }
@@ -138,7 +139,7 @@ export default function ProductDetailPage() {
 
             <div className="text-3xl sm:text-4xl font-extrabold text-green-700 my-4">
               ₹{Number(product.price).toFixed(2)}
-              <span className="text-lg font-semibold text-gray-400 ml-1">/kg</span>
+              <span className="text-lg font-semibold text-gray-400 ml-1">/{product.unit?.name || 'kg'}</span>
             </div>
 
             <p className="text-gray-600 leading-relaxed mb-6">{product.description}</p>

@@ -22,6 +22,8 @@ export default function VegetableCard({ item }) {
     setInputVal(String(cartQty));
   }, [cartQty]);
 
+  const itemUnit = item.unit?.name || 'kg';
+
   const handleAdd = async () => {
     if (loading) return;
     setLoading(true);
@@ -32,6 +34,7 @@ export default function VegetableCard({ item }) {
         price: item.price,
         image_url: item.image_url,
         quantity: 1,
+        unit: itemUnit,
       });
       toast.success("Added to cart!");
     } catch (error) {
@@ -52,6 +55,7 @@ export default function VegetableCard({ item }) {
         price: item.price,
         image_url: item.image_url,
         quantity: 1,
+        unit: itemUnit,
       });
     } catch (error) {
       console.error("Error incrementing:", error);
@@ -74,6 +78,7 @@ export default function VegetableCard({ item }) {
           price: item.price,
           image_url: item.image_url,
           quantity: -1,
+          unit: itemUnit,
         });
       }
     } catch (error) {
@@ -111,6 +116,7 @@ export default function VegetableCard({ item }) {
           price: item.price,
           image_url: item.image_url,
           quantity: delta,
+          unit: itemUnit,
         });
         toast.success(`Quantity updated to ${parsed}`);
       }
@@ -153,7 +159,7 @@ export default function VegetableCard({ item }) {
         <div className="flex items-center justify-between mt-auto gap-1 sm:gap-2">
           <span className="text-base sm:text-lg sm:ml-0 md:ml-0 font-bold text-green-700 whitespace-nowrap">
             ₹{Number(item.price)}
-            <span className="text-xs sm:text-sm font-medium text-gray-400 ml-0.5">/kg</span>
+            <span className="text-xs sm:text-sm font-medium text-gray-400 ml-0.5">/{itemUnit}</span>
           </span>
 
           {isOutOfStock ? (

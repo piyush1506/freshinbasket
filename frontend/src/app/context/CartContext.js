@@ -24,16 +24,32 @@ export function CartProvider({ children }) {
       price: Number(item.price),
       image_url: item.image,
       quantity: Number(item.quantity),
+      unit: item.unit || 'kg',
     }));
   };
 
   const fetchCart = async () => {
-    const token = typeof window !== "undefined" ? getAccessToken() : null;
+    let token = typeof window !== "undefined" ? getAccessToken() : null;
     if (!token) return;
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/cart/`, {
+      let res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/cart/`, {
         headers: { Authorization: `Bearer ${token}` },
       });
+      if (res.status === 401) {
+        const { refreshAccessToken, clearAuth } = await import("@/lib/auth");
+        const newToken = await refreshAccessToken();
+        if (newToken) {
+          token = newToken;
+          res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/cart/`, {
+            headers: { Authorization: `Bearer ${newToken}` },
+          });
+        } else {
+          clearAuth();
+          setUser(null);
+          setCartItems([]);
+          return;
+        }
+      }
       if (res.ok) {
         const data = await res.json();
         const cartData = Array.isArray(data) ? data[0] : data;

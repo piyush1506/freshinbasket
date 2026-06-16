@@ -6,8 +6,12 @@ from .models import Order, OrderItem, Cart, CartItem, DeliveryAssignment
 class OrderItemInline(admin.TabularInline):
     model = OrderItem
     extra = 0
-    readonly_fields = ('product_name', 'quantity', 'unit_price', 'total_price')
+    readonly_fields = ('product_name', 'weight', 'unit_price', 'total_price')
     can_delete = False
+
+    def weight(self, obj):
+        return f"{obj.quantity} kg"
+    weight.short_description = "Weight"
 
 
 class DeliveryAssignmentInline(admin.StackedInline):
@@ -60,14 +64,22 @@ class OrderAdmin(admin.ModelAdmin):
 
 @admin.register(OrderItem)
 class OrderItemAdmin(admin.ModelAdmin):
-    list_display = ('id', 'order', 'product_name', 'quantity', 'unit_price', 'total_price')
+    list_display = ('id', 'order', 'product_name', 'weight', 'unit_price', 'total_price')
     search_fields = ('product_name', 'order__order_number')
+
+    def weight(self, obj):
+        return f"{obj.quantity} kg"
+    weight.short_description = "Weight"
 
 class CartItemsInline(admin.TabularInline):
     model = CartItem
     extra = 0
-    readonly_fields = ('product', 'quantity')
+    readonly_fields = ('product', 'weight')
     can_delete = False
+
+    def weight(self, obj):
+        return f"{obj.quantity} kg"
+    weight.short_description = "Weight"
 
 @admin.register(Cart)
 class CartAdmin(admin.ModelAdmin):
@@ -82,9 +94,13 @@ class CartAdmin(admin.ModelAdmin):
 
 @admin.register(CartItem)
 class CartItemAdmin(admin.ModelAdmin):
-    list_display = ('cart_folder','product','quantity')
+    list_display = ('cart_folder','product','weight')
     search_fields = ('cart__user__username','product__name')
     ordering = ('cart__user__username','product__name')
+
+    def weight(self, obj):
+        return f"{obj.quantity} kg"
+    weight.short_description = "Weight"
 
     list_filter = ('cart',)
    

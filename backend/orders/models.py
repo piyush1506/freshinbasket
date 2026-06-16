@@ -131,6 +131,7 @@ class OrderItem(models.Model):
 
     product_name = models.CharField(max_length=255)
     quantity = models.PositiveIntegerField(default=1)
+    unit_name = models.CharField(max_length=50, blank=True, default='kg', help_text="Unit label at time of order")
 
     unit_price = models.DecimalField(max_digits=10, decimal_places=2)
     total_price = models.DecimalField(max_digits=12, decimal_places=2)
