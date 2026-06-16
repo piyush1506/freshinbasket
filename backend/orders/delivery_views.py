@@ -77,15 +77,19 @@ class DeliveryDashboardView(APIView):
                 'delivery_latitude': str(order.delivery_latitude) if order.delivery_latitude else None,
                 'delivery_longitude': str(order.delivery_longitude) if order.delivery_longitude else None,
                 'status': order.status,
+                'subtotal': str(order.subtotal),
+                'delivery_charge': str(order.delivery_charge),
                 'total_amount': str(order.total_amount),
                 'is_paid': order.is_paid,
                 'payment_method': order.payment_method,
                 'items': [
                     {
-                        'name': item.product_name,
+                        'id': item.id,
+                        'product_name': item.product_name,
                         'quantity': item.quantity,
                         'unit_name': item.unit_name or 'kg',
                         'unit_price': str(item.unit_price),
+                        'total_price': str(item.total_price),
                     }
                     for item in items
                 ],
@@ -135,6 +139,8 @@ class DeliveryAssignedOrdersView(APIView):
                 'delivery_latitude': str(order.delivery_latitude) if order.delivery_latitude else None,
                 'delivery_longitude': str(order.delivery_longitude) if order.delivery_longitude else None,
                 'status': order.status,
+                'subtotal': str(order.subtotal),
+                'delivery_charge': str(order.delivery_charge),
                 'total_amount': str(order.total_amount),
                 'is_paid': order.is_paid,
                 'payment_method': order.payment_method,
@@ -144,10 +150,12 @@ class DeliveryAssignedOrdersView(APIView):
                 'notes': assignment.notes or '',
                 'items': [
                     {
-                        'name': item.product_name,
+                        'id': item.id,
+                        'product_name': item.product_name,
                         'quantity': item.quantity,
                         'unit_name': item.unit_name or 'kg',
                         'unit_price': str(item.unit_price),
+                        'total_price': str(item.total_price),
                     }
                     for item in items
                 ],

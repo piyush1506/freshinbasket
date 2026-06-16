@@ -8,6 +8,7 @@ const DeliveryMap = dynamic(() => import("../components/DeliveryMap"), {
   ssr: false,
   loading: () => <div className="w-full h-full bg-gray-100 flex items-center justify-center text-sm text-gray-500">Loading Map...</div> 
 });
+import OrderDetailModal from "../components/OrderDetailModal";
 import { getAccessToken } from "@/lib/auth";
 import toast from "react-hot-toast";
 import {
@@ -33,6 +34,8 @@ export default function DeliveryDashboard() {
   const [loading, setLoading] = useState(true);
   const [updatingStatus, setUpdatingStatus] = useState(false);
   const [driverlocation,setdriverlocation]=useState({lat:0,lng:0})
+  const [selectedOrder, setSelectedOrder] = useState(null);
+  const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
 
   const fetchDashboard = async () => {
     const token = getAccessToken();
@@ -477,7 +480,7 @@ export default function DeliveryDashboard() {
                       </span>
                     </td>
                     <td className="px-6 py-4">
-                      <button className="text-sm text-green-700 font-semibold hover:text-green-900 transition-colors flex items-center gap-1">
+                      <button onClick={() => { setSelectedOrder(item); setIsDetailModalOpen(true); }} className="text-sm text-green-700 font-semibold hover:text-green-900 transition-colors flex items-center gap-1">
                         View Details
                         <ChevronRight size={14} />
                       </button>
@@ -496,6 +499,13 @@ export default function DeliveryDashboard() {
           </div>
         )}
       </div>
+
+      {/* Order Detail Modal */}
+      <OrderDetailModal
+        isOpen={isDetailModalOpen}
+        onClose={() => { setIsDetailModalOpen(false); setSelectedOrder(null); }}
+        order={selectedOrder}
+      />
 
       {/* Footer */}
       <footer className="border-t border-gray-200 pt-6 pb-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-gray-400">
