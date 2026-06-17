@@ -6,6 +6,7 @@ from django.utils import timezone
 from django.db.models import Sum, Count, Q
 from datetime import timedelta
 from .models import Order, DeliveryAssignment
+from .delivery.models import DeliveryLocation
 from api.serializers import UserSerializer, UserUpdateSerializer
 
 
@@ -287,5 +288,21 @@ class DeliveryUpdateProfileView(APIView):
         serializer.is_valid(raise_exception=True)
         serializer.save()
         return Response(UserSerializer(user).data)
+
+
+class UpdateDeliveryLocationView(APIView):
+    """Update the delivery boy's current live location."""
+    permission_classes = [permissions.IsAuthenticated, IsDeliveryUser]
+
+    def post(self, request):
+        latitude = request.data.get('latitude')
+        longitude = request.data.get('longitude')
+        if latitude is None or longitude is None:
+            return Response({'error': 'latitude and longitude are required'}, status=status.HTTP_400_BAD_REQUEST)
+        DeliveryLocation.objects.update_or_create(
+            delivery_boy=request.user,
+            defaults={'latitude': latitude, 'longitude': longitude}
+        )
+        return Response({'status': 'ok'})
 
 
