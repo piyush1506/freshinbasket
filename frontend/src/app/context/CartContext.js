@@ -1,7 +1,7 @@
 "use client";
 import { createContext, useContext, useEffect, useState } from "react";
 import { Toaster } from "react-hot-toast";
-import { getAccessToken, isAuthenticated, getUser } from "@/lib/auth";
+import { getAccessToken, isAuthenticated, getUser, authFetch } from "@/lib/auth";
 
 const CartContext = createContext();
 const GUEST_CART_KEY = "guest_cart";
@@ -15,6 +15,41 @@ export function CartProvider({ children }) {
     delivery_charge: 50,
   });
   const [backendTotals, setBackendTotals] = useState(null);
+  const [wishlistIds, setWishlistIds] = useState([]);
+
+  const fetchWishlistIds = async () => {
+    const token = getAccessToken();
+    if (!token) return;
+    try {
+      const res = await authFetch(`${process.env.NEXT_PUBLIC_API_URL}/api/wishlist/ids/`);
+      if (res.ok) {
+        setWishlistIds(await res.json());
+      }
+    } catch {}
+  };
+
+  const toggleWishlist = async (productId) => {
+    const token = getAccessToken();
+    if (!token) return;
+    const isWishlisted = wishlistIds.includes(Number(productId));
+    try {
+      if (isWishlisted) {
+        const res = await authFetch(`${process.env.NEXT_PUBLIC_API_URL}/api/wishlist/remove/`, {
+          method: 'DELETE',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ product_id: productId }),
+        });
+        if (res.ok) setWishlistIds((prev) => prev.filter((id) => id !== Number(productId)));
+      } else {
+        const res = await authFetch(`${process.env.NEXT_PUBLIC_API_URL}/api/wishlist/`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ product: productId }),
+        });
+        if (res.ok) setWishlistIds((prev) => [...prev, Number(productId)]);
+      }
+    } catch {}
+  };
 
   const formatCartItems = (cartData) => {
     if (!cartData || !cartData.items) return [];
@@ -25,6 +60,7 @@ export function CartProvider({ children }) {
       image_url: item.image,
       quantity: Number(item.quantity),
       unit: item.unit || 'kg',
+      tax_percentage: parseFloat(item.tax_percentage) || 0,
     }));
   };
 
@@ -89,8 +125,9 @@ export function CartProvider({ children }) {
       })
       .catch((err) => console.error("Failed to fetch store settings", err));
 
-    // If authenticated, load cart from backend
+    // If authenticated, load cart and wishlist from backend
     queueMicrotask(() => fetchCart());
+    queueMicrotask(() => fetchWishlistIds());
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -277,15 +314,24 @@ export function CartProvider({ children }) {
       ? parseFloat(backendTotals.delivery_charge)
       : ((subtotal > 0 && subtotal <= freeDeliveryThreshold) ? deliveryChargeValue : 0);
       
+  const taxAmount = cartItems.reduce((sum, item) => {
+    const pct = Number(item.tax_percentage) || 0;
+    return sum + (item.price * item.quantity * pct / 100);
+  }, 0);
+
+  const hasTaxableItems = cartItems.some((item) => Number(item.tax_percentage) > 0);
+
   const grandTotal = backendTotals?.grand_total !== undefined
       ? parseFloat(backendTotals.grand_total)
-      : subtotal + deliveryCharge;
+      : subtotal + taxAmount + deliveryCharge;
 
   return (
     <CartContext.Provider value={{
       cartItems, addToCart, removeFromCart, clearCart, cartCount,
       loadingItems, mergeCart, user, setUser, storeSettings,
-      subtotal, deliveryCharge, grandTotal, freeDeliveryThreshold
+      subtotal, deliveryCharge, grandTotal, freeDeliveryThreshold,
+      taxAmount, hasTaxableItems,
+      wishlistIds, toggleWishlist, fetchWishlistIds
     }}>
       <Toaster position="top-right"
         toastOptions={{

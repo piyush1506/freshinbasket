@@ -1,7 +1,7 @@
 from django.contrib import admin
 from django.utils.html import format_html
 from django.db.models import Q
-from .models import Order, OrderItem, Cart, CartItem, DeliveryAssignment
+from .models import Order, OrderItem, Cart, CartItem, DeliveryAssignment, Review
 
 
 class OrderItemInline(admin.TabularInline):
@@ -168,3 +168,11 @@ class DeliveryOrderAdmin(admin.ModelAdmin):
         return super().get_queryset(request).select_related(
             'customer', 'delivery_assignment', 'delivery_assignment__delivery_boy'
         )
+
+
+@admin.register(Review)
+class ReviewAdmin(admin.ModelAdmin):
+    list_display = ('id', 'order', 'user', 'rating', 'created_at')
+    list_filter = ('rating', 'created_at')
+    search_fields = ('user__username', 'user__email', 'order__order_number')
+    ordering = ('-created_at',)

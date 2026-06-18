@@ -3,7 +3,7 @@ import { useState, useEffect, useRef, useCallback, startTransition } from "react
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCart } from "../context/CartContext";
-import { Search, ShoppingCart, Leaf, ChevronDown, User } from "lucide-react";
+import { Search, ShoppingCart, Leaf, ChevronDown, User, Heart, Bookmark } from "lucide-react";
 import { Squash as Hamburger } from 'hamburger-react';
 import { clearAuth, AUTH_API } from "@/lib/auth";
 
@@ -38,7 +38,7 @@ const getLocalSuggestions = (products, query) => {
 };
 
 export default function Navbar({ item }) {
-    const { cartCount, user, setUser } = useCart();
+    const { cartCount, user, setUser, wishlistIds } = useCart();
     const router = useRouter();
 	
     const [isOpen, setIsOpen] = useState(false);
@@ -239,6 +239,16 @@ export default function Navbar({ item }) {
 
                 {/* Right Side Icons & Profile */}
                 <div className="flex items-center space-x-3 md:space-x-6 ml-auto pl-6">
+                    {/* Wishlist */}
+                    <Link href='/wishlist' className="relative hover:opacity-80 transition-opacity shrink-0">
+                        <Bookmark className="w-[20px] h-[20px] md:w-[22px] md:h-[22px] text-gray-800" strokeWidth={2.2} />
+                        {wishlistIds?.length > 0 && (
+                          <span className="absolute -top-1.5 -right-2 bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full border-2 border-white shadow-sm min-w-[18px] text-center">
+                            {wishlistIds.length}
+                          </span>
+                        )}
+                    </Link>
+
                     {/* Cart */}
                     <Link href='/cart' className="relative hover:opacity-80 transition-opacity shrink-0">
                         <ShoppingCart className="w-[20px] h-[20px] md:w-[22px] md:h-[22px] text-gray-800" strokeWidth={2.2} />
@@ -264,8 +274,9 @@ export default function Navbar({ item }) {
                             {/* Dropdown Menu */}
                             <div className="absolute right-0 top-full pt-2 w-48 z-50 hidden group-hover:block">
                                 <div className="bg-white rounded-xl shadow-xl py-2 border border-gray-100 transition-all duration-200">
-                                <Link href="/profile" className="block px-4 py-2.5 text-[14px] font-semibold text-gray-700 hover:bg-gray-50 hover:text-[#216140]">My Profile</Link>
-                                <Link href="/order" className="block px-4 py-2.5 text-[14px] font-semibold text-gray-700 hover:bg-gray-50 hover:text-[#216140]">Order History</Link>
+                                                                <Link href="/profile" className="block px-4 py-2.5 text-[14px] font-semibold text-gray-700 hover:bg-gray-50 hover:text-[#216140]">My Profile</Link>
+                                                                <Link href="/wishlist" className="block px-4 py-2.5 text-[14px] font-semibold text-gray-700 hover:bg-gray-50 hover:text-[#216140]">Wishlist</Link>
+                                                                <Link href="/order" className="block px-4 py-2.5 text-[14px] font-semibold text-gray-700 hover:bg-gray-50 hover:text-[#216140]">Order History</Link>
                                 {user.role === "ADMIN" && (
                                     <>
                                         <hr className="my-1 border-gray-100" />
@@ -317,6 +328,9 @@ export default function Navbar({ item }) {
                                     <>
                                         <li className="px-2 border-t border-gray-100 mt-1 pt-1">
                                             <Link href="/profile" className="block px-4 py-2.5 text-sm font-bold text-gray-700 hover:bg-gray-50 rounded-lg">Profile</Link>
+                                        </li>
+                                        <li className="px-2">
+                                            <Link href="/wishlist" className="block px-4 py-2.5 text-sm font-bold text-gray-700 hover:bg-gray-50 rounded-lg">Wishlist</Link>
                                         </li>
                                         <li className="px-2">
                                             <Link href="/order" className="block px-4 py-2.5 text-sm font-bold text-gray-700 hover:bg-gray-50 rounded-lg">Orders</Link>

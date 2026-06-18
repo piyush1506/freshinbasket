@@ -5,6 +5,7 @@ import Link from "next/link";
 import Navbar from "../components/Navbar";
 import ChangeAddressModal from "../components/ChangeAddressModal";
 import OrderDetailModal from "../components/OrderDetailModal";
+import ReviewModal from "../components/ReviewModal";
 import { getAccessToken } from "@/lib/auth";
 import { ArrowLeft, Truck, CheckCircle2, RotateCcw, Star, ChevronDown, SlidersHorizontal, MapPin } from "lucide-react";
 import { useCart } from "../context/CartContext";
@@ -47,6 +48,8 @@ export default function OrdersPage() {
     const [selectedOrderForAddress, setSelectedOrderForAddress] = useState(null);
     const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
     const [selectedOrderForDetail, setSelectedOrderForDetail] = useState(null);
+    const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
+    const [selectedOrderForReview, setSelectedOrderForReview] = useState(null);
     const { user, addToCart } = useCart();
     const router = useRouter();
 
@@ -118,6 +121,14 @@ export default function OrdersPage() {
             console.error("Error updating address:", error);
             toast.error("Error updating address.");
         }
+    };
+
+    const handleReviewSubmitted = (review) => {
+      setOrders((prevOrders) =>
+        prevOrders.map((o) =>
+          o.id === selectedOrderForReview?.id ? { ...o, review } : o
+        )
+      );
     };
 
     const handleReorder = async (order) => {
@@ -292,6 +303,18 @@ export default function OrdersPage() {
                                                         </div>
 
                                                         <div className="flex flex-wrap gap-2">
+                                                            {order.status === "DELIVERED" && !order.review && (
+                                                              <button
+                                                                onClick={() => {
+                                                                  setSelectedOrderForReview(order);
+                                                                  setIsReviewModalOpen(true);
+                                                                }}
+                                                                className="flex items-center gap-1.5 px-4 py-2 bg-amber-50 text-amber-700 text-sm font-medium rounded-xl hover:bg-amber-100 transition-colors whitespace-nowrap border border-amber-200"
+                                                              >
+                                                                <Star size={14} />
+                                                                Rate
+                                                              </button>
+                                                            )}
                                                             <button
                                                                 onClick={() => handleReorder(order)}
                                                                 className="flex items-center gap-1.5 px-4 py-2 bg-gray-100 text-gray-700 text-sm font-medium rounded-xl hover:bg-gray-200 transition-colors whitespace-nowrap"
@@ -355,6 +378,21 @@ export default function OrdersPage() {
                     setSelectedOrderForDetail(null);
                 }}
                 order={selectedOrderForDetail}
+                onReviewClick={(order) => {
+                    setIsDetailModalOpen(false);
+                    setSelectedOrderForReview(order);
+                    setIsReviewModalOpen(true);
+                }}
+            />
+
+            <ReviewModal
+                isOpen={isReviewModalOpen}
+                onClose={() => {
+                    setIsReviewModalOpen(false);
+                    setSelectedOrderForReview(null);
+                }}
+                order={selectedOrderForReview}
+                onReviewSubmitted={handleReviewSubmitted}
             />
         </>
     );

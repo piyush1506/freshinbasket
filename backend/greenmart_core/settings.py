@@ -139,8 +139,8 @@ DATABASES = {
         'HOST': os.getenv('DB_HOST', 'localhost'),
         'PORT': os.getenv('DB_PORT', '5432'),
         'POOL_OPTIONS': {
-            'POOL_SIZE': 10,
-            'MAX_OVERFLOW': 5,
+            'POOL_SIZE': 20,
+            'MAX_OVERFLOW': 10,
             'RECYCLE': 300,
             'TIMEOUT': 30,
             'PRE_PING': True,
@@ -165,13 +165,13 @@ REST_FRAMEWORK = {
         'rest_framework.throttling.UserRateThrottle',
     ],
     'DEFAULT_THROTTLE_RATES': {
-        'anon': '100/hour',
-        'user': '1000/hour',
-        'login': '10/minute',
-        'register': '5/minute',
-        'logout': '10/minute',
-        'search': '60/minute',
-        'cart': '30/minute',
+        'anon': '10000/minute',  # Extremely high for Locust load testing from 1 IP
+        'user': '10000/minute',
+        'login': '20/minute',
+        'register': '10/minute',
+        'logout': '20/minute',
+        'search': '5000/minute',
+        'cart': '1200/minute',
     },
 
     'DEFAULT_RENDERER_CLASSES': (

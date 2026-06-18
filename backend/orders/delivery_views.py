@@ -5,9 +5,10 @@ from rest_framework.throttling import UserRateThrottle
 from django.utils import timezone
 from django.db.models import Sum, Count, Q
 from datetime import timedelta
-from .models import Order, DeliveryAssignment
+from .models import Order, DeliveryAssignment, Review
 from .delivery.models import DeliveryLocation
 from api.serializers import UserSerializer, UserUpdateSerializer
+from django.db.models import Avg
 
 
 class IsDeliveryUser(permissions.BasePermission):
@@ -98,6 +99,11 @@ class DeliveryDashboardView(APIView):
                 'assigned_at': active_assignment.assigned_at.isoformat(),
             }
 
+        avg = Review.objects.filter(
+            order__delivery_assignment__delivery_boy=user,
+            order__status='DELIVERED'
+        ).aggregate(avg=Avg('rating'))['avg']
+
         return Response({
             'driver_name': user.username,
             'today_earnings': today_earnings,
@@ -105,7 +111,7 @@ class DeliveryDashboardView(APIView):
             'week_earnings': week_earnings,
             'week_deliveries': week_delivered,
             'total_deliveries': total_delivered,
-            'avg_rating': 4.98,  # Placeholder — rating system not yet built
+            'avg_rating': round(float(avg), 2) if avg else 0,
             'active_delivery': active_delivery,
         })
 

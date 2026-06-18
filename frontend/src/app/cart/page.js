@@ -12,7 +12,7 @@ import "leaflet/dist/leaflet.css";
 
 export default function CartPage() {
   const router = useRouter()
-  const { cartItems, removeFromCart, addToCart, clearCart, user, subtotal, deliveryCharge, grandTotal, storeSettings } = useCart();
+  const { cartItems, removeFromCart, addToCart, clearCart, user, subtotal, deliveryCharge, grandTotal, storeSettings, taxAmount, hasTaxableItems } = useCart();
   const deliverySlot = (() => {
     const hour = new Date().getHours();
     if (hour >= 22) return { label: "7 AM - 10 AM", slot: "early-morning" };
@@ -465,6 +465,9 @@ export default function CartPage() {
                               <div className="font-semibold text-gray-900 md:col-span-1">
                                 <span className="md:hidden text-gray-500 text-sm font-normal mr-2">Total:</span>
                                 ₹{parseInt(item.price * (item.quantity || 1))}
+                                {Number(item.tax_percentage) > 0 && (
+                                  <div className="text-[10px] font-medium text-amber-600">+{Number(item.tax_percentage)}% tax</div>
+                                )}
                               </div>
                             </div>
 
@@ -512,6 +515,13 @@ export default function CartPage() {
                             {deliveryCharge === 0 ? "FREE" : `₹${parseInt(deliveryCharge)}`}
                           </span>
                         </div>
+
+                        {hasTaxableItems && (
+                          <div className="flex justify-between text-gray-600">
+                            <span>Tax</span>
+                            <span className="font-semibold text-gray-900">₹{taxAmount.toFixed(2)}</span>
+                          </div>
+                        )}
 
                         <div className="flex justify-between items-center text-gray-600">
                           <span>Delivery Slot</span>

@@ -12,13 +12,14 @@ from django.views.decorators.cache import cache_page
 from django.utils.decorators import method_decorator
 from django.db.models import Prefetch, F, Q, Case, When, Value, IntegerField
 from rest_framework.exceptions import ValidationError
-from store.models import Category, Product, Slide, ContactQuery
-from orders.models import Order, DeliveryAssignment, Cart, CartItem
+from store.models import Category, Product, Slide, ContactQuery, WishlistItem
+from orders.models import Order, DeliveryAssignment, Cart, CartItem, Review
 from .serializers import (
     UserSerializer, RegisterSerializer, CategorySerializer, ProductSerializer,
     SearchProductSerializer, SlideSerializer, ContactQuerySerializer,
-    OrderSerializer, DeliveryAssignmentSerializer,
-    CartSerializer, CartItemSerializer, LoginSerializer, UserUpdateSerializer
+    OrderSerializer, DeliveryAssignmentSerializer, ReviewSerializer,
+    CartSerializer, CartItemSerializer, LoginSerializer, UserUpdateSerializer,
+    WishlistItemSerializer
 )
 from rest_framework_simplejwt.tokens import RefreshToken, OutstandingToken, BlacklistedToken
 
@@ -94,7 +95,7 @@ class HomeApiView(APIView):
         categories = Category.objects.prefetch_related(
             Prefetch(
                 'products',
-                queryset=Product.objects.prefetch_related('categories').defer('description'),
+                queryset=Product.objects.select_related('unit').prefetch_related('categories').defer('description'),
                 to_attr='cached_products'
             )
         )
@@ -199,6 +200,34 @@ class UserViewSet(viewsets.ModelViewSet):
         serializer.save()
         return Response(UserSerializer(user).data)
 
+    @action(detail=False, methods=['POST'], permission_classes=[permissions.IsAuthenticated])
+    def avatar(self, request):
+        user = request.user
+        file = request.FILES.get('avatar')
+        if not file:
+            return Response({'error': 'No image file provided'}, status=status.HTTP_400_BAD_REQUEST)
+
+        allowed_types = ['image/jpeg', 'image/png', 'image/webp', 'image/gif']
+        if file.content_type not in allowed_types:
+            return Response({'error': 'Invalid file type. Allowed: JPEG, PNG, WebP, GIF'}, status=400)
+
+        if file.size > 5 * 1024 * 1024:
+            return Response({'error': 'File too large. Max 5MB allowed.'}, status=400)
+
+        upload_result = cloudinary.uploader.upload(
+            file,
+            folder='freshinbasket/avatars',
+            resource_type='image',
+            allowed_formats=['jpg', 'png', 'webp', 'gif'],
+            width=300, height=300, crop='fill',
+            quality='auto',
+            fetch_format='auto',
+        )
+        user.avatar = upload_result['secure_url']
+        user.save(update_fields=['avatar'])
+        logger.info('Avatar updated user=%s', user.email)
+        return Response({'avatar': user.avatar}, status=status.HTTP_200_OK)
+
 
 class RegisterView(mixins.CreateModelMixin, viewsets.GenericViewSet):
     queryset = User.objects.all()
@@ -236,6 +265,15 @@ class SlideViewSet(viewsets.ModelViewSet):
     serializer_class = SlideSerializer
     permission_classes = [IsAdminRole]
 
+    def list(self, request, *args, **kwargs):
+        cache_key = 'slides_list'
+        cached = cache.get(cache_key)
+        if cached is not None:
+            return Response(cached)
+        response = super().list(request, *args, **kwargs)
+        cache.set(cache_key, response.data, timeout=600)
+        return response
+
 
 class ContactView(mixins.CreateModelMixin, mixins.ListModelMixin, mixins.RetrieveModelMixin, viewsets.GenericViewSet):
     queryset = ContactQuery.objects.all()
@@ -249,13 +287,31 @@ class ContactView(mixins.CreateModelMixin, mixins.ListModelMixin, mixins.Retriev
         serializer.save(user=self.request.user)
 
 
-@method_decorator(cache_page(60 * 10), name='list')
+# @method_decorator(cache_page(60 * 10), name='list')
+# class CategoryViewSet(viewsets.ModelViewSet):
+#     queryset = Category.objects.all()
+#     serializer_class = CategorySerializer
+#     permission_classes = [permissions.IsAuthenticatedOrReadOnly]
+#     pagination_class = None
+
 class CategoryViewSet(viewsets.ModelViewSet):
     queryset = Category.objects.all()
     serializer_class = CategorySerializer
     permission_classes = [permissions.IsAuthenticatedOrReadOnly]
     pagination_class = None
 
+    def list(self, request, *args, **kwargs):
+        cache_key = 'categories_list'
+
+        cached = cache.get(cache_key)
+        if cached is not None:
+            logger.debug('categories_list cache HIT')
+            return Response(cached)
+
+        logger.debug('categories_list cache MISS')
+        response = super().list(request, *args, **kwargs)
+        cache.set(cache_key, response.data, timeout=600)  # 10 minutes
+        return response
 
 class SearchRateThrottle(UserRateThrottle):
     scope = 'search'
@@ -265,7 +321,8 @@ class CartRateThrottle(UserRateThrottle):
     scope = 'cart'
 
 
-@method_decorator(cache_page(60 * 2), name='list')
+
+
 class ProductViewSet(viewsets.ModelViewSet):
     serializer_class = ProductSerializer
     permission_classes = [permissions.IsAuthenticatedOrReadOnly]
@@ -273,11 +330,38 @@ class ProductViewSet(viewsets.ModelViewSet):
     throttle_classes = [SearchRateThrottle]
 
     def get_queryset(self):
-        qs = Product.objects.prefetch_related('categories').defer('description')
+        qs = Product.objects.select_related('unit').prefetch_related('categories').defer('description')
         category_slug = self.request.query_params.get('category')
         if category_slug:
             qs = qs.filter(categories__slug=category_slug)
         return qs
+
+    def list(self, request, *args, **kwargs):
+        category_slug = request.query_params.get('category', '')
+        cache_key = f'products_list:{category_slug}'
+
+        cached = cache.get(cache_key)
+        if cached is not None:
+            logger.debug('products_list cache HIT key=%s', cache_key)
+            return Response(cached)
+
+        logger.debug('products_list cache MISS key=%s', cache_key)
+        response = super().list(request, *args, **kwargs)
+        cache.set(cache_key, response.data, timeout=120)
+        return response
+# @method_decorator(cache_page(60 * 2), name='list')
+# class ProductViewSet(viewsets.ModelViewSet):
+#     serializer_class = ProductSerializer
+#     permission_classes = [permissions.IsAuthenticatedOrReadOnly]
+#     pagination_class = None
+#     throttle_classes = [SearchRateThrottle]
+
+#     def get_queryset(self):
+#         qs = Product.objects.prefetch_related('categories').defer('description')
+#         category_slug = self.request.query_params.get('category')
+#         if category_slug:
+#             qs = qs.filter(categories__slug=category_slug)
+#         return qs
 
 
     @action(detail=False, methods=['GET'])
@@ -294,9 +378,10 @@ class ProductViewSet(viewsets.ModelViewSet):
             limit = 20
         limit = max(1, min(limit, 1000 if suggest or index else 100))
 
+        search_version = cache.get('product_search_version', 1)
         normalized_q = q.lower()
         mode = 'index' if index else 'suggest' if suggest else 'full'
-        cache_key = f"product_search:{mode}:{normalized_q}:{limit}"
+        cache_key = f"product_search:v{search_version}:{mode}:{normalized_q}:{limit}"
         cached = cache.get(cache_key)
         if cached is not None:
             return Response(cached)
@@ -345,7 +430,7 @@ class OrderViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         user = self.request.user
-        qs = Order.objects.select_related('customer').prefetch_related('items__product')
+        qs = Order.objects.select_related('customer').prefetch_related('items__product').select_related('review')
         if user.role == User.Role.ADMIN:
             return qs.all()
         elif user.role == User.Role.DELIVERY:
@@ -496,12 +581,55 @@ class CartViewSet(viewsets.ModelViewSet):
         return Response(CartSerializer(cart).data)
 
 
+class WishlistViewSet(viewsets.ModelViewSet):
+    serializer_class = WishlistItemSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        return WishlistItem.objects.filter(user=self.request.user).select_related('product').prefetch_related('product__categories').order_by('-created_at')
+
+    def perform_create(self, serializer):
+        serializer.save(user=self.request.user)
+
+    @action(detail=False, methods=['DELETE'])
+    def remove(self, request):
+        product_id = request.data.get('product_id')
+        if not product_id:
+            return Response({'error': 'product_id is required'}, status=status.HTTP_400_BAD_REQUEST)
+        deleted, _ = WishlistItem.objects.filter(user=request.user, product_id=product_id).delete()
+        if deleted:
+            return Response({'message': 'Removed from wishlist'})
+        return Response({'error': 'Item not found in wishlist'}, status=status.HTTP_404_NOT_FOUND)
+
+    @action(detail=False, methods=['GET'])
+    def ids(self, request):
+        product_ids = WishlistItem.objects.filter(user=request.user).values_list('product_id', flat=True)
+        return Response(list(product_ids))
+
+
+class ReviewViewSet(viewsets.ModelViewSet):
+    serializer_class = ReviewSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        return Review.objects.filter(user=self.request.user).select_related('order')
+
+    def perform_create(self, serializer):
+        serializer.save(user=self.request.user)
+
+
 class StoreSettingsView(APIView):
     permission_classes = [permissions.AllowAny]
 
     def get(self, request):
         from store.models import StoreSettings
         from .serializers import StoreSettingsSerializer
+        cache_key = 'store_settings'
+        cached = cache.get(cache_key)
+        if cached is not None:
+            return Response(cached)
         settings_obj = StoreSettings.get_settings()
         serializer = StoreSettingsSerializer(settings_obj)
-        return Response(serializer.data)
+        data = serializer.data
+        cache.set(cache_key, data, timeout=300)
+        return Response(data)

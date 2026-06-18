@@ -1,14 +1,14 @@
 "use client";
 import Image from "next/image";
 import Link from "next/link";
-import { ShoppingCart } from "lucide-react";
+import { ShoppingCart, Heart } from "lucide-react";
 import { useState, useEffect } from "react";
 import toast from "react-hot-toast";
 import { useCart } from "../context/CartContext";
 
 export default function VegetableCard({ item }) {
   const [loading, setLoading] = useState(false);
-  const { addToCart, removeFromCart, cartItems, updateCartQuantity } = useCart();
+  const { addToCart, removeFromCart, cartItems, updateCartQuantity, wishlistIds, toggleWishlist, user } = useCart();
 
   // Read actual qty from cart (source of truth)
   const cartItem = cartItems.find((c) => Number(c.id) === Number(item.id));
@@ -133,15 +133,28 @@ export default function VegetableCard({ item }) {
 
   return (
     <div className="bg-white rounded-xl shadow-lg overflow-hidden flex flex-col h-full group">
-      <Link href={`/product/${item.id}`} className="relative h-48 w-full block overflow-hidden rounded-t-xl">
-        <Image
-          src={item.image_url || item.image || "https://via.placeholder.com/400x300?text=No+Image"}
-          alt={item.name}
-          fill
-          style={{ objectFit: "cover" }}
-          sizes="(max-width:768px) 50vw, (max-width: 1200px) 33vw, 20vw"
-          className="group-hover:scale-105 transition-transform duration-300"
-        />
+      <div className="relative h-48 w-full overflow-hidden rounded-t-xl">
+        <Link href={`/product/${item.id}`} className="block w-full h-full">
+          <Image
+            src={item.image_url || item.image || "https://via.placeholder.com/400x300?text=No+Image"}
+            alt={item.name}
+            fill
+            style={{ objectFit: "cover" }}
+            sizes="(max-width:768px) 50vw, (max-width: 1200px) 33vw, 20vw"
+            className="group-hover:scale-105 transition-transform duration-300"
+          />
+        </Link>
+        {user && (
+          <button
+            onClick={(e) => { e.preventDefault(); toggleWishlist(item.id); }}
+            className="absolute top-2 left-2 z-10 p-1.5 bg-white/80 backdrop-blur-sm rounded-full hover:bg-white transition-colors shadow-sm"
+          >
+            <Heart
+              size={18}
+              className={wishlistIds?.includes(Number(item.id)) ? "fill-red-500 text-red-500" : "text-gray-600"}
+            />
+          </button>
+        )}
         <div className="absolute top-2 right-2">
           {isOutOfStock ? (
             <span className="bg-red-500 text-white text-[11px] font-bold px-2.5 py-1 rounded-full shadow-md">Sold Out</span>
@@ -149,7 +162,7 @@ export default function VegetableCard({ item }) {
             <span className="bg-green-500 text-white text-[11px] font-bold px-2.5 py-1 rounded-full shadow-md">In Stock</span>
           )}
         </div>
-      </Link>
+      </div>
       <div className="p-4 flex flex-col flex-grow">
         <Link href={`/product/${item.id}`}>
           <h3 className="text-base font-bold text-gray-800 capitalize mb-1 hover:text-green-700 transition-colors line-clamp-1">{item.name}</h3>
@@ -161,6 +174,11 @@ export default function VegetableCard({ item }) {
             ₹{Number(item.price)}
             <span className="text-xs sm:text-sm font-medium text-gray-400 ml-0.5">/{itemUnit}</span>
           </span>
+          {Number(item.tax_percentage) > 0 && (
+            <span className="text-[10px] font-semibold text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded ml-1 shrink-0">
+              +{Number(item.tax_percentage)}%
+            </span>
+          )}
 
           {isOutOfStock ? (
             <span className="text-xs font-semibold text-red-400">Unavailable</span>

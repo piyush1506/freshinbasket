@@ -4,6 +4,9 @@
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
 const nextConfig = {
+  turbopack: {
+    root: import.meta.dirname,
+  },
   allowedDevOrigins: ['localhost', '127.0.0.1', '192.168.29.50'],
   images: {
     remotePatterns: [
@@ -38,7 +41,7 @@ const nextConfig = {
             key: 'Content-Security-Policy',
             value: [
               "default-src 'self'",
-              "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://checkout.razorpay.com",
+              "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://checkout.razorpay.com https://cdn.razorpay.com",
               "style-src 'self' 'unsafe-inline' https://unpkg.com",
               `img-src 'self' data: blob: https: ${API_URL} https://*.tile.openstreetmap.org https://unpkg.com`,
               "font-src 'self' data:",

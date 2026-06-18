@@ -6,7 +6,8 @@ from .views import (
     UserViewSet, CategoryViewSet, ProductViewSet, SlideViewSet,
     OrderViewSet, DeliveryAssignmentViewSet,
     CartViewSet, LoginView, RegisterView, LogoutView, ContactView,
-    upload_image, HomeApiView, StoreSettingsView
+    upload_image, HomeApiView, StoreSettingsView, ReviewViewSet,
+    WishlistViewSet
 )
 from orders.views import CreateRazorpayOrderView, VerifyPaymentView, CreateCODOrderView
 from orders.delivery_views import (
@@ -26,6 +27,8 @@ router.register(r'products', ProductViewSet, basename='product')
 router.register(r'orders', OrderViewSet, basename='order')
 router.register(r'deliveries', DeliveryAssignmentViewSet, basename='delivery')
 router.register(r'cart', CartViewSet, basename='cart')
+router.register(r'reviews', ReviewViewSet, basename='review')
+router.register(r'wishlist', WishlistViewSet, basename='wishlist')
 
 urlpatterns = [
     # Home Endpoint

@@ -28,7 +28,11 @@ export default function AdminSlidesPage() {
   const [form, setForm] = useState({
     title: "",
     subtitle: "",
+    tag: "Organic",
     link: "",
+    button_text: "Shop Now",
+    link_two: "",
+    button_text_two: "View Offers",
     order: 0,
     is_active: true,
     image_url: "",
@@ -65,7 +69,7 @@ export default function AdminSlidesPage() {
   };
 
   const resetForm = () => {
-    setForm({ title: "", subtitle: "", link: "", order: 0, is_active: true, image_url: "" });
+    setForm({ title: "", subtitle: "", tag: "Organic", link: "", button_text: "Shop Now", link_two: "", button_text_two: "View Offers", order: 0, is_active: true, image_url: "" });
     setPreview(null);
     setEditingId(null);
     setShowForm(false);
@@ -75,7 +79,11 @@ export default function AdminSlidesPage() {
     setForm({
       title: slide.title || "",
       subtitle: slide.subtitle || "",
+      tag: slide.tag || "Organic",
       link: slide.link || "",
+      button_text: slide.button_text || "Shop Now",
+      link_two: slide.link_two || "",
+      button_text_two: slide.button_text_two || "View Offers",
       order: slide.order,
       is_active: slide.is_active,
       image_url: slide.image_url || "",
@@ -96,7 +104,11 @@ export default function AdminSlidesPage() {
       const body = {
         title: form.title,
         subtitle: form.subtitle,
+        tag: form.tag,
         link: form.link,
+        button_text: form.button_text,
+        link_two: form.link_two,
+        button_text_two: form.button_text_two,
         order: form.order,
         is_active: form.is_active,
         image_url: form.image_url,
@@ -227,13 +239,55 @@ export default function AdminSlidesPage() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-1.5">Link (optional)</label>
+                  <label className="block text-sm font-semibold text-gray-700 mb-1.5">Tag / Badge</label>
+                  <input
+                    type="text"
+                    value={form.tag}
+                    onChange={(e) => setForm({ ...form, tag: e.target.value })}
+                    className="w-full px-4 py-2.5 border border-gray-300 rounded-xl text-sm focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none"
+                    placeholder="Organic"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-1.5">Button 1 Text</label>
+                  <input
+                    type="text"
+                    value={form.button_text}
+                    onChange={(e) => setForm({ ...form, button_text: e.target.value })}
+                    className="w-full px-4 py-2.5 border border-gray-300 rounded-xl text-sm focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none"
+                    placeholder="Shop Now"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-1.5">Button 1 Link</label>
                   <input
                     type="text"
                     value={form.link}
                     onChange={(e) => setForm({ ...form, link: e.target.value })}
                     className="w-full px-4 py-2.5 border border-gray-300 rounded-xl text-sm focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none"
                     placeholder="/category/vegetables"
+                  />
+                </div>
+              </div>
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-1.5">Button 2 Text</label>
+                  <input
+                    type="text"
+                    value={form.button_text_two}
+                    onChange={(e) => setForm({ ...form, button_text_two: e.target.value })}
+                    className="w-full px-4 py-2.5 border border-gray-300 rounded-xl text-sm focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none"
+                    placeholder="View Offers"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-1.5">Button 2 Link (optional)</label>
+                  <input
+                    type="text"
+                    value={form.link_two}
+                    onChange={(e) => setForm({ ...form, link_two: e.target.value })}
+                    className="w-full px-4 py-2.5 border border-gray-300 rounded-xl text-sm focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none"
+                    placeholder="/offers"
                   />
                 </div>
               </div>

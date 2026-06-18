@@ -41,7 +41,7 @@ export default async function Home() {
       <About />
 
       {/* Testimonials */}
-      <Testimonials />
+      {/* <Testimonials /> */}
 
       {/* Assistance Banner */}
       <section className="px-4 sm:px-8 md:px-16 pb-20 max-w-7xl mx-auto">

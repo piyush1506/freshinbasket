@@ -47,6 +47,11 @@ class CreateRazorpayOrderView(APIView):
 
         subtotal_amount = sum(item.product.price * item.quantity for item in items)
         
+        tax_amount = sum(
+            item.product.price * item.quantity * item.product.tax_percentage / 100
+            for item in items
+        )
+        
         from store.models import StoreSettings
         settings_obj = StoreSettings.get_settings()
         
@@ -54,7 +59,7 @@ class CreateRazorpayOrderView(APIView):
         if subtotal_amount <= settings_obj.free_delivery_threshold:
             delivery_charge = settings_obj.delivery_charge
             
-        total_amount = subtotal_amount + delivery_charge
+        total_amount = subtotal_amount + tax_amount + delivery_charge
         total_paise = int(total_amount * 100)
 
         if total_paise <= 0:
@@ -119,6 +124,11 @@ class VerifyPaymentView(APIView):
 
             subtotal = sum(item.product.price * item.quantity for item in items)
             
+            tax_amount = sum(
+                item.product.price * item.quantity * item.product.tax_percentage / 100
+                for item in items
+            )
+            
             from store.models import StoreSettings
             settings_obj = StoreSettings.get_settings()
             
@@ -126,7 +136,7 @@ class VerifyPaymentView(APIView):
             if subtotal <= settings_obj.free_delivery_threshold:
                 delivery_charge = settings_obj.delivery_charge
                 
-            total = subtotal + delivery_charge
+            total = subtotal + tax_amount + delivery_charge
 
             order = Order.objects.create(
                 customer=request.user,
@@ -210,6 +220,11 @@ class CreateCODOrderView(APIView):
 
         subtotal = sum(item.product.price * item.quantity for item in items)
 
+        tax_amount = sum(
+            item.product.price * item.quantity * item.product.tax_percentage / 100
+            for item in items
+        )
+
         from store.models import StoreSettings
         settings_obj = StoreSettings.get_settings()
 
@@ -217,7 +232,7 @@ class CreateCODOrderView(APIView):
         if subtotal <= settings_obj.free_delivery_threshold:
             delivery_charge = settings_obj.delivery_charge
 
-        total = subtotal + delivery_charge
+        total = subtotal + tax_amount + delivery_charge
 
         order = Order.objects.create(
             customer=request.user,

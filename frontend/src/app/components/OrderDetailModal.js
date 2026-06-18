@@ -1,6 +1,6 @@
 "use client";
 
-import { X, Package, MapPin, CreditCard, Truck, CalendarDays, IndianRupee } from "lucide-react";
+import { X, Package, MapPin, CreditCard, Truck, CalendarDays, IndianRupee, Star } from "lucide-react";
 
 const statusLabels = {
   PENDING: "Pending",
@@ -18,8 +18,10 @@ const statusColors = {
   CANCELLED: "bg-red-100 text-red-700",
 };
 
-export default function OrderDetailModal({ isOpen, onClose, order }) {
+export default function OrderDetailModal({ isOpen, onClose, order, onReviewClick }) {
   if (!isOpen || !order) return null;
+
+  const review = order.review;
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
@@ -84,6 +86,18 @@ export default function OrderDetailModal({ isOpen, onClose, order }) {
                   )}
                 </span>
               </div>
+              {(() => {
+                const orderTax = order.items?.reduce((sum, item) => {
+                  const pct = parseFloat(item.tax_percentage) || 0;
+                  return sum + (parseFloat(item.total_price || item.unit_price * item.quantity) * pct / 100);
+                }, 0);
+                return orderTax > 0 ? (
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-500">Tax</span>
+                    <span className="text-gray-700">₹{orderTax.toFixed(2)}</span>
+                  </div>
+                ) : null;
+              })()}
               <div className="flex justify-between text-sm font-bold border-t border-gray-200 pt-2">
                 <span className="text-gray-900">Total</span>
                 <span className="text-gray-900">₹{parseInt(order.total_amount)}</span>
@@ -109,6 +123,40 @@ export default function OrderDetailModal({ isOpen, onClose, order }) {
             <CalendarDays size={14} />
             <span>Placed: {new Date(order.created_at).toLocaleDateString("en-IN", { year: "numeric", month: "long", day: "numeric", hour: "2-digit", minute: "2-digit" })}</span>
           </div>
+
+          {/* Review */}
+          {order.status === "DELIVERED" && (
+            <div className="border-t border-gray-100 pt-4">
+              <h3 className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
+                <Star size={16} className="text-gray-400" />
+                {review ? "Your Review" : "Review"}
+              </h3>
+              {review ? (
+                <div className="bg-gray-50 rounded-xl px-4 py-3 space-y-2">
+                  <div className="flex items-center gap-1">
+                    {[1, 2, 3, 4, 5].map((s) => (
+                      <Star
+                        key={s}
+                        size={16}
+                        className={s <= review.rating ? "fill-amber-400 text-amber-400" : "text-gray-300"}
+                      />
+                    ))}
+                  </div>
+                  {review.comment && (
+                    <p className="text-sm text-gray-600 leading-relaxed">{review.comment}</p>
+                  )}
+                </div>
+              ) : (
+                <button
+                  onClick={() => onReviewClick?.(order)}
+                  className="w-full flex items-center justify-center gap-2 px-4 py-3 border border-dashed border-gray-300 rounded-xl text-sm font-semibold text-green-700 hover:bg-green-50 hover:border-green-300 transition-colors"
+                >
+                  <Star size={18} />
+                  Write a Review
+                </button>
+              )}
+            </div>
+          )}
         </div>
       </div>
     </div>

@@ -1,8 +1,8 @@
 import cloudinary.uploader
 from rest_framework import serializers
 from users.models import User
-from store.models import Category, Product, Slide, ContactQuery, Unit
-from orders.models import Order, OrderItem, DeliveryAssignment, Cart, CartItem
+from store.models import Category, Product, Slide, ContactQuery, Unit, WishlistItem
+from orders.models import Order, OrderItem, DeliveryAssignment, Cart, CartItem, Review
 from django.contrib.auth import authenticate
 from django.contrib.auth.password_validation import validate_password as django_validate_password
 from django.core.exceptions import ValidationError as DjangoValidationError
@@ -148,6 +148,7 @@ class ProductSerializer(serializers.ModelSerializer):
         model = Product
         fields = (
             'id', 'name', 'slug', 'description', 'price', 'stock',
+            'tax_percentage',
             'unit', 'unit_id',
             'image', 'image_url', 'created_at', 'updated_at',
             'categories', 'category_names',
@@ -207,7 +208,7 @@ class SearchProductSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Product
-        fields = ('id', 'name', 'price', 'stock', 'image_url', 'unit')
+        fields = ('id', 'name', 'price', 'stock', 'tax_percentage', 'image_url', 'unit')
 
     def get_unit(self, obj):
         if obj.unit:
@@ -222,15 +223,44 @@ class SearchProductSerializer(serializers.ModelSerializer):
 
 class OrderItemSerializer(serializers.ModelSerializer):
     product_name = serializers.ReadOnlyField(source='product.name')
+    tax_percentage = serializers.DecimalField(source='product.tax_percentage', max_digits=5, decimal_places=2, read_only=True)
 
     class Meta:
         model = OrderItem
-        fields = ('id', 'product', 'product_name', 'quantity', 'unit_name', 'unit_price', 'total_price')
+        fields = ('id', 'product', 'product_name', 'quantity', 'unit_name', 'unit_price', 'total_price', 'tax_percentage')
+
+
+class ReviewSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Review
+        fields = ('id', 'order', 'rating', 'comment', 'created_at')
+        read_only_fields = ('id', 'user', 'created_at')
+
+    def validate_rating(self, value):
+        if value < 1 or value > 5:
+            raise serializers.ValidationError('Rating must be between 1 and 5.')
+        return value
+
+    def validate(self, data):
+        request = self.context.get('request')
+        order = data.get('order')
+        if order.customer != request.user:
+            raise serializers.ValidationError('You can only review your own orders.')
+        if order.status != Order.Status.DELIVERED:
+            raise serializers.ValidationError('You can only review delivered orders.')
+        if Review.objects.filter(order=order).exists():
+            raise serializers.ValidationError('You have already reviewed this order.')
+        return data
+
+    def create(self, validated_data):
+        validated_data['user'] = self.context['request'].user
+        return super().create(validated_data)
 
 
 class OrderSerializer(serializers.ModelSerializer):
     items = OrderItemSerializer(many=True, read_only=True)
     customer_name = serializers.ReadOnlyField(source='customer.username')
+    review = serializers.SerializerMethodField()
 
     class Meta:
         model = Order
@@ -238,8 +268,19 @@ class OrderSerializer(serializers.ModelSerializer):
             'id', 'order_number', 'customer', 'customer_name', 'status',
             'total_amount', 'delivery_address', 'created_at',
             'delivery_latitude', 'delivery_longitude', 'delivery_slot',
-            'is_paid', 'payment_method', 'items'
+            'is_paid', 'payment_method', 'items', 'review',
         )
+
+    def get_review(self, obj):
+        if hasattr(obj, 'review') and obj.review is not None:
+            review = obj.review
+            return {
+                'id': review.id,
+                'rating': review.rating,
+                'comment': review.comment,
+                'created_at': review.created_at.isoformat(),
+            }
+        return None
 
 
 class DeliveryAssignmentSerializer(serializers.ModelSerializer):
@@ -260,10 +301,11 @@ class CartItemSerializer(serializers.ModelSerializer):
     image = serializers.SerializerMethodField()
     total_price = serializers.SerializerMethodField()
     unit = serializers.SerializerMethodField()
+    tax_percentage = serializers.DecimalField(source='product.tax_percentage', max_digits=5, decimal_places=2, read_only=True)
 
     class Meta:
         model = CartItem
-        fields = ('id', 'product', 'name', 'price', 'image', 'quantity', 'unit', 'total_price')
+        fields = ('id', 'product', 'name', 'price', 'image', 'quantity', 'unit', 'total_price', 'tax_percentage')
 
     def get_image(self, obj):
         if obj.product.image_url and hasattr(obj.product.image_url, 'url'):
@@ -326,7 +368,7 @@ class SlideSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Slide
-        fields = ('id', 'image_url', 'title', 'subtitle', 'link', 'order', 'is_active', 'created_at')
+        fields = ('id', 'image_url', 'title', 'subtitle', 'tag', 'link', 'button_text', 'link_two', 'button_text_two', 'order', 'is_active', 'created_at')
         read_only_fields = ('created_at',)
 
     def get_image_url(self, obj):
@@ -337,15 +379,22 @@ class CartSerializer(serializers.ModelSerializer):
     items = CartItemSerializer(many=True, read_only=True)
     subtotal = serializers.SerializerMethodField()
     delivery_charge = serializers.SerializerMethodField()
+    tax_amount = serializers.SerializerMethodField()
     grand_total = serializers.SerializerMethodField()
     free_delivery_threshold = serializers.SerializerMethodField()
 
     class Meta:
         model = Cart
-        fields = ('id', 'created_at', 'items', 'subtotal', 'delivery_charge', 'grand_total', 'free_delivery_threshold')
+        fields = ('id', 'created_at', 'items', 'subtotal', 'delivery_charge', 'tax_amount', 'grand_total', 'free_delivery_threshold')
 
     def get_subtotal(self, obj):
         return sum(item.quantity * item.product.price for item in obj.items.all())
+
+    def get_tax_amount(self, obj):
+        return sum(
+            item.quantity * item.product.price * item.product.tax_percentage / 100
+            for item in obj.items.all()
+        )
 
     def get_delivery_charge(self, obj):
         subtotal = self.get_subtotal(obj)
@@ -356,7 +405,7 @@ class CartSerializer(serializers.ModelSerializer):
         return 0
 
     def get_grand_total(self, obj):
-        return self.get_subtotal(obj) + self.get_delivery_charge(obj)
+        return self.get_subtotal(obj) + self.get_tax_amount(obj) + self.get_delivery_charge(obj)
 
     def get_free_delivery_threshold(self, obj):
         from store.models import StoreSettings
@@ -368,3 +417,22 @@ class StoreSettingsSerializer(serializers.ModelSerializer):
         from store.models import StoreSettings
         model = StoreSettings
         fields = ('free_delivery_threshold', 'delivery_charge')
+
+
+class WishlistItemSerializer(serializers.ModelSerializer):
+    product_detail = ProductSerializer(source='product', read_only=True)
+
+    class Meta:
+        model = WishlistItem
+        fields = ('id', 'product', 'product_detail', 'created_at')
+        read_only_fields = ('id', 'created_at')
+
+    def validate_product(self, value):
+        user = self.context['request'].user
+        if WishlistItem.objects.filter(user=user, product=value).exists():
+            raise serializers.ValidationError('Product already in wishlist.')
+        return value
+
+    def create(self, validated_data):
+        validated_data['user'] = self.context['request'].user
+        return super().create(validated_data)

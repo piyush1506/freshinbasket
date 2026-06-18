@@ -6,13 +6,13 @@ import Link from "next/link";
 import Navbar from "../../components/Navbar";
 import VegetableCard from "../../components/VegetableCard";
 import { useCart } from "../../context/CartContext";
-import { ArrowLeft, Minus, Plus, ShoppingCart, Leaf } from "lucide-react";
+import { ArrowLeft, Minus, Plus, ShoppingCart, Leaf, Heart } from "lucide-react";
 import toast from "react-hot-toast";
 
 export default function ProductDetailPage() {
   const { id } = useParams();
   const router = useRouter();
-  const { addToCart, removeFromCart, cartItems } = useCart();
+  const { addToCart, removeFromCart, cartItems, wishlistIds, toggleWishlist, user } = useCart();
 
   const [product, setProduct] = useState(null);
   const [related, setRelated] = useState([]);
@@ -142,6 +142,12 @@ export default function ProductDetailPage() {
               <span className="text-lg font-semibold text-gray-400 ml-1">/{product.unit?.name || 'kg'}</span>
             </div>
 
+            {Number(product.tax_percentage) > 0 && (
+              <p className="text-sm text-amber-700 bg-amber-50 px-3 py-1.5 rounded-lg mb-4 inline-block font-medium">
+                +{Number(product.tax_percentage)}% tax applicable
+              </p>
+            )}
+
             <p className="text-gray-600 leading-relaxed mb-6">{product.description}</p>
 
             <div className="flex items-center gap-4 mb-6">
@@ -170,14 +176,27 @@ export default function ProductDetailPage() {
               </div>
             </div>
 
-            <button
-              onClick={handleAddToCart}
-              disabled={product.stock <= 0 || adding}
-              className="w-full sm:w-auto bg-green-700 text-white px-8 py-3.5 rounded-xl text-base font-extrabold hover:bg-green-800 transition-colors flex items-center justify-center gap-2 disabled:bg-green-400 disabled:cursor-not-allowed shadow-lg shadow-green-700/20"
-            >
-              <ShoppingCart size={20} />
-              {adding ? "Updating..." : cartQty > 0 ? "Update Cart" : "Add to Cart"}
-            </button>
+            <div className="flex items-center gap-3">
+              <button
+                onClick={handleAddToCart}
+                disabled={product.stock <= 0 || adding}
+                className="flex-1 sm:flex-none bg-green-700 text-white px-8 py-3.5 rounded-xl text-base font-extrabold hover:bg-green-800 transition-colors flex items-center justify-center gap-2 disabled:bg-green-400 disabled:cursor-not-allowed shadow-lg shadow-green-700/20"
+              >
+                <ShoppingCart size={20} />
+                {adding ? "Updating..." : cartQty > 0 ? "Update Cart" : "Add to Cart"}
+              </button>
+              {user && (
+                <button
+                  onClick={() => toggleWishlist(product.id)}
+                  className="p-3.5 border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors"
+                >
+                  <Heart
+                    size={22}
+                    className={wishlistIds?.includes(Number(product.id)) ? "fill-red-500 text-red-500" : "text-gray-500"}
+                  />
+                </button>
+              )}
+            </div>
 
             {cartQty > 0 && (
               <p className="text-sm text-gray-500 mt-3">

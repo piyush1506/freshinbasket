@@ -27,16 +27,18 @@ export const metadata = {
   },
 };
 
+export const viewport = {
+  themeColor: "#216140",
+  width: "device-width",
+  initialScale: 1,
+};
+
 export default function RootLayout({ children }) {
   return (
     <html
       lang="en"
       className={`${plusJakarta.variable} scroll-smooth h-full antialiased`}
     >
-      <head>
-        <meta name="theme-color" content="#216140" />
-        <meta name="viewport" content="width=device-width, initial-scale=1" />
-      </head>
       <body className="min-h-full flex flex-col" style={{ fontFamily: "var(--font-plus-jakarta), sans-serif" }}>
         <CartProvider>
           {children}

@@ -39,8 +39,8 @@ class UnitAdmin(admin.ModelAdmin):
 
 @admin.register(Product)
 class ProductAdmin(admin.ModelAdmin):
-    list_display = ('name', 'category_list', 'unit', 'price', 'stock', 'stock_status', 'image_preview', 'created_at')
-    list_editable = ('price', 'stock')
+    list_display = ('name', 'category_list', 'unit', 'price', 'tax_percentage', 'stock', 'stock_status', 'image_preview', 'created_at')
+    list_editable = ('price', 'tax_percentage', 'stock')
     list_filter = ('categories', 'created_at')
     search_fields = ('name', 'description')
     prepopulated_fields = {'slug': ('name',)}
@@ -48,7 +48,7 @@ class ProductAdmin(admin.ModelAdmin):
     filter_horizontal = ('categories',)
     fieldsets = (
         (None, {
-            'fields': ('categories', 'name', 'slug', 'description', 'price', 'stock', 'unit')
+            'fields': ('categories', 'name', 'slug', 'description', 'price', 'stock', 'tax_percentage', 'unit')
         }),
         ('Image', {
             'fields': ('image_url', 'image_preview')
@@ -128,7 +128,10 @@ class SlideAdmin(admin.ModelAdmin):
     readonly_fields = ('image_preview', 'created_at')
     fieldsets = (
         (None, {
-            'fields': ('title', 'subtitle', 'link', 'order', 'is_active')
+            'fields': ('title', 'subtitle', 'tag', 'order', 'is_active')
+        }),
+        ('Buttons', {
+            'fields': (('link', 'button_text'), ('link_two', 'button_text_two')),
         }),
         ('Image', {
             'fields': ('image_url', 'image_preview')

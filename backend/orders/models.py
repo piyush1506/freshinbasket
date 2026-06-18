@@ -167,3 +167,28 @@ class DeliveryAssignment(models.Model):
 
     def __str__(self):
         return f"Assignment for Order {self.order.id} to {self.delivery_boy.username}"
+
+
+# =========================
+# REVIEW MODEL
+# =========================
+class Review(models.Model):
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        related_name='reviews',
+        on_delete=models.CASCADE
+    )
+    order = models.OneToOneField(
+        Order,
+        related_name='review',
+        on_delete=models.CASCADE
+    )
+    rating = models.PositiveSmallIntegerField()
+    comment = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"Review for Order {self.order.order_number} - {self.rating}★"
