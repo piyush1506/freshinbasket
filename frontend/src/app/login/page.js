@@ -4,6 +4,8 @@ import { useCart } from "../context/CartContext";
 import { useRouter } from "next/navigation";
 import { AUTH_API, isAuthenticated, getAccessToken } from "@/lib/auth";
 import toast from "react-hot-toast";
+import Link from "next/link";
+
 
 export default function AuthPage() {
   const { setUser, mergeCart } = useCart();
@@ -186,8 +188,11 @@ export default function AuthPage() {
               </button>
             </form>
 
-
-
+            <div className="mt-8 text-center text-[13px] text-gray-500 leading-relaxed">
+              By continuing, you agree to our <br className="hidden md:block" />
+              <Link href="/terms" className="text-[#1B3624] font-bold hover:underline">Terms and Agreement</Link> and{" "}
+              <Link href="/privacy" className="text-[#1B3624] font-bold hover:underline">Privacy Policy</Link>.
+            </div>
 
           </div>
         </div>

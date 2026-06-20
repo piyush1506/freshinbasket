@@ -61,14 +61,14 @@ export default function Hero() {
                 className="w-full h-full object-cover"
                 loading="eager"
               />
-              <div className="absolute inset-0 bg-black/30" />
+              <div className="absolute inset-0 bg-black/10" />
               <div className="absolute inset-0 flex flex-col justify-center px-8 md:px-16 max-w-3xl">
                 {slide.tag && (
                   <span className="bg-[#B4F044] text-green-900 text-xs font-bold px-3 py-1 rounded-full w-max mb-4 uppercase tracking-wider">
                     {slide.tag}
                   </span>
                 )}
-                <h1 className="text-4xl md:text-6xl font-extrabold text-white leading-tight mb-4 drop-shadow-lg whitespace-pre-line">
+                <h1 className="text-4xl md:text-6xl font-extrabold text-white z-10 leading-tight mb-4 drop-shadow-lg whitespace-pre-line">
                   {slide.title}
                 </h1>
                 <p className="text-white/95 text-sm md:text-lg mb-8 max-w-lg drop-shadow-md font-medium">

@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Trash2, ShoppingBag, ArrowLeft, Lock, Truck, Crosshair } from "lucide-react";
+import { Trash2, ShoppingBag, ArrowLeft, Lock, Truck, Crosshair, RefreshCw } from "lucide-react";
 import { useCart } from "../context/CartContext";
 import Navbar from "../components/Navbar";
 import { useState, useEffect, useRef } from "react";
@@ -25,6 +25,7 @@ export default function CartPage() {
   const [paymentMethod, setPaymentMethod] = useState("online");
   const [lat, setLat] = useState(25.3471);
   const [lng, setLng] = useState(74.6408);
+  const [isProcessing, setIsProcessing] = useState(false);
   const mapRef = useRef(null);
   const mapInstance = useRef(null);
   const markerRef = useRef(null);
@@ -248,15 +249,21 @@ export default function CartPage() {
   };
 
   const handleCheckout = async () => {
+    if (isProcessing) return;
     const token = getAccessToken()
     if (!token) return router.push('/login')
 
     const fullAddress = `${deliveryAddress}${pincode ? `, Pincode: ${pincode}` : ""}`;
 
-    if (paymentMethod === "cod") {
-      await handleCODCheckout(fullAddress);
-    } else {
-      await handleOnlinePayment(fullAddress);
+    setIsProcessing(true);
+    try {
+      if (paymentMethod === "cod") {
+        await handleCODCheckout(fullAddress);
+      } else {
+        await handleOnlinePayment(fullAddress);
+      }
+    } finally {
+      setIsProcessing(false);
     }
   }
 
@@ -355,10 +362,11 @@ export default function CartPage() {
 
                 <button
                   onClick={handleCheckout}
-                  className="w-full bg-green-700 hover:bg-green-800 text-white py-3 rounded-lg font-semibold transition flex items-center justify-center gap-2"
+                  disabled={isProcessing}
+                  className="w-full bg-green-700 hover:bg-green-800 text-white py-3 rounded-lg font-semibold transition flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  <Lock size={18} />
-                  {paymentMethod === "cod" ? `Place COD Order — ₹${parseInt(grandTotal)}` : `Confirm Address & Pay ₹${parseInt(grandTotal)}`}
+                  {isProcessing ? <RefreshCw size={18} className="animate-spin" /> : <Lock size={18} />}
+                  {isProcessing ? "Processing..." : (paymentMethod === "cod" ? `Place COD Order — ₹${parseInt(grandTotal)}` : `Confirm Address & Pay ₹${parseInt(grandTotal)}`)}
                 </button>
               </div>
             </div>

@@ -134,7 +134,7 @@ export default function VegetableCard({ item }) {
   return (
     <div className="bg-white rounded-xl shadow-lg overflow-hidden flex flex-col h-full group">
       <div className="relative h-48 w-full overflow-hidden rounded-t-xl">
-        <Link href={`/product/${item.id}`} className="block w-full h-full">
+        <Link href={`/product/${item.id}`} className="block relative w-full h-full">
           <Image
             src={item.image_url || item.image || "https://via.placeholder.com/400x300?text=No+Image"}
             alt={item.name}
@@ -162,24 +162,33 @@ export default function VegetableCard({ item }) {
             <span className="bg-green-500 text-white text-[11px] font-bold px-2.5 py-1 rounded-full shadow-md">In Stock</span>
           )}
         </div>
+        {Number(item.discount_percentage) > 0 && (
+          <div className="absolute bottom-2 right-2 flex items-center gap-1.5 bg-red-500 text-white px-2 py-1 rounded-lg shadow-md">
+            <span className="text-[10px] line-through opacity-80">₹{Number(item.mrp)}</span>
+            <span className="text-xs font-bold">{item.discount_percentage}% OFF</span>
+          </div>
+        )}
       </div>
       <div className="p-4 flex flex-col flex-grow">
-        <Link href={`/product/${item.id}`}>
-          <h3 className="text-base font-bold text-gray-800 capitalize mb-1 hover:text-green-700 transition-colors line-clamp-1">{item.name}</h3>
-        </Link>
+        {/* Title + Price on md screens */}
+        <div className="md:flex md:items-center md:justify-between">
+          <Link href={`/product/${item.id}`}>
+            <h3 className="text-base font-bold text-gray-800 capitalize mb-1 md:mb-0 hover:text-green-700 transition-colors line-clamp-1">{item.name}</h3>
+          </Link>
+          {/* Price alongside title on md only */}
+          <span className="hidden md:inline-flex text-base sm:text-lg font-bold text-green-700 whitespace-nowrap">
+            ₹{ (Number(item.price))}
+            <span className="text-xs sm:text-sm font-medium text-gray-400 ml-0.5">/{itemUnit}</span>
+          </span>
+        </div>
         <p className="text-gray-500 text-xs mb-3">Farm Fresh</p>
 
         <div className="flex items-center justify-between mt-auto gap-1 sm:gap-2">
-          <span className="text-base sm:text-lg sm:ml-0 md:ml-0 font-bold text-green-700 whitespace-nowrap">
-            ₹{Number(item.price)}
+          {/* Price - hidden on md, shown on sm and lg+ */}
+          <span className="md:hidden text-base sm:text-lg font-bold text-green-700 whitespace-nowrap">
+            ₹{ (Number(item.price))}
             <span className="text-xs sm:text-sm font-medium text-gray-400 ml-0.5">/{itemUnit}</span>
           </span>
-          {Number(item.tax_percentage) > 0 && (
-            <span className="text-[10px] font-semibold text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded ml-1 shrink-0">
-              +{Number(item.tax_percentage)}%
-            </span>
-          )}
-
           {isOutOfStock ? (
             <span className="text-xs font-semibold text-red-400">Unavailable</span>
           ) : cartQty > 0 ? (

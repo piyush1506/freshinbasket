@@ -6,6 +6,8 @@ import { useCart } from "../context/CartContext";
 import { Search, ShoppingCart, Leaf, ChevronDown, User, Heart, Bookmark } from "lucide-react";
 import { Squash as Hamburger } from 'hamburger-react';
 import { clearAuth, AUTH_API } from "@/lib/auth";
+import Logo from '../../../public/logo/logo.jpg'
+import Image from "next/image";
 
 const SUGGESTION_LIMIT = 20;
 const PRELOAD_SUGGESTION_LIMIT = 1000;
@@ -190,8 +192,8 @@ export default function Navbar({ item }) {
                 
                 {/* Logo Section */}
                 <Link href="/" className="flex items-center gap-2.5 shrink-0">
-                    <div className="w-9 h-9 bg-[#216140] rounded-xl flex items-center justify-center shadow-sm">
-                        <Leaf className="w-5 h-5 text-white" strokeWidth={2.5} />
+                    <div className="w-10 h-10 rounded-xl flex items-center justify-center shadow-sm overflow-hidden relative">
+                        <Image src={Logo} alt="Logo" width={100} height={100} quality={100} className="object-cover w-full h-full" />
                     </div>
                     <span className="hidden md:block text-xl font-extrabold text-[#113B26] tracking-tight">Freshinbasket</span>
                 </Link>

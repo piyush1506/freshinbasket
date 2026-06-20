@@ -9,6 +9,7 @@ const nextConfig = {
   },
   allowedDevOrigins: ['localhost', '127.0.0.1', '192.168.29.50'],
   images: {
+    qualities: [75, 100],
     remotePatterns: [
       { protocol: 'https', hostname: '**' },
       { protocol: 'http', hostname: '**' },

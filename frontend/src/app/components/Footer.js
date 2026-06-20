@@ -21,6 +21,7 @@
               <li><Link href="/about" className="hover:text-green-600">About Us</Link></li>
               <li><Link href="/contact" className="hover:text-green-600">Contact</Link></li>
               <li><Link href="/contact" className="hover:text-green-600">Support</Link></li>
+              <li><Link href="/privacy" className="hover:text-green-600">Privacy Policy</Link></li>
               <li><Link href="#" className="hover:text-green-600">Terms of Service</Link></li>
             </ul>
           </div>

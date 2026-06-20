@@ -38,6 +38,7 @@ export default function RootLayout({ children }) {
     <html
       lang="en"
       className={`${plusJakarta.variable} scroll-smooth h-full antialiased`}
+      data-scroll-behavior="smooth"
     >
       <body className="min-h-full flex flex-col" style={{ fontFamily: "var(--font-plus-jakarta), sans-serif" }}>
         <CartProvider>

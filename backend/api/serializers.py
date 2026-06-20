@@ -143,12 +143,15 @@ class ProductSerializer(serializers.ModelSerializer):
     unit_id = serializers.PrimaryKeyRelatedField(
         queryset=Unit.objects.all(), source='unit', write_only=True, required=False, allow_null=True
     )
+    discount_amount = serializers.ReadOnlyField()
+    discount_percentage = serializers.ReadOnlyField()
 
     class Meta:
         model = Product
         fields = (
-            'id', 'name', 'slug', 'description', 'price', 'stock',
+            'id', 'name', 'slug', 'description', 'price', 'stock','mrp',
             'tax_percentage',
+            'discount_percentage', 'discount_amount',
             'unit', 'unit_id',
             'image', 'image_url', 'created_at', 'updated_at',
             'categories', 'category_names',
@@ -205,10 +208,13 @@ class ProductSerializer(serializers.ModelSerializer):
 class SearchProductSerializer(serializers.ModelSerializer):
     image_url = serializers.SerializerMethodField()
     unit = serializers.SerializerMethodField()
+    discount_amount = serializers.ReadOnlyField()
+    discount_percentage = serializers.ReadOnlyField()
+    mrp = serializers.ReadOnlyField()
 
     class Meta:
         model = Product
-        fields = ('id', 'name', 'price', 'stock', 'tax_percentage', 'image_url', 'unit')
+        fields = ('id', 'name', 'price', 'stock', 'tax_percentage','mrp', 'discount_percentage','discount_amount','image_url', 'unit')
 
     def get_unit(self, obj):
         if obj.unit:
@@ -266,7 +272,8 @@ class OrderSerializer(serializers.ModelSerializer):
         model = Order
         fields = (
             'id', 'order_number', 'customer', 'customer_name', 'status',
-            'total_amount', 'delivery_address', 'created_at',
+            'subtotal', 'delivery_charge', 'total_amount',
+            'delivery_address', 'created_at',
             'delivery_latitude', 'delivery_longitude', 'delivery_slot',
             'is_paid', 'payment_method', 'items', 'review',
         )
@@ -300,12 +307,14 @@ class CartItemSerializer(serializers.ModelSerializer):
     price = serializers.ReadOnlyField(source='product.price')
     image = serializers.SerializerMethodField()
     total_price = serializers.SerializerMethodField()
+    mrp = serializers.ReadOnlyField(source='product.mrp')
+    discount_percentage = serializers.ReadOnlyField(source='product.discount_percentage')
     unit = serializers.SerializerMethodField()
     tax_percentage = serializers.DecimalField(source='product.tax_percentage', max_digits=5, decimal_places=2, read_only=True)
 
     class Meta:
         model = CartItem
-        fields = ('id', 'product', 'name', 'price', 'image', 'quantity', 'unit', 'total_price', 'tax_percentage')
+        fields = ('id', 'product', 'name', 'price', 'image', 'quantity', 'unit', 'mrp', 'discount_percentage', 'total_price', 'tax_percentage')
 
     def get_image(self, obj):
         if obj.product.image_url and hasattr(obj.product.image_url, 'url'):

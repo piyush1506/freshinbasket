@@ -39,8 +39,8 @@ class UnitAdmin(admin.ModelAdmin):
 
 @admin.register(Product)
 class ProductAdmin(admin.ModelAdmin):
-    list_display = ('name', 'category_list', 'unit', 'price', 'tax_percentage', 'stock', 'stock_status', 'image_preview', 'created_at')
-    list_editable = ('price', 'tax_percentage', 'stock')
+    list_display = ('name', 'category_list', 'discount_display','unit', 'price', 'tax_percentage', 'stock', 'mrp','stock_status', 'image_preview', 'created_at')
+    list_editable = ('price', 'tax_percentage', 'mrp','stock')
     list_filter = ('categories', 'created_at')
     search_fields = ('name', 'description')
     prepopulated_fields = {'slug': ('name',)}
@@ -48,7 +48,7 @@ class ProductAdmin(admin.ModelAdmin):
     filter_horizontal = ('categories',)
     fieldsets = (
         (None, {
-            'fields': ('categories', 'name', 'slug', 'description', 'price', 'stock', 'tax_percentage', 'unit')
+            'fields': ('categories', 'name', 'slug', 'mrp','description', 'price', 'stock', 'tax_percentage', 'unit')
         }),
         ('Image', {
             'fields': ('image_url', 'image_preview')
@@ -75,6 +75,13 @@ class ProductAdmin(admin.ModelAdmin):
             return f'Low ({obj.stock})'
         return 'In stock'
     stock_status.short_description = 'Stock Status'
+
+    def discount_display(self,obj):
+        if obj.discount_percentage > 0:
+            return f'{obj.discount_percentage}%OFF'
+        return '-'
+    discount_display.short_description = 'Discount'    
+         
 
 
 @admin.register(ContactQuery)

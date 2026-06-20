@@ -44,7 +44,7 @@ export default async function Home() {
       {/* <Testimonials /> */}
 
       {/* Assistance Banner */}
-      <section className="px-4 sm:px-8 md:px-16 pb-20 max-w-7xl mx-auto">
+      <section className="px-4 sm:px-8 md:px-16 mt-10 pb-20 max-w-7xl mx-auto">
         <div className="relative rounded-3xl overflow-hidden">
           <Image src="https://images.pexels.com/photos/2255935/pexels-photo-2255935.jpeg?auto=compress&cs=tinysrgb&w=1500" alt="Vegetable market background" fill className="object-cover" />
           <div className="absolute inset-0 bg-black/20" />

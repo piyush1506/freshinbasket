@@ -8,6 +8,7 @@ class ContactQuery(models.Model):
     name = models.CharField(max_length=100)
     email = models.EmailField()
     message = models.TextField()
+
     response = models.TextField(blank=True, default='')
     responded_at = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -77,9 +78,27 @@ class Product(models.Model):
     image_url = models.ImageField(upload_to='products/', blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+    mrp  = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,null=True,blank=True,
+        help_text="Maximum Retail Price"
+    )
 
     def __str__(self):
         return self.name
+
+    @property
+    def discount_amount(self):
+        if self.mrp and self.mrp > self.price:
+            return self.mrp - self.price
+        return 0
+
+    @property
+    def discount_percentage(self):
+        if self.mrp and self.mrp > self.price:
+            return round(((self.mrp - self.price)/(self.mrp))*100)
+        return 0        
+
 
     def save(self, *args, **kwargs):
         if not self.slug:
