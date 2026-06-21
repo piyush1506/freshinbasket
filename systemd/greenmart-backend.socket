@@ -1,0 +1,8 @@
+[Unit]
+Description=gunicorn socket for greenmart backend
+
+[Socket]
+ListenStream=/run/greenmart-backend.sock
+
+[Install]
+WantedBy=sockets.target

@@ -1,0 +1,20 @@
+[Unit]
+Description=gunicorn daemon for greenmart backend
+Requires=greenmart-backend.socket
+After=network.target
+
+[Service]
+# REPLACE 'yourusername' WITH your actual VPS non-root user (e.g. ubuntu)
+User=yourusername
+Group=www-data
+# REPLACE WITH THE PATH TO YOUR CLONED REPOSITORY ON THE VPS
+WorkingDirectory=/var/www/freshinbasket/backend
+# REPLACE WITH THE PATH TO YOUR VIRTUAL ENVIRONMENT
+ExecStart=/var/www/freshinbasket/backend/venv/bin/gunicorn \
+          --access-logfile - \
+          --workers 3 \
+          --bind unix:/run/greenmart-backend.sock \
+          greenmart_core.wsgi:application
+
+[Install]
+WantedBy=multi-user.target
