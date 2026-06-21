@@ -27,13 +27,13 @@ export default function ProductDetailPage() {
     if (!id) return;
     const fetchProduct = async () => {
       try {
-        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/products/${id}/`);
+        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/products/${id}/`);
         if (!res.ok) { router.push("/"); return; }
         const data = await res.json();
         setProduct(data);
         setQty(Math.max(1, cartQty));
 
-        const allRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/products/`);
+        const allRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/products/`);
         const allData = await allRes.json();
         const sameCategory = allData.filter(
           (p) => {

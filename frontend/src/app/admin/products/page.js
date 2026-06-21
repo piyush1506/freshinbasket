@@ -37,7 +37,7 @@ export default function AdminProductsPage() {
   const fetchProducts = async () => {
     try {
       const res = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/products/`
+        `${process.env.NEXT_PUBLIC_API_URL}/api/v1/products/`
       );
       const data = await res.json();
       setProducts(data);
@@ -58,7 +58,7 @@ export default function AdminProductsPage() {
       formData.append("image", file);
 
       const res = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/products/${productId}/`,
+        `${process.env.NEXT_PUBLIC_API_URL}/api/v1/products/${productId}/`,
         {
           method: "PATCH",
           headers: {

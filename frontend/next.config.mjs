@@ -11,8 +11,9 @@ const nextConfig = {
   images: {
     qualities: [75, 100],
     remotePatterns: [
-      { protocol: 'https', hostname: '**' },
-      { protocol: 'http', hostname: '**' },
+      { protocol: 'https', hostname: 'res.cloudinary.com' },
+      { protocol: 'https', hostname: '*.tile.openstreetmap.org' },
+      { protocol: 'https', hostname: 'unpkg.com' },
     ],
     formats: ['image/webp'],
   },

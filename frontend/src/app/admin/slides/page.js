@@ -56,7 +56,7 @@ export default function AdminSlidesPage() {
   const fetchSlides = async () => {
     try {
       const token = getAccessToken();
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/slides/`, {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/slides/`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       const data = await res.json();
@@ -115,8 +115,8 @@ export default function AdminSlidesPage() {
       };
 
       const url = editingId
-        ? `${process.env.NEXT_PUBLIC_API_URL}/api/slides/${editingId}/`
-        : `${process.env.NEXT_PUBLIC_API_URL}/api/slides/`;
+        ? `${process.env.NEXT_PUBLIC_API_URL}/api/v1/slides/${editingId}/`
+        : `${process.env.NEXT_PUBLIC_API_URL}/api/v1/slides/`;
       const method = editingId ? "PATCH" : "POST";
 
       const res = await fetch(url, {
@@ -147,7 +147,7 @@ export default function AdminSlidesPage() {
     if (!confirm("Delete this slide?")) return;
     try {
       const token = getAccessToken();
-      await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/slides/${id}/`, {
+      await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/slides/${id}/`, {
         method: "DELETE",
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -162,7 +162,7 @@ export default function AdminSlidesPage() {
     try {
       const token = getAccessToken();
       const body = { is_active: !slide.is_active };
-      await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/slides/${slide.id}/`, {
+      await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/slides/${slide.id}/`, {
         method: "PATCH",
         headers: { 
           Authorization: `Bearer ${token}`,

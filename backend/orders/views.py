@@ -3,7 +3,8 @@ from rest_framework.response import Response
 from rest_framework import status, permissions
 from store.models import Product
 from django.conf import settings
-from django.db.models import Count, Q
+from django.db.models import Count, Q, F
+from django.db import transaction
 from .models import Order, OrderItem, Cart, CartItem
 from .utils import haversine_distance
 
@@ -138,34 +139,41 @@ class VerifyPaymentView(APIView):
                 
             total = subtotal + tax_amount + delivery_charge
 
-            order = Order.objects.create(
-                customer=request.user,
-                subtotal=subtotal,
-                delivery_charge=delivery_charge,
-                total_amount=total,
-                delivery_address=delivery_address,
-                delivery_latitude=delivery_latitude,
-                delivery_longitude=delivery_longitude,
-                delivery_slot=_get_delivery_slot(),
-                status=Order.Status.CONFIRMED,
-                is_paid=True,
-                payment_method=Order.PaymentMethod.ONLINE
-            )
-
-            for item in items:
-                OrderItem.objects.create(
-                    order=order,
-                    product=item.product,
-                    product_name=item.product.name,
-                    quantity=item.quantity,
-                    unit_name=item.product.unit.name if item.product.unit else 'kg',
-                    unit_price=item.product.price
-                )
-                Product.objects.filter(id=item.product.id).update(
-                    stock=item.product.stock - item.quantity
+            with transaction.atomic():
+                order = Order.objects.create(
+                    customer=request.user,
+                    subtotal=subtotal,
+                    delivery_charge=delivery_charge,
+                    total_amount=total,
+                    delivery_address=delivery_address,
+                    delivery_latitude=delivery_latitude,
+                    delivery_longitude=delivery_longitude,
+                    delivery_slot=_get_delivery_slot(),
+                    status=Order.Status.CONFIRMED,
+                    is_paid=True,
+                    payment_method=Order.PaymentMethod.ONLINE
                 )
 
-            items.delete()
+                for item in items:
+                    # Atomic stock decrement — prevents overselling under concurrent orders
+                    updated = Product.objects.filter(
+                        id=item.product.id,
+                        stock__gte=item.quantity   # only update if enough stock exists
+                    ).update(stock=F('stock') - item.quantity)
+
+                    if not updated:
+                        raise ValueError(f'"{item.product.name}" went out of stock during checkout.')
+
+                    OrderItem.objects.create(
+                        order=order,
+                        product=item.product,
+                        product_name=item.product.name,
+                        quantity=item.quantity,
+                        unit_name=item.product.unit.name if item.product.unit else 'kg',
+                        unit_price=item.product.price
+                    )
+
+                items.delete()
 
             from django.contrib.auth import get_user_model
             from .models import DeliveryAssignment
@@ -184,6 +192,8 @@ class VerifyPaymentView(APIView):
             })
         except Cart.DoesNotExist:
             return Response({'error': 'Cart not found'}, status=404)
+        except ValueError as e:
+            return Response({'error': str(e)}, status=400)
         except Exception as e:
             return Response({'error': 'Order creation failed. Please contact support.'}, status=500)
 
@@ -234,34 +244,41 @@ class CreateCODOrderView(APIView):
 
         total = subtotal + tax_amount + delivery_charge
 
-        order = Order.objects.create(
-            customer=request.user,
-            subtotal=subtotal,
-            delivery_charge=delivery_charge,
-            total_amount=total,
-            delivery_address=delivery_address,
-            delivery_latitude=delivery_latitude,
-            delivery_longitude=delivery_longitude,
-            delivery_slot=_get_delivery_slot(),
-            status=Order.Status.CONFIRMED,
-            is_paid=False,
-            payment_method=Order.PaymentMethod.COD
-        )
-
-        for item in items:
-            OrderItem.objects.create(
-                order=order,
-                product=item.product,
-                product_name=item.product.name,
-                quantity=item.quantity,
-                unit_name=item.product.unit.name if item.product.unit else 'kg',
-                unit_price=item.product.price
-            )
-            Product.objects.filter(id=item.product.id).update(
-                stock=item.product.stock - item.quantity
+        with transaction.atomic():
+            order = Order.objects.create(
+                customer=request.user,
+                subtotal=subtotal,
+                delivery_charge=delivery_charge,
+                total_amount=total,
+                delivery_address=delivery_address,
+                delivery_latitude=delivery_latitude,
+                delivery_longitude=delivery_longitude,
+                delivery_slot=_get_delivery_slot(),
+                status=Order.Status.CONFIRMED,
+                is_paid=False,
+                payment_method=Order.PaymentMethod.COD
             )
 
-        items.delete()
+            for item in items:
+                # Atomic stock decrement — prevents overselling under concurrent orders
+                updated = Product.objects.filter(
+                    id=item.product.id,
+                    stock__gte=item.quantity   # only update if enough stock exists
+                ).update(stock=F('stock') - item.quantity)
+
+                if not updated:
+                    raise ValueError(f'"{item.product.name}" went out of stock during checkout.')
+
+                OrderItem.objects.create(
+                    order=order,
+                    product=item.product,
+                    product_name=item.product.name,
+                    quantity=item.quantity,
+                    unit_name=item.product.unit.name if item.product.unit else 'kg',
+                    unit_price=item.product.price
+                )
+
+            items.delete()
 
         from django.contrib.auth import get_user_model
         from .models import DeliveryAssignment

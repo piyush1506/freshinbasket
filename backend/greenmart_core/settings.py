@@ -165,13 +165,13 @@ REST_FRAMEWORK = {
         'rest_framework.throttling.UserRateThrottle',
     ],
     'DEFAULT_THROTTLE_RATES': {
-        'anon': '10000/minute',  # Extremely high for Locust load testing from 1 IP
-        'user': '10000/minute',
-        'login': '20/minute',
-        'register': '10/minute',
+        'anon': '200/minute',
+        'user': '500/minute',
+        'login': '10/minute',
+        'register': '5/minute',
         'logout': '20/minute',
-        'search': '5000/minute',
-        'cart': '1200/minute',
+        'search': '100/minute',
+        'cart': '120/minute',
     },
 
     'DEFAULT_RENDERER_CLASSES': (

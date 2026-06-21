@@ -47,9 +47,26 @@ export default function Navbar({ item }) {
     const [searchQuery, setSearchQuery] = useState("");
     const [suggestions, setSuggestions] = useState([]);
     const [showSuggestions, setShowSuggestions] = useState(false);
+    const [categories, setCategories] = useState([]);
     const searchRef = useRef(null);
     const suggestionCacheRef = useRef(new Map());
     const allSuggestionsRef = useRef([]);
+
+    // Fetch categories for bottom tier
+    useEffect(() => {
+        const fetchCategories = async () => {
+            try {
+                const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/categories/`);
+                if (res.ok) {
+                    const data = await res.json();
+                    setCategories(data);
+                }
+            } catch (err) {
+                console.error("Failed to fetch categories", err);
+            }
+        };
+        fetchCategories();
+    }, []);
 
     const handleSearch = (e)=>{
         if(e.key === 'Enter' && searchQuery.trim()){
@@ -105,7 +122,7 @@ export default function Navbar({ item }) {
         const preloadSuggestions = async () => {
             try {
                 const res = await fetch(
-                    `${base}/api/products/search/?limit=${PRELOAD_SUGGESTION_LIMIT}&suggest=1`,
+                    `${base}/api/v1/products/search/?limit=${PRELOAD_SUGGESTION_LIMIT}&suggest=1`,
                     { signal: controller.signal }
                 );
                 if (!res.ok) return;
@@ -120,7 +137,7 @@ export default function Navbar({ item }) {
         const preloadSearchIndex = async () => {
             try {
                 const res = await fetch(
-                    `${base}/api/products/search/?limit=${PRELOAD_SUGGESTION_LIMIT}&index=1`,
+                    `${base}/api/v1/products/search/?limit=${PRELOAD_SUGGESTION_LIMIT}&index=1`,
                     { signal: controller.signal }
                 );
                 if (!res.ok) return;
@@ -153,7 +170,7 @@ export default function Navbar({ item }) {
         const fetchSuggestions = async () => {
             try {
                 const res = await fetch(
-                    `${base}/api/products/search/?q=${encodeURIComponent(query)}&limit=${SUGGESTION_LIMIT}&suggest=1`,
+                    `${base}/api/v1/products/search/?q=${encodeURIComponent(query)}&limit=${SUGGESTION_LIMIT}&suggest=1`,
                     { signal: controller.signal }
                 );
                 if (!res.ok) return;
@@ -187,35 +204,38 @@ export default function Navbar({ item }) {
     }, [handleClickOutside]);
 
     return (
-        <div className="bg-[#FCFCFC] border-b border-gray-100 relative">
-            <header className="flex items-center justify-between px-6 md:px-10 py-4 max-w-[1400px] mx-auto sticky top-0 z-50">
+        <div className="sticky top-0 z-50 bg-white shadow-sm border-b border-gray-100 flex flex-col">
+            {/* Top Tier: Logo, Location, Search, Profile, Cart */}
+            <header className="flex items-center justify-between px-4 md:px-10 py-3 max-w-[1400px] w-full mx-auto gap-4 md:gap-8">
                 
                 {/* Logo Section */}
-                <Link href="/" className="flex items-center gap-2.5 shrink-0">
-                    <div className="w-10 h-10 rounded-xl flex items-center justify-center shadow-sm overflow-hidden relative">
-                        <Image src={Logo} alt="Logo" width={100} height={100} quality={100} className="object-cover w-full h-full" />
-                    </div>
-                    <span className="hidden md:block text-xl font-extrabold text-[#113B26] tracking-tight">Freshinbasket</span>
-                </Link>
+                <div className="flex items-center shrink-0">
+                    <Link href="/" className="flex items-center gap-2 shrink-0">
+                        <div className="w-8 h-8 md:w-10 md:h-10 rounded-xl flex items-center justify-center shadow-sm overflow-hidden relative">
+                            <Image src={Logo} alt="Logo" width={100} height={100} quality={100} className="object-contain w-full h-full" />
+                        </div>
+                        <span className="hidden md:block text-2xl font-black text-[#216140] tracking-tighter">Freshinbasket</span>
+                    </Link>
+                </div>
 
-                {/* Search Bar (Now visible on Mobile) */}
-                <div className="flex-1 max-w-md mx-4 md:mx-8" ref={searchRef}>
+                {/* Search Bar */}
+                <div className="flex-1 max-w-2xl" ref={searchRef}>
                     <div className="relative">
                         <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 w-4 h-4" />
                         <input
                             type="text"
-                            placeholder="Search vegetables and fruits"
-                            aria-label="Search vegetables"
+                            placeholder="Search for vegetables, fruits..."
+                            aria-label="Search products"
                             value={searchQuery}
                             onChange={handleSearchQueryChange}
                             onKeyDown={handleSearch}
                             onFocus={() => suggestions.length > 0 && setShowSuggestions(true)}
-                            className="w-full pl-10 pr-4 py-2 bg-[#F1F3F2] rounded-full text-[13px] md:text-[14px] font-medium text-gray-800 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-[#216140]/20 transition-all"
+                            className="w-full pl-10 pr-4 py-2.5 bg-[#F8F8F8] border border-gray-200 rounded-lg text-[14px] font-medium text-gray-800 placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-[#216140] transition-all shadow-inner"
                         />
 
                         {/* Suggestions Dropdown */}
                         {showSuggestions && suggestions.length > 0 && (
-                            <div className="absolute top-full mt-2 left-0 right-0 bg-white border border-gray-200 rounded-xl shadow-xl z-50 overflow-hidden">
+                            <div className="absolute top-full mt-1 left-0 right-0 bg-white border border-gray-200 rounded-lg shadow-xl z-50 overflow-hidden">
                                 {suggestions.map((p) => (
                                     <button
                                         key={p.id}
@@ -231,79 +251,71 @@ export default function Navbar({ item }) {
                     </div>
                 </div>
 
-                {/* Navigation Links */}
-                <nav className="hidden lg:flex items-center space-x-8 text-[14px] font-bold text-[#4B5563]">
-                    <Link href="/" className="text-[#216140] border-b-2 border-[#216140] pb-1">Home</Link>
-                    <Link href="/category/fruits" className="hover:text-[#216140] transition-colors">Fruits</Link>
-                    <Link href="/category/vegetables" className="hover:text-[#216140] transition-colors">Vegetables</Link>
-                    <Link href="/contact" className="hover:text-[#216140] transition-colors">Contact Us</Link>
-                </nav>
-
-                {/* Right Side Icons & Profile */}
-                <div className="flex items-center space-x-3 md:space-x-6 ml-auto pl-6">
+                {/* Right Side Icons */}
+                <div className="flex items-center gap-6 shrink-0">
+                    
                     {/* Wishlist */}
-                    <Link href='/wishlist' className="relative hover:opacity-80 transition-opacity shrink-0">
-                        <Bookmark className="w-[20px] h-[20px] md:w-[22px] md:h-[22px] text-gray-800" strokeWidth={2.2} />
+                    <Link href='/wishlist' className="hidden md:flex flex-col items-center gap-1 hover:text-[#216140] transition-colors relative group">
+                        <Bookmark className="w-6 h-6 text-gray-700 group-hover:text-[#216140]" strokeWidth={1.5} />
+                        <span className="text-[12px] font-semibold text-gray-700 hidden md:block">Wishlist</span>
                         {wishlistIds?.length > 0 && (
-                          <span className="absolute -top-1.5 -right-2 bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full border-2 border-white shadow-sm min-w-[18px] text-center">
+                          <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full border border-white shadow-sm min-w-[18px] text-center">
                             {wishlistIds.length}
                           </span>
                         )}
                     </Link>
 
-                    {/* Cart */}
-                    <Link href='/cart' className="relative hover:opacity-80 transition-opacity shrink-0">
-                        <ShoppingCart className="w-[20px] h-[20px] md:w-[22px] md:h-[22px] text-gray-800" strokeWidth={2.2} />
-                        <span className="absolute -top-1.5 -right-2 bg-[#F59E0B] text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full border-2 border-white shadow-sm min-w-[18px] text-center">
-                            {cartCount}
-                        </span>
-                    </Link>
-
-                    {/* User Profile Pill */}
+                    {/* Profile */}
                     {user ? (
-                        <div className="relative group cursor-pointer hidden md:block">
-                            <div className="flex items-center gap-3 bg-[#F1F3F2] rounded-full py-1.5 px-2 pr-4 hover:bg-[#E5E7E5] transition-colors">
-                                <div className="w-8 h-8 rounded-full bg-[#216140] text-white flex items-center justify-center font-bold text-sm shadow-inner">
-                                    {user.username?.charAt(0).toUpperCase()}
-                                </div>
-                                <div className="flex flex-col">
-                                    <span className="text-[10px] text-gray-500 font-semibold leading-tight">Welcome</span>
-                                    <span className="text-[13px] font-extrabold text-gray-900 leading-tight">Hi, {user.username}</span>
-                                </div>
-                                <ChevronDown className="w-4 h-4 text-gray-500 ml-1" />
+                        <div className="hidden md:flex relative group cursor-pointer flex-col items-center gap-1 hover:text-[#216140] transition-colors">
+                            <div className="w-6 h-6 rounded-full bg-[#216140] text-white flex items-center justify-center font-bold text-[11px] shadow-sm">
+                                {user.username?.charAt(0).toUpperCase()}
                             </div>
+                            <span className="text-[12px] font-semibold text-gray-700 hidden md:block">Profile</span>
 
                             {/* Dropdown Menu */}
-                            <div className="absolute right-0 top-full pt-2 w-48 z-50 hidden group-hover:block">
+                            <div className="absolute right-[-20px] top-full pt-4 w-48 z-50 hidden group-hover:block">
                                 <div className="bg-white rounded-xl shadow-xl py-2 border border-gray-100 transition-all duration-200">
-                                                                <Link href="/profile" className="block px-4 py-2.5 text-[14px] font-semibold text-gray-700 hover:bg-gray-50 hover:text-[#216140]">My Profile</Link>
-                                                                <Link href="/wishlist" className="block px-4 py-2.5 text-[14px] font-semibold text-gray-700 hover:bg-gray-50 hover:text-[#216140]">Wishlist</Link>
-                                                                <Link href="/order" className="block px-4 py-2.5 text-[14px] font-semibold text-gray-700 hover:bg-gray-50 hover:text-[#216140]">Order History</Link>
-                                {user.role === "ADMIN" && (
-                                    <>
-                                        <hr className="my-1 border-gray-100" />
-                                        <Link href="/admin/slides" className="block px-4 py-2.5 text-[14px] font-semibold text-green-700 hover:bg-green-50">Hero Slides</Link>
-                                        <Link href="/admin/products" className="block px-4 py-2.5 text-[14px] font-semibold text-green-700 hover:bg-green-50">Product Images</Link>
-                                    </>
-                                )}
-                                <hr className="my-1 border-gray-100" />
-                                <button
-                                    onClick={async () => { await AUTH_API.logout(); setUser(null); router.push('/login'); }}
-                                    className="w-full text-left px-4 py-2 text-[14px] font-semibold text-red-600 hover:bg-red-50 transition-colors">
-                                    Logout
-                                </button>
+                                    <Link href="/profile" className="block px-4 py-2.5 text-[14px] font-semibold text-gray-700 hover:bg-gray-50 hover:text-[#216140]">My Profile</Link>
+                                    <Link href="/wishlist" className="block px-4 py-2.5 text-[14px] font-semibold text-gray-700 hover:bg-gray-50 hover:text-[#216140]">Wishlist</Link>
+                                    <Link href="/order" className="block px-4 py-2.5 text-[14px] font-semibold text-gray-700 hover:bg-gray-50 hover:text-[#216140]">Order History</Link>
+                                    {user.role === "ADMIN" && (
+                                        <>
+                                            <hr className="my-1 border-gray-100" />
+                                            <Link href="/admin/slides" className="block px-4 py-2.5 text-[14px] font-semibold text-green-700 hover:bg-green-50">Hero Slides</Link>
+                                            <Link href="/admin/products" className="block px-4 py-2.5 text-[14px] font-semibold text-green-700 hover:bg-green-50">Product Images</Link>
+                                        </>
+                                    )}
+                                    <hr className="my-1 border-gray-100" />
+                                    <button
+                                        onClick={async () => { await AUTH_API.logout(); setUser(null); router.push('/login'); }}
+                                        className="w-full text-left px-4 py-2 text-[14px] font-semibold text-red-600 hover:bg-red-50 transition-colors">
+                                        Logout
+                                    </button>
                                 </div>
                             </div>
                         </div>
                     ) : (
-                        <Link href="/login" className="hidden md:flex items-center gap-2 bg-[#216140] text-white px-5 py-2 rounded-full text-[14px] font-bold hover:bg-[#16432C] transition-colors">
-                            <User size={16} /> Login
+                        <Link href="/login" className="hidden md:flex flex-col items-center gap-1 hover:text-[#216140] transition-colors group">
+                            <User className="w-6 h-6 text-gray-700 group-hover:text-[#216140]" strokeWidth={1.5} />
+                            <span className="text-[12px] font-semibold text-gray-700 hidden md:block">Login</span>
                         </Link>
                     )}
 
+                    {/* Cart */}
+                    <Link href='/cart' className="flex flex-col items-center gap-1 hover:text-[#216140] transition-colors relative group">
+                        <ShoppingCart className="w-6 h-6 text-gray-700 group-hover:text-[#216140]" strokeWidth={1.5} />
+                        <span className="text-[12px] font-semibold text-gray-700 hidden md:block">Cart</span>
+                        {cartCount > 0 && (
+                            <span className="absolute -top-1 -right-1 bg-[#F59E0B] text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full border border-white shadow-sm min-w-[18px] text-center">
+                                {cartCount}
+                            </span>
+                        )}
+                    </Link>
+
                     {/* Mobile Hamburger */}
-                    <div className="flex lg:hidden items-center relative">
-                        <button onClick={() => setIsOpen(!isOpen)} className="p-1.5 focus:outline-none z-50 -mr-2" aria-label="Toggle Menu">
+                    <div className="flex lg:hidden items-center relative -mr-2">
+                        <button onClick={() => setIsOpen(!isOpen)} className="p-1.5 focus:outline-none z-50" aria-label="Toggle Menu">
                             <Hamburger toggled={isOpen} toggle={setIsOpen} color="#216140" size={24} rounded />
                         </button>
                         {isOpen && (
@@ -315,33 +327,34 @@ export default function Navbar({ item }) {
                                     </li>
                                 )}
                                 <li className="px-2">
-                                    <Link href="#home" className="block px-4 py-2.5 text-sm font-bold text-gray-700 hover:bg-gray-50 rounded-lg">Home</Link>
+                                    <Link href="/" className="block px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50 rounded-lg">Home</Link>
                                 </li>
                                 <li className="px-2">
-                                    <Link href="/category/vegetables" className="block px-4 py-2.5 text-sm font-bold text-gray-700 hover:bg-gray-50 rounded-lg">vegetables</Link>
+                                    <Link href="/wishlist" className="block px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50 rounded-lg flex items-center justify-between">
+                                        Wishlist
+                                        {wishlistIds?.length > 0 && (
+                                            <span className="bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full min-w-[18px] text-center">
+                                                {wishlistIds.length}
+                                            </span>
+                                        )}
+                                    </Link>
                                 </li>
                                 <li className="px-2">
-                                    <Link href="/category/fruits" className="block px-4 py-2.5 text-sm font-bold text-gray-700 hover:bg-gray-50 rounded-lg">Fruits</Link>
-                                </li>
-                                <li className="px-2">
-                                    <Link href="/contact" className="block px-4 py-2.5 text-sm font-bold text-gray-700 hover:bg-gray-50 rounded-lg">Contact Us</Link>
+                                    <Link href="/contact" className="block px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50 rounded-lg">Contact Us</Link>
                                 </li>
                                 {user ? (
                                     <>
                                         <li className="px-2 border-t border-gray-100 mt-1 pt-1">
                                             <Link href="/profile" className="block px-4 py-2.5 text-sm font-bold text-gray-700 hover:bg-gray-50 rounded-lg">Profile</Link>
                                         </li>
-                                        <li className="px-2">
-                                            <Link href="/wishlist" className="block px-4 py-2.5 text-sm font-bold text-gray-700 hover:bg-gray-50 rounded-lg">Wishlist</Link>
-                                        </li>
-                                        <li className="px-2">
-                                            <Link href="/order" className="block px-4 py-2.5 text-sm font-bold text-gray-700 hover:bg-gray-50 rounded-lg">Orders</Link>
-                                        </li>
                                         {user.role === "ADMIN" && (
                                             <li className="px-2">
                                                 <Link href="/admin/products" className="block px-4 py-2.5 text-sm font-bold text-green-700 hover:bg-green-50 rounded-lg">Admin Panel</Link>
                                             </li>
                                         )}
+                                        <li className="px-2 border-t border-gray-100 mt-1 pt-1">
+                                            <button onClick={async () => { await AUTH_API.logout(); setUser(null); router.push('/login'); }} className="w-full text-left px-4 py-2 text-sm font-bold text-red-600 hover:bg-red-50 rounded-lg">Logout</button>
+                                        </li>
                                     </>
                                 ) : (
                                     <li className="px-2 border-t border-gray-100 mt-1 pt-1">
@@ -353,6 +366,43 @@ export default function Navbar({ item }) {
                     </div>
                 </div>
             </header>
+
+            {/* Bottom Tier: Dynamic Category Scroll */}
+            <div className="border-t border-gray-100">
+                <div className="max-w-[1400px] mx-auto overflow-x-auto no-scrollbar">
+                    <div className="flex items-center px-4 md:px-10 py-3 gap-6 min-w-max">
+                        <Link href="/" className="flex items-center gap-2 group">
+                            <div className="w-8 h-8 rounded-full bg-purple-50 flex items-center justify-center group-hover:bg-purple-100 transition-colors">
+                                <Leaf className="w-4 h-4 text-purple-600" />
+                            </div>
+                            <span className="text-[14px] font-bold text-gray-800 group-hover:text-purple-700 transition-colors">All</span>
+                        </Link>
+                        
+                        {categories.map((cat) => (
+                            <Link key={cat.id} href={`/category/${cat.slug}`} className="flex items-center gap-2 group">
+                                <div className="w-8 h-8 rounded-full overflow-hidden bg-gray-50 flex items-center justify-center border border-gray-100 group-hover:border-[#216140] transition-colors shrink-0">
+                                    {cat.image_url ? (
+                                        <Image src={cat.image_url} alt={cat.name} width={32} height={32} className="object-cover w-full h-full" />
+                                    ) : (
+                                        <Leaf className="w-4 h-4 text-gray-400 group-hover:text-[#216140]" />
+                                    )}
+                                </div>
+                                <span className="text-[14px] font-semibold text-gray-700 group-hover:text-[#216140] transition-colors whitespace-nowrap">{cat.name}</span>
+                            </Link>
+                        ))}
+                    </div>
+                </div>
+            </div>
+            
+            <style jsx>{`
+                .no-scrollbar::-webkit-scrollbar {
+                    display: none;
+                }
+                .no-scrollbar {
+                    -ms-overflow-style: none;  /* IE and Edge */
+                    scrollbar-width: none;  /* Firefox */
+                }
+            `}</style>
         </div>
     );
 }

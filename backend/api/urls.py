@@ -7,7 +7,7 @@ from .views import (
     OrderViewSet, DeliveryAssignmentViewSet,
     CartViewSet, LoginView, RegisterView, LogoutView, ContactView,
     upload_image, HomeApiView, StoreSettingsView, ReviewViewSet,
-    WishlistViewSet
+    WishlistViewSet, SendOTPView, VerifyOTPView
 )
 from orders.views import CreateRazorpayOrderView, VerifyPaymentView, CreateCODOrderView
 from orders.delivery_views import (
@@ -43,6 +43,10 @@ urlpatterns = [
     path('auth/logout/', LogoutView.as_view(), name='logout'),
     path('auth/token/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
     path('auth/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
+    
+    # Mobile OTP Auth
+    path('auth/send-otp/', SendOTPView.as_view(), name='send_otp'),
+    path('auth/verify-otp/', VerifyOTPView.as_view(), name='verify_otp'),
 
     # Payment
     path('payment/create-order/', CreateRazorpayOrderView.as_view(), name='create_razorpay_order'),

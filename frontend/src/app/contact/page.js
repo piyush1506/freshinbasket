@@ -24,7 +24,7 @@ export default function ContactPage() {
     setSending(true);
     try {
       const token = getAccessToken();
-      await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/contact/`, {
+      await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/contact/`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

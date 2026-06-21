@@ -53,7 +53,7 @@ export default function ProfilePage() {
     setSuccess('');
     try {
       const token = getAccessToken();
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/users/me/`, {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/users/me/`, {
         method: 'PATCH',
         headers: {
           Authorization: `Bearer ${token}`,

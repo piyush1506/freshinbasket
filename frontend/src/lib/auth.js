@@ -62,7 +62,7 @@ export function clearAuth() {
   memoryToken = null;
   if (isBrowser()) {
     [TOKEN_KEYS.ACCESS, TOKEN_KEYS.REFRESH, TOKEN_KEYS.USER].forEach(k => {
-      try { sessionStorage.removeItem(k); } catch {}
+      try { sessionStorage.removeItem(k); } catch { }
       localStorage.removeItem(k);
     });
   }
@@ -105,7 +105,7 @@ export async function refreshAccessToken() {
 
   try {
     const res = await fetch(
-      `${process.env.NEXT_PUBLIC_API_URL}/api/auth/refresh/`,
+      `${process.env.NEXT_PUBLIC_API_URL}/api/v1/auth/refresh/`,
       {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -128,7 +128,7 @@ export async function refreshAccessToken() {
 export const AUTH_API = {
   async login(email, password) {
     const res = await fetch(
-      `${process.env.NEXT_PUBLIC_API_URL}/api/auth/login/`,
+      `${process.env.NEXT_PUBLIC_API_URL}/api/v1/auth/login/`,
       {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -148,7 +148,7 @@ export const AUTH_API = {
 
   async register(data) {
     const res = await fetch(
-      `${process.env.NEXT_PUBLIC_API_URL}/api/auth/register/`,
+      `${process.env.NEXT_PUBLIC_API_URL}/api/v1/auth/register/`,
       {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -182,7 +182,7 @@ export const AUTH_API = {
     if (refresh) {
       try {
         await fetch(
-          `${process.env.NEXT_PUBLIC_API_URL}/api/auth/logout/`,
+          `${process.env.NEXT_PUBLIC_API_URL}/api/v1/auth/logout/`,
           {
             method: 'POST',
             headers: {
@@ -197,5 +197,59 @@ export const AUTH_API = {
       }
     }
     clearAuth();
+  },
+
+  async sendOtp(phone_number) {
+    const res = await fetch(
+      `${process.env.NEXT_PUBLIC_API_URL}/api/v1/auth/send-otp/`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phone_number }),
+      }
+    );
+    const result = await res.json();
+    if (!res.ok) {
+      throw new Error(result.error || 'Failed to send OTP');
+    }
+    return result;
+  },
+
+  async verifyOtp(phone_number, otp_code) {
+    const res = await fetch(
+      `${process.env.NEXT_PUBLIC_API_URL}/api/v1/auth/verify-otp/`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phone_number, otp_code }),
+      }
+    );
+    const result = await res.json();
+    if (!res.ok) {
+      throw new Error(result.error || 'Invalid OTP');
+    }
+    setTokens(result.access, result.refresh);
+    setUser(result.user);
+    return result;
+  },
+
+  async updateProfile(data) {
+    const res = await fetch(
+      `${process.env.NEXT_PUBLIC_API_URL}/api/v1/users/me/`,
+      {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${getAccessToken()}`
+        },
+        body: JSON.stringify(data),
+      }
+    );
+    const result = await res.json();
+    if (!res.ok) {
+      throw new Error(result.error || result.detail || 'Failed to update profile');
+    }
+    setUser(result);
+    return result;
   },
 };

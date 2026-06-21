@@ -5,7 +5,7 @@ export async function uploadImage(file) {
   const formData = new FormData();
   formData.append('image', file);
 
-  const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/upload/`, {
+  const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/upload/`, {
     method: 'POST',
     headers: {
       Authorization: `Bearer ${token}`,

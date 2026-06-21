@@ -14,6 +14,11 @@ from django.db.models import Prefetch, F, Q, Case, When, Value, IntegerField
 from rest_framework.exceptions import ValidationError
 from store.models import Category, Product, Slide, ContactQuery, WishlistItem
 from orders.models import Order, DeliveryAssignment, Cart, CartItem, Review
+from users.models import OTPVerification
+import random
+import datetime
+from django.utils import timezone
+from .utils import send_msg91_otp
 from .serializers import (
     UserSerializer, RegisterSerializer, CategorySerializer, ProductSerializer,
     SearchProductSerializer, SlideSerializer, ContactQuerySerializer,
@@ -633,3 +638,104 @@ class StoreSettingsView(APIView):
         data = serializer.data
         cache.set(cache_key, data, timeout=300)
         return Response(data)
+
+class SendOTPView(APIView):
+    permission_classes = [permissions.AllowAny]
+    throttle_classes = [AnonRateThrottle]
+
+    def post(self, request):
+        phone_number = request.data.get('phone_number')
+        if not phone_number or len(str(phone_number)) < 10:
+            return Response({'error': 'Valid 10-digit phone number is required.'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        # Generate 6 digit OTP
+        otp_code = str(random.randint(100000, 999999))
+        
+        # Clean up old unverified OTPs for this number
+        OTPVerification.objects.filter(phone_number=phone_number, is_verified=False).delete()
+        
+        # Create new OTP entry
+        OTPVerification.objects.create(phone_number=phone_number, otp_code=otp_code)
+        
+        # Send OTP
+        success = send_msg91_otp(phone_number, otp_code)
+        if success:
+            return Response({'message': 'OTP sent successfully.'})
+        return Response({'error': 'Failed to send OTP. Please try again.'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+class VerifyOTPView(APIView):
+    permission_classes = [permissions.AllowAny]
+    throttle_classes = [AnonRateThrottle]
+
+    def post(self, request):
+        phone_number = request.data.get('phone_number')
+        otp_code = request.data.get('otp_code')
+        
+        if not phone_number or not otp_code:
+            return Response({'error': 'Phone number and OTP are required.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Get latest unverified OTP for this number
+        try:
+            otp_record = OTPVerification.objects.filter(
+                phone_number=phone_number,
+                is_verified=False
+            ).latest('created_at')
+        except OTPVerification.DoesNotExist:
+            return Response({'error': 'No OTP found. Please request a new one.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Check if OTP is locked due to too many wrong attempts
+        if otp_record.is_locked():
+            return Response({'error': 'Too many wrong attempts. Please request a new OTP.'}, status=status.HTTP_429_TOO_MANY_REQUESTS)
+
+        # Check expiry (5 minutes)
+        if timezone.now() > otp_record.created_at + datetime.timedelta(minutes=5):
+            return Response({'error': 'OTP has expired. Please request a new one.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        from django.conf import settings
+        
+        # Check OTP code — increment attempts on wrong guess
+        # Allow '123456' as a test OTP only if DEBUG mode is enabled
+        is_test_bypass = settings.DEBUG and str(otp_code) == '123456'
+        
+        if not is_test_bypass and otp_record.otp_code != str(otp_code):
+            otp_record.attempts += 1
+            otp_record.save(update_fields=['attempts'])
+            remaining = otp_record.max_attempts - otp_record.attempts
+            if remaining > 0:
+                return Response(
+                    {'error': f'Invalid OTP. {remaining} attempt(s) remaining.'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            return Response(
+                {'error': 'Too many wrong attempts. Please request a new OTP.'},
+                status=status.HTTP_429_TOO_MANY_REQUESTS
+            )
+
+        # OTP is correct — mark as verified
+        otp_record.is_verified = True
+        otp_record.save(update_fields=['is_verified'])
+
+        # Find or create user
+        user, created = User.objects.get_or_create(
+            phone_number=phone_number,
+            defaults={
+                'username': None,
+                'email': None,
+            }
+        )
+        
+        if created:
+            user.set_unusable_password()
+            user.save()
+            logger.info(f'New user registered via OTP: {phone_number}')
+        else:
+            logger.info(f'User logged in via OTP: {phone_number}')
+            
+        refresh = RefreshToken.for_user(user)
+        return Response({
+            'refresh': str(refresh),
+            'access': str(refresh.access_token),
+            'user': UserSerializer(user).data,
+            'is_new_user': created
+        })
+

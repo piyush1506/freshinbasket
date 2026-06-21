@@ -21,17 +21,33 @@ class User(AbstractUser):
         DELIVERY = 'DELIVERY', 'Delivery Boy'
     username = models.CharField(max_length=150,
     unique=False,
+    blank=True,
+    null=True,
     validators=[username_validator])
 
     role = models.CharField(max_length=50, choices=Role.choices, default=Role.CUSTOMER)
-    phone_number = models.CharField(max_length=10, validators=[phone_validator],blank=True,null=True, unique=True )
+    phone_number = models.CharField(max_length=10, validators=[phone_validator], unique=True)
     address = models.TextField(blank=True, null=True)
-    email = models.EmailField(unique=True)
+    email = models.EmailField(unique=True, blank=True, null=True)
     avatar = models.URLField(blank=True, null=True)
 
-    USERNAME_FIELD = 'email'        
-    REQUIRED_FIELDS = ['username']  
+    USERNAME_FIELD = 'phone_number'        
+    REQUIRED_FIELDS = []
 
 
     def __str__(self):
         return f"{self.username} ({self.role})"
+
+class OTPVerification(models.Model):
+    phone_number = models.CharField(max_length=15)
+    otp_code = models.CharField(max_length=6)
+    created_at = models.DateTimeField(auto_now_add=True)
+    is_verified = models.BooleanField(default=False)
+    attempts = models.PositiveSmallIntegerField(default=0)  # track wrong guesses
+    max_attempts = models.PositiveSmallIntegerField(default=5)  # lock after 5 wrong tries
+
+    def is_locked(self):
+        return self.attempts >= self.max_attempts
+
+    def __str__(self):
+        return f"{self.phone_number} - {self.otp_code}"

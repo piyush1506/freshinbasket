@@ -25,6 +25,9 @@ export const metadata = {
     locale: "en_IN",
     siteName: "Freshinbasket",
   },
+  icons: {
+    icon: "/logo/logo.jpg",
+  },
 };
 
 export const viewport = {

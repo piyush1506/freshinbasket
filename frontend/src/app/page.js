@@ -13,7 +13,7 @@ export default async function Home() {
   let sections = [];
 
   try {
-    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/home/`, {
+    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/home/`, {
       next: { revalidate: 60 } // Cache for 60 seconds
     });
     if (res.ok) {

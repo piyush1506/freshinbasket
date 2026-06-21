@@ -170,7 +170,7 @@ export default function CartPage() {
   };
 
   const handleOnlinePayment = async (fullAddress) => {
-    const res = await authFetch(`${process.env.NEXT_PUBLIC_API_URL}/api/payment/create-order/`, {
+    const res = await authFetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/payment/create-order/`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -200,7 +200,7 @@ export default function CartPage() {
 
       handler: async function (response) {
         try {
-          const verifyRes = await authFetch(`${process.env.NEXT_PUBLIC_API_URL}/api/payment/verify/`, {
+          const verifyRes = await authFetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/payment/verify/`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -230,7 +230,7 @@ export default function CartPage() {
   };
 
   const handleCODCheckout = async (fullAddress) => {
-    const res = await authFetch(`${process.env.NEXT_PUBLIC_API_URL}/api/payment/cod/`, {
+    const res = await authFetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/payment/cod/`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({

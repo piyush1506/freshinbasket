@@ -32,7 +32,7 @@ export default function WishlistPage() {
       return;
     }
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/products/`);
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/products/`);
       if (res.ok) {
         const all = await res.json();
         setProducts(all.filter((p) => wishlistIds.includes(Number(p.id))));

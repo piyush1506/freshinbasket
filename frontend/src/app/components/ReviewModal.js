@@ -19,7 +19,7 @@ export default function ReviewModal({ isOpen, onClose, order, onReviewSubmitted 
     }
     setSubmitting(true);
     try {
-      const res = await authFetch(`${process.env.NEXT_PUBLIC_API_URL}/api/reviews/`, {
+      const res = await authFetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/reviews/`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ order: order.id, rating, comment }),

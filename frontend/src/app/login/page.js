@@ -2,85 +2,106 @@
 import { useState, useEffect } from "react";
 import { useCart } from "../context/CartContext";
 import { useRouter } from "next/navigation";
-import { AUTH_API, isAuthenticated, getAccessToken } from "@/lib/auth";
+import { AUTH_API, isAuthenticated, getAccessToken, getUser } from "@/lib/auth";
 import toast from "react-hot-toast";
 import Link from "next/link";
-
+import { ArrowRight, CheckCircle2 } from "lucide-react";
 
 export default function AuthPage() {
   const { setUser, mergeCart } = useCart();
-  const [mode, setMode] = useState("login");
   const router = useRouter();
+  
+  // 'phone' | 'otp' | 'name'
+  const [step, setStep] = useState('phone');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const [form, setForm] = useState({
-    username: '', email: '', password: '', confirmPassword: '',
-    address: '', phone_number: '',
-  });
+  
+  const [phoneNumber, setPhoneNumber] = useState('');
+  const [otpCode, setOtpCode] = useState('');
+  const [name, setName] = useState('');
 
   useEffect(() => {
-    if (isAuthenticated()) router.replace('/');
-  }, [router]);
+    if (isAuthenticated()) {
+      const user = getUser();
+      if (user && !user.username) {
+        if (step !== 'name') setStep('name');
+      } else {
+        router.replace('/');
+      }
+    }
+  }, [router, step]);
 
-  const handleLogin = async () => {
+  const handleSendOtp = async (e) => {
+    e.preventDefault();
     setError("");
-    if (!form.email || !form.password) return setError("Please fill in all fields.");
+    if (!phoneNumber || phoneNumber.length !== 10) {
+      return setError("Please enter a valid 10-digit mobile number.");
+    }
+    
     setLoading(true);
     try {
-      const data = await AUTH_API.login(form.email, form.password);
+      await AUTH_API.sendOtp(phoneNumber);
+      toast.success('OTP sent successfully!');
+      setStep('otp');
+    } catch (err) {
+      setError(err.message || "Failed to send OTP. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleVerifyOtp = async (e) => {
+    e.preventDefault();
+    setError("");
+    if (!otpCode || otpCode.length !== 6) {
+      return setError("Please enter a valid 6-digit OTP.");
+    }
+
+    setLoading(true);
+    try {
+      const data = await AUTH_API.verifyOtp(phoneNumber, otpCode);
       setUser(data.user);
       if (getAccessToken() && mergeCart) await mergeCart(getAccessToken());
-      toast.success('Login successful');
+      
+      if (data.is_new_user || !data.user.username) {
+        setStep('name');
+      } else {
+        toast.success('Login successful! Welcome back.');
+        setTimeout(() => router.push("/"), 1500);
+      }
+    } catch (err) {
+      setError(err.message || "Invalid OTP. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleUpdateName = async (e) => {
+    e.preventDefault();
+    setError("");
+    if (!name || name.trim().length < 3) {
+      return setError("Please enter a valid name (at least 3 characters).");
+    }
+
+    setLoading(true);
+    try {
+      await AUTH_API.updateProfile({ username: name.trim() });
+      toast.success(`Welcome, ${name}! Your account is ready.`);
       setTimeout(() => router.push("/"), 1500);
     } catch (err) {
-      setError(err.message || "An error occurred");
+      setError(err.message || "Failed to update profile. Please try again.");
     } finally {
       setLoading(false);
     }
-  };
-
-  const handleRegister = async () => {
-    setError("");
-    if (!form.username || !form.email || !form.password || !form.confirmPassword)
-      return setError("Please fill in all fields.");
-    if (form.password !== form.confirmPassword)
-      return setError("Passwords do not match.");
-    if (form.password.length < 8)
-      return setError("Password must be at least 8 characters.");
-    setLoading(true);
-    try {
-      const data = await AUTH_API.register({
-        username: form.username,
-        email: form.email,
-        password: form.password,
-        confirm_password: form.confirmPassword,
-        phone_number: form.phone_number || "",
-        address: form.address || "",
-      });
-      setUser(data.user);
-      if (getAccessToken() && mergeCart) await mergeCart(getAccessToken());
-      toast.success(`Welcome, ${data.user?.username}! Account created.`);
-      setTimeout(() => router.push("/"), 2000);
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    if (mode === 'login') handleLogin();
-    else handleRegister();
   };
 
   return (
     <div className="min-h-screen flex flex-col font-sans text-gray-900 bg-[#FAFAFA]">
       <nav className="flex justify-between items-center px-10 py-6 bg-[#FAFAFA]">
-        <div className="text-[28px] font-extrabold text-[#1B3624] tracking-tight">Freshinbasket</div>
+        <Link href="/" className="text-[28px] font-extrabold text-[#1B3624] tracking-tight">Freshinbasket</Link>
         <div className="flex gap-8 items-center">
           <div className="flex flex-col items-center">
-            <button className="text-gray-800 hover:text-black">
+            <button onClick={() => router.push('/')} className="text-gray-800 hover:text-black">
               <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" />
               </svg>
@@ -108,97 +129,105 @@ export default function AuthPage() {
 
         <div className="w-full md:w-1/2 flex flex-col justify-center items-center p-8 bg-[#FAFAFA]">
           <div className="w-full max-w-[420px]">
-            <div className="flex bg-[#F0F0F0] rounded-full p-1.5 mb-14 w-fit mx-auto">
-              <button
-                type="button"
-                onClick={() => { setMode("login"); setError(''); }}
-                className={`${mode === "login" ? "bg-white text-gray-900 shadow-sm" : "text-gray-500 hover:text-gray-700"} rounded-full px-8 py-2.5 text-[14px] font-bold transition-colors`}
-              >Sign In</button>
-              <button
-                type="button"
-                onClick={() => { setMode("register"); setError(''); }}
-                className={`${mode === "register" ? "bg-white text-gray-900 shadow-sm" : "text-gray-500 hover:text-gray-700"} rounded-full px-8 py-2.5 text-[14px] font-bold transition-colors`}
-              >Create Account</button>
-            </div>
 
             <h1 className="text-[40px] font-bold mb-3 text-gray-900 tracking-tight">
-              {mode === "login" ? "Welcome Back" : "Join Freshinbasket"}
+              {step === 'phone' ? 'Welcome' : step === 'otp' ? 'Verify OTP' : 'Complete Profile'}
             </h1>
             <p className="text-gray-500 mb-10 text-[16px]">
-              {mode === "login" ? "Healthy living starts with a single click. Let's get you in." : "Create your account and start shopping for organic freshness."}
+              {step === 'phone' 
+                ? 'Enter your mobile number to log in or create an account instantly.' 
+                : step === 'otp'
+                ? `We have sent a 6-digit code to +91 ${phoneNumber}`
+                : 'Just one last step to complete your account!'
+              }
             </p>
 
             {error && (
               <div className="mb-4 px-4 py-3 bg-red-50 border border-red-200 rounded-[14px] text-red-700 text-sm font-medium">{error}</div>
             )}
 
-            <form className="space-y-5" onSubmit={handleSubmit}>
-              {mode === "register" && (
+            {step === 'phone' ? (
+              <form className="space-y-5" onSubmit={handleSendOtp}>
+                <div>
+                  <label className="block text-[13px] font-bold mb-2 text-gray-800">Mobile Number</label>
+                  <div className="relative">
+                    <span className="absolute left-5 top-1/2 -translate-y-1/2 text-gray-500 font-bold">+91</span>
+                    <input 
+                      type="tel" 
+                      maxLength={10} 
+                      placeholder="9876543210" 
+                      value={phoneNumber}
+                      onChange={(e) => setPhoneNumber(e.target.value.replace(/\D/g, ''))}
+                      className="w-full bg-[#F3F4F1] border border-gray-200/60 rounded-[14px] pl-14 pr-5 py-4 text-[15px] font-medium focus:outline-none focus:border-[#1B3624] transition-colors placeholder:text-gray-400" 
+                    />
+                  </div>
+                </div>
+                
+                <button type="submit" disabled={loading || phoneNumber.length !== 10}
+                  className="w-full bg-[#1B3624] flex items-center justify-center gap-2 text-white rounded-[14px] py-4 font-bold mt-2 hover:bg-[#132619] transition-colors text-[16px] shadow-lg shadow-[#1B3624]/20 disabled:opacity-50 disabled:cursor-not-allowed">
+                  {loading ? "Sending OTP..." : (
+                    <>Get OTP <ArrowRight size={20} /></>
+                  )}
+                </button>
+              </form>
+            ) : step === 'otp' ? (
+              <form className="space-y-5" onSubmit={handleVerifyOtp}>
+                <div>
+                  <label className="block text-[13px] font-bold mb-2 text-gray-800">6-Digit OTP</label>
+                  <input 
+                    type="text" 
+                    maxLength={6} 
+                    placeholder="Enter OTP" 
+                    value={otpCode}
+                    onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, ''))}
+                    className="w-full text-center tracking-[0.5em] bg-[#F3F4F1] border border-gray-200/60 rounded-[14px] px-5 py-4 text-[20px] font-bold focus:outline-none focus:border-[#1B3624] transition-colors placeholder:text-gray-400 placeholder:tracking-normal" 
+                  />
+                </div>
+                
+                <button type="submit" disabled={loading || otpCode.length !== 6}
+                  className="w-full bg-[#1B3624] flex items-center justify-center gap-2 text-white rounded-[14px] py-4 font-bold mt-2 hover:bg-[#132619] transition-colors text-[16px] shadow-lg shadow-[#1B3624]/20 disabled:opacity-50 disabled:cursor-not-allowed">
+                  {loading ? "Verifying..." : (
+                    <>Verify & Proceed <CheckCircle2 size={20} /></>
+                  )}
+                </button>
+                
+                <div className="text-center pt-4">
+                  <button type="button" onClick={() => setStep('phone')} className="text-sm font-bold text-gray-500 hover:text-gray-800 underline">
+                    Change Mobile Number
+                  </button>
+                </div>
+              </form>
+            ) : (
+              <form className="space-y-5" onSubmit={handleUpdateName}>
                 <div>
                   <label className="block text-[13px] font-bold mb-2 text-gray-800">Full Name</label>
-                  <input type="text" placeholder="John Doe" value={form.username}
-                    onChange={(e) => setForm({ ...form, username: e.target.value })}
-                    className="w-full bg-[#F3F4F1] border border-gray-200/60 rounded-[14px] px-5 py-4 text-[15px] focus:outline-none focus:border-[#1B3624] transition-colors placeholder:text-gray-400" />
+                  <input 
+                    type="text" 
+                    placeholder="Enter your full name" 
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    className="w-full bg-[#F3F4F1] border border-gray-200/60 rounded-[14px] px-5 py-4 text-[15px] font-medium focus:outline-none focus:border-[#1B3624] transition-colors placeholder:text-gray-400" 
+                  />
                 </div>
-              )}
-              <div>
-                <label className="block text-[13px] font-bold mb-2 text-gray-800">Email Address</label>
-                <input type="email" placeholder="hello@freshinbasket.com" value={form.email}
-                  onChange={(e) => setForm({ ...form, email: e.target.value })}
-                  className="w-full bg-[#F3F4F1] border border-gray-200/60 rounded-[14px] px-5 py-4 text-[15px] focus:outline-none focus:border-[#1B3624] transition-colors placeholder:text-gray-400" />
-              </div>
-              {mode === 'register' && (
-                <div>
-                  <label className="block text-[13px] font-bold mb-2 text-gray-800">Phone number</label>
-                  <input type='tel' maxLength={10} placeholder="9893223232" value={form.phone_number}
-                    onChange={(e) => setForm({ ...form, phone_number: e.target.value.replace(/\D/g, '') })}
-                    className="w-full bg-[#F3F4F1] border border-gray-200/60 rounded-[14px] px-5 py-4 text-[15px] focus:outline-none focus:border-[#1B3624] transition-colors placeholder:text-gray-400" />
-                </div>
-              )}
-              <div>
-                <label className="block text-[13px] font-bold mb-2 text-gray-800">Password</label>
-                <input type="password" placeholder="••••••••" value={form.password}
-                  onChange={(e) => setForm({ ...form, password: e.target.value })}
-                  className="w-full bg-[#F3F4F1] border border-gray-200/60 rounded-[14px] px-5 py-4 text-[15px] focus:outline-none focus:border-[#1B3624] transition-colors placeholder:text-gray-400" />
-              </div>
-              {mode === 'register' && (
-                <div>
-                  <label className="block text-[13px] font-bold mb-2 text-gray-800">Confirm password</label>
-                  <input type="password" placeholder="••••••••" value={form.confirmPassword}
-                    onChange={(e) => setForm({ ...form, confirmPassword: e.target.value })}
-                    className="w-full bg-[#F3F4F1] border border-gray-200/60 rounded-[14px] px-5 py-4 text-[15px] focus:outline-none focus:border-[#1B3624] transition-colors placeholder:text-gray-400" />
-                </div>
-              )}
-              {mode === 'register' && (
-                <div>
-                  <label className="block text-[13px] font-bold mb-2 text-gray-800">Address</label>
-                  <input type="text" placeholder="apartment building" value={form.address}
-                    onChange={(e) => setForm({ ...form, address: e.target.value })}
-                    className="w-full bg-[#F3F4F1] border border-gray-200/60 rounded-[14px] px-5 py-4 text-[15px] focus:outline-none focus:border-[#1B3624] transition-colors placeholder:text-gray-400" />
-                </div>
-              )}
-              {mode === "login" && (
-                <div className="flex justify-end pt-1">
-                  <a href="#" className="text-[13px] font-bold text-[#8B2C2C] hover:underline">Forgot password?</a>
-                </div>
-              )}
-              <button type="submit" disabled={loading}
-                className="w-full bg-[#1B3624] text-white rounded-[14px] py-4 font-bold mt-2 hover:bg-[#132619] transition-colors text-[16px] shadow-lg shadow-[#1B3624]/20 disabled:opacity-50 disabled:cursor-not-allowed">
-                {loading ? "Please wait..." : (mode === "login" ? "Sign In" : "Create Account")}
-              </button>
-            </form>
+                
+                <button type="submit" disabled={loading || name.trim().length < 3}
+                  className="w-full bg-[#1B3624] flex items-center justify-center gap-2 text-white rounded-[14px] py-4 font-bold mt-2 hover:bg-[#132619] transition-colors text-[16px] shadow-lg shadow-[#1B3624]/20 disabled:opacity-50 disabled:cursor-not-allowed">
+                  {loading ? "Saving..." : (
+                    <>Start Shopping <ArrowRight size={20} /></>
+                  )}
+                </button>
+              </form>
+            )}
 
             <div className="mt-8 text-center text-[13px] text-gray-500 leading-relaxed">
               By continuing, you agree to our <br className="hidden md:block" />
-              <Link href="/terms" className="text-[#1B3624] font-bold hover:underline">Terms and Agreement</Link> and{" "}
+              <Link href="/terms" className="text-[#1B3624] font-bold hover:underline">Terms and Conditions</Link> and{" "}
               <Link href="/privacy" className="text-[#1B3624] font-bold hover:underline">Privacy Policy</Link>.
             </div>
 
           </div>
         </div>
       </main>
-
-  
     </div>
   );
 }

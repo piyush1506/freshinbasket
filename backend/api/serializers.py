@@ -88,7 +88,7 @@ class RegisterSerializer(serializers.ModelSerializer):
         validated_data.pop('confirm_password')
         user = User(
             username=validated_data['username'],
-            email=validated_data.get('email', ''),
+            email=validated_data.get('email') or None,
             phone_number=validated_data.get('phone_number') or None,
             address=validated_data.get('address', '')
         )
@@ -331,16 +331,17 @@ class CartItemSerializer(serializers.ModelSerializer):
 
 
 class UserUpdateSerializer(serializers.ModelSerializer):
-    username = serializers.CharField(max_length=150)
+    username = serializers.CharField(max_length=150, allow_blank=True, required=False)
+    email = serializers.EmailField(allow_blank=True, allow_null=True, required=False)
 
     class Meta:
         model = User
         fields = ('username', 'email', 'phone_number', 'address', 'avatar')
 
     def validate_username(self, value):
-        value = value.strip()
         if not value:
-            raise serializers.ValidationError('Username cannot be empty.')
+            return None
+        value = value.strip()
         if len(value) < 3:
             raise serializers.ValidationError('Username must be at least 3 characters.')
         if not re.match(r'^[\w\s\-]+$', value):
@@ -350,6 +351,8 @@ class UserUpdateSerializer(serializers.ModelSerializer):
         return value
 
     def validate_email(self, value):
+        if not value:
+            return None
         value = value.strip().lower()
         user = self.context['request'].user
         if User.objects.filter(email=value).exclude(pk=user.pk).exists():

@@ -48,7 +48,7 @@ export default function CategoryPage() {
 
       try {
         const prodRes = await fetch(
-          `${base}/api/products/?category=${encodeURIComponent(slug)}`
+          `${base}/api/v1/products/?category=${encodeURIComponent(slug)}`
         );
 
         if (!prodRes.ok) throw new Error(`Products fetch failed: ${prodRes.status}`);
@@ -58,7 +58,7 @@ export default function CategoryPage() {
 
         // Try to get the proper category name from the categories API in the background
         // This is non-blocking — the page already shows content
-        fetch(`${base}/api/categories/`)
+        fetch(`${base}/api/v1/categories/`)
           .then(res => res.ok ? res.json() : [])
           .then(categories => {
             const cat = categories.find((c) => c.slug?.toLowerCase() === slug?.toLowerCase());

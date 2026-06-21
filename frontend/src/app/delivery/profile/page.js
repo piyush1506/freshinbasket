@@ -57,7 +57,7 @@ export default function ProfilePage() {
 
       try {
         const res = await fetch(
-          `${process.env.NEXT_PUBLIC_API_URL}/api/delivery/profile/`,
+          `${process.env.NEXT_PUBLIC_API_URL}/api/v1/delivery/profile/`,
           {
             headers: { Authorization: `Bearer ${token}` },
           }
@@ -84,7 +84,7 @@ export default function ProfilePage() {
     setSaving(true);
     try {
       const res = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/delivery/profile/`,
+        `${process.env.NEXT_PUBLIC_API_URL}/api/v1/delivery/profile/`,
         {
           method: "PATCH",
           headers: {
@@ -123,7 +123,7 @@ export default function ProfilePage() {
       const result = await uploadImage(file);
       const token = getAccessToken();
       const res = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/delivery/profile/`,
+        `${process.env.NEXT_PUBLIC_API_URL}/api/v1/delivery/profile/`,
         {
           method: "PATCH",
           headers: {

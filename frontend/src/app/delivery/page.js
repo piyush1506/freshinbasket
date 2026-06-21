@@ -43,7 +43,7 @@ export default function DeliveryDashboard() {
 
     try {
       const res = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/delivery/dashboard/`,
+        `${process.env.NEXT_PUBLIC_API_URL}/api/v1/delivery/dashboard/`,
         {
           headers: { Authorization: `Bearer ${token}` },
         }
@@ -64,7 +64,7 @@ export default function DeliveryDashboard() {
     if (!token) return;
     try {
       const res = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/delivery/orders/`,
+        `${process.env.NEXT_PUBLIC_API_URL}/api/v1/delivery/orders/`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
       if (res.ok) {
@@ -93,7 +93,7 @@ export default function DeliveryDashboard() {
     setUpdatingStatus(true);
     try {
       const res = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/delivery/orders/${orderId}/status/`,
+        `${process.env.NEXT_PUBLIC_API_URL}/api/v1/delivery/orders/${orderId}/status/`,
         {
           method: "PATCH",
           headers: {

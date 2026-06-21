@@ -26,7 +26,7 @@ export default function Hero() {
   const [slides, setSlides] = useState(FALLBACK_SLIDES);
 
   useEffect(() => {
-    fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/home/`)
+    fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/home/`)
       .then((res) => res.json())
       .then((data) => {
         if (data.slides && data.slides.length > 0) {

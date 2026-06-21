@@ -102,7 +102,7 @@ function SearchContent() {
         }
 
         const res = await fetch(
-          `${base}/api/products/search/?q=${encodeURIComponent(trimmedQuery)}&limit=${SEARCH_RESULT_LIMIT}`,
+          `${base}/api/v1/products/search/?q=${encodeURIComponent(trimmedQuery)}&limit=${SEARCH_RESULT_LIMIT}`,
           { signal: controller.signal }
         );
 

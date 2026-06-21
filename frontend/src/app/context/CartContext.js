@@ -21,7 +21,7 @@ export function CartProvider({ children }) {
     const token = getAccessToken();
     if (!token) return;
     try {
-      const res = await authFetch(`${process.env.NEXT_PUBLIC_API_URL}/api/wishlist/ids/`);
+      const res = await authFetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/wishlist/ids/`);
       if (res.ok) {
         setWishlistIds(await res.json());
       }
@@ -34,14 +34,14 @@ export function CartProvider({ children }) {
     const isWishlisted = wishlistIds.includes(Number(productId));
     try {
       if (isWishlisted) {
-        const res = await authFetch(`${process.env.NEXT_PUBLIC_API_URL}/api/wishlist/remove/`, {
+        const res = await authFetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/wishlist/remove/`, {
           method: 'DELETE',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ product_id: productId }),
         });
         if (res.ok) setWishlistIds((prev) => prev.filter((id) => id !== Number(productId)));
       } else {
-        const res = await authFetch(`${process.env.NEXT_PUBLIC_API_URL}/api/wishlist/`, {
+        const res = await authFetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/wishlist/`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ product: productId }),
@@ -68,7 +68,7 @@ export function CartProvider({ children }) {
     let token = typeof window !== "undefined" ? getAccessToken() : null;
     if (!token) return;
     try {
-      let res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/cart/`, {
+      let res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/cart/`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (res.status === 401) {
@@ -76,7 +76,7 @@ export function CartProvider({ children }) {
         const newToken = await refreshAccessToken();
         if (newToken) {
           token = newToken;
-          res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/cart/`, {
+          res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/cart/`, {
             headers: { Authorization: `Bearer ${newToken}` },
           });
         } else {
@@ -116,7 +116,7 @@ export function CartProvider({ children }) {
     const savedUser = getUser();
     if (savedUser) queueMicrotask(() => setUser(savedUser));
 
-    fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/store-info/`)
+    fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/store-info/`)
       .then((res) => res.json())
       .then((data) => {
         if (data.free_delivery_threshold !== undefined) {
@@ -159,7 +159,7 @@ export function CartProvider({ children }) {
 
     try {
       for (const item of guestItems) {
-        await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/cart/add_item/`, {
+        await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/cart/add_item/`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -197,7 +197,7 @@ export function CartProvider({ children }) {
     if (token) {
       setLoadingItems((prev) => ({ ...prev, [product.id]: true }));
       try {
-        let res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/cart/add_item/`, {
+        let res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/cart/add_item/`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -212,7 +212,7 @@ export function CartProvider({ children }) {
           const newToken = await refreshAccessToken();
           if (newToken) {
             // Retry with new token
-            res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/cart/add_item/`, {
+            res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/cart/add_item/`, {
               method: 'POST',
               headers: {
                 'Content-Type': 'application/json',
@@ -253,7 +253,7 @@ export function CartProvider({ children }) {
     let token = typeof window !== "undefined" ? getAccessToken() : null;
     if (token) {
       try {
-        let res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/cart/remove_item/`, {
+        let res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/cart/remove_item/`, {
           method: 'DELETE',
           headers: {
             'Content-Type': 'application/json',
@@ -266,7 +266,7 @@ export function CartProvider({ children }) {
           const { refreshAccessToken, clearAuth } = await import("@/lib/auth");
           const newToken = await refreshAccessToken();
           if (newToken) {
-            res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/cart/remove_item/`, {
+            res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/cart/remove_item/`, {
               method: 'DELETE',
               headers: {
                 'Content-Type': 'application/json',

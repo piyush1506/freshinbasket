@@ -49,7 +49,7 @@ export default function DeliveryLayout({ children }) {
     const fetchUserAndStats = async () => {
       try {
         const meRes = await authFetch(
-          `${process.env.NEXT_PUBLIC_API_URL}/api/users/me/`
+          `${process.env.NEXT_PUBLIC_API_URL}/api/v1/users/me/`
         );
         if (!meRes.ok) {
           clearAuth();
@@ -66,7 +66,7 @@ export default function DeliveryLayout({ children }) {
         setUser(me);
 
         const dashRes = await authFetch(
-          `${process.env.NEXT_PUBLIC_API_URL}/api/delivery/dashboard/`
+          `${process.env.NEXT_PUBLIC_API_URL}/api/v1/delivery/dashboard/`
         );
         if (dashRes.ok) {
           const dash = await dashRes.json();

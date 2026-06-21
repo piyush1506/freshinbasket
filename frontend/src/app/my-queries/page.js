@@ -14,7 +14,7 @@ export default function MyQueriesPage() {
       const token = getAccessToken();
       if (!token) return;
       try {
-        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/contact/`, {
+        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/contact/`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         const data = await res.json();
