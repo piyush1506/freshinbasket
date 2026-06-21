@@ -32,5 +32,8 @@ django-ratelimit>=4.1,<5.0
 # Testing
 locust>=2.32,<3.0
 
+# Build Tools
+setuptools>=69.0.0
+
 # WSGI
 gunicorn>=23.0,<24.0
