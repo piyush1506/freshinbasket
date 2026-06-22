@@ -78,8 +78,8 @@ class CreateRazorpayOrderView(APIView):
                 'currency': 'INR',
                 'key': settings.RAZORPAY_KEY_ID
             })
-        except razorpay.errors.AuthenticationError:
-            return Response({'error': 'Payment gateway authentication failed.'}, status=401)
+        except razorpay.errors.BadRequestError as e:
+            return Response({'error': f'Payment gateway error: {str(e)}'}, status=400)
         except Exception as e:
             return Response({'error': 'Payment gateway error. Please try again.'}, status=500)
 

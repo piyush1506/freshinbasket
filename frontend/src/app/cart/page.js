@@ -26,14 +26,21 @@ export default function CartPage() {
   const [lat, setLat] = useState(25.3471);
   const [lng, setLng] = useState(74.6408);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [razorpayLoaded, setRazorpayLoaded] = useState(false);
   const mapRef = useRef(null);
   const mapInstance = useRef(null);
   const markerRef = useRef(null);
 
   useEffect(() => {
+    if (typeof window.Razorpay !== 'undefined') {
+      setRazorpayLoaded(true);
+      return;
+    }
     const script = document.createElement("script");
     script.src = "https://checkout.razorpay.com/v1/checkout.js";
     script.async = true;
+    script.onload = () => setRazorpayLoaded(true);
+    script.onerror = () => console.error("Failed to load Razorpay script");
     document.body.appendChild(script);
     return () => {
       if (document.body.contains(script)) document.body.removeChild(script);
@@ -170,6 +177,11 @@ export default function CartPage() {
   };
 
   const handleOnlinePayment = async (fullAddress) => {
+    if (!razorpayLoaded || typeof window.Razorpay === 'undefined') {
+      toast.error("Payment gateway is still loading. Please try again.");
+      return;
+    }
+
     const res = await authFetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/payment/create-order/`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -197,7 +209,12 @@ export default function CartPage() {
         email: user?.email || 'guest@example.com',
         contact: user?.phone_number || '9999999999'
       },
-
+      modal: {
+        ondismiss: function() {
+          toast.error("Payment cancelled");
+          setIsProcessing(false);
+        }
+      },
       handler: async function (response) {
         try {
           const verifyRes = await authFetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/payment/verify/`, {
@@ -224,9 +241,17 @@ export default function CartPage() {
           toast.error("An error occurred during verification.");
         }
       }
+    };
+    try {
+      const rzp = new window.Razorpay(options);
+      rzp.on('payment.failed', function (response) {
+        toast.error(response.error?.description || "Payment failed");
+      });
+      rzp.open();
+    } catch (err) {
+      toast.error("Failed to open payment gateway. Please try again.");
+      console.error("Razorpay error:", err);
     }
-    const rzp = new window.Razorpay(options);
-    rzp.open();
   };
 
   const handleCODCheckout = async (fullAddress) => {

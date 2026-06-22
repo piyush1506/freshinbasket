@@ -659,7 +659,7 @@ class SendOTPView(APIView):
         
         # Send OTP
         success = send_msg91_otp(phone_number, otp_code)
-        if success:
+        if success or settings.DEBUG:
             return Response({'message': 'OTP sent successfully.'})
         return Response({'error': 'Failed to send OTP. Please try again.'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 

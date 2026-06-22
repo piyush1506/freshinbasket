@@ -10,19 +10,30 @@ import re
 
 
 class LoginSerializer(serializers.Serializer):
-    email = serializers.EmailField()
+    email = serializers.EmailField(required=False)
+    phone_number = serializers.CharField(required=False)
     password = serializers.CharField(write_only=True)
 
     def validate(self, data):
         email = data.get('email', '').strip().lower()
+        phone_number = data.get('phone_number', '').strip()
         password = data.get('password', '')
 
-        try:
-            user_obj = User.objects.get(email=email)
-        except User.DoesNotExist:
-            raise serializers.ValidationError('Invalid credentials')
+        if email:
+            try:
+                user_obj = User.objects.get(email=email)
+            except User.DoesNotExist:
+                raise serializers.ValidationError('Invalid credentials')
+            user = authenticate(username=email, password=password)
+        elif phone_number:
+            try:
+                user_obj = User.objects.get(phone_number=phone_number)
+            except User.DoesNotExist:
+                raise serializers.ValidationError('Invalid credentials')
+            user = authenticate(username=phone_number, password=password)
+        else:
+            raise serializers.ValidationError('Email or phone number is required')
 
-        user = authenticate(username=email, password=password)
         if not user:
             raise serializers.ValidationError('Invalid credentials')
         if not user.is_active:

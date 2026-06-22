@@ -1,7 +1,7 @@
 "use client";
 import { Swiper, SwiperSlide } from 'swiper/react';
 import 'swiper/css';
-import { Autoplay, EffectFade } from "swiper";
+import { Autoplay, EffectFade } from "swiper/modules";
 import "swiper/css/effect-fade";
 import { Star } from "lucide-react";
 

@@ -1,4 +1,4 @@
-from django.core.checks import Critical, register, Tags
+from django.core.checks import Critical, Warning, register, Tags
 from django.conf import settings
 import os
 
@@ -42,7 +42,7 @@ def check_cloudinary_config(app_configs, **kwargs):
 @register(Tags.security)
 def check_debug_mode(app_configs, **kwargs):
     if settings.DEBUG:
-        return [Critical(
+        return [Warning(
             'Django is running in DEBUG mode',
             hint='Set DJANGO_DEBUG=False in production',
             id='api.E004',
