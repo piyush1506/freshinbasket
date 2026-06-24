@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useCart } from "../context/CartContext";
 import { Search, ShoppingCart, Leaf, ChevronDown, User, Heart, Bookmark } from "lucide-react";
 import { Squash as Hamburger } from 'hamburger-react';
-import { clearAuth, AUTH_API } from "@/lib/auth";
+import { clearAuth, AUTH_API, getUser } from "@/lib/auth";
 import Logo from '../../../public/logo/logo.jpg'
 import Image from "next/image";
 
@@ -40,8 +40,10 @@ const getLocalSuggestions = (products, query) => {
 };
 
 export default function Navbar({ item }) {
-    const { cartCount, user, setUser, wishlistIds } = useCart();
+    const { cartCount, user: contextUser, setUser, wishlistIds } = useCart();
     const router = useRouter();
+    const [mounted, setMounted] = useState(false);
+    const user = mounted ? (contextUser ?? getUser()) : null;
 	
     const [isOpen, setIsOpen] = useState(false);
     const [searchQuery, setSearchQuery] = useState("");
@@ -51,6 +53,9 @@ export default function Navbar({ item }) {
     const searchRef = useRef(null);
     const suggestionCacheRef = useRef(new Map());
     const allSuggestionsRef = useRef([]);
+
+    // Mark component as mounted (client-side only) to avoid hydration mismatch
+    useEffect(() => { setMounted(true); }, []);
 
     // Fetch categories for bottom tier
     useEffect(() => {
@@ -394,15 +399,6 @@ export default function Navbar({ item }) {
                 </div>
             </div>
             
-            <style jsx>{`
-                .no-scrollbar::-webkit-scrollbar {
-                    display: none;
-                }
-                .no-scrollbar {
-                    -ms-overflow-style: none;  /* IE and Edge */
-                    scrollbar-width: none;  /* Firefox */
-                }
-            `}</style>
         </div>
     );
 }

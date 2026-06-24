@@ -114,7 +114,7 @@ export function CartProvider({ children }) {
     }
 
     const savedUser = getUser();
-    if (savedUser) queueMicrotask(() => setUser(savedUser));
+    if (savedUser) setUser(savedUser);
 
     fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/store-info/`)
       .then((res) => res.json())
@@ -126,8 +126,8 @@ export function CartProvider({ children }) {
       .catch((err) => console.error("Failed to fetch store settings", err));
 
     // If authenticated, load cart and wishlist from backend
-    queueMicrotask(() => fetchCart());
-    queueMicrotask(() => fetchWishlistIds());
+    fetchCart();
+    fetchWishlistIds();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 

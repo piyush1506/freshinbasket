@@ -81,15 +81,7 @@ export default function ContactPage() {
                 <p className="text-sm text-gray-500">support@freshinbasket.com</p>
               </div>
             </div>
-            <div className="flex items-start gap-4">
-              <div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center shrink-0">
-                <MapPin size={18} className="text-green-700" />
-              </div>
-              <div>
-                <h3 className="font-semibold text-gray-900">Address</h3>
-                <p className="text-sm text-gray-500">123 Green Lane, Organic Valley, Coimbatore - 641001</p>
-              </div>
-            </div>
+
           </div>
 
           {/* Contact Form */}

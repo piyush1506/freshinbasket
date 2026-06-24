@@ -10,6 +10,7 @@ import { ArrowRight, CheckCircle2 } from "lucide-react";
 export default function AuthPage() {
   const { setUser, mergeCart } = useCart();
   const router = useRouter();
+  const [ready, setReady] = useState(false);
   
   // 'phone' | 'otp' | 'name'
   const [step, setStep] = useState('phone');
@@ -24,12 +25,14 @@ export default function AuthPage() {
     if (isAuthenticated()) {
       const user = getUser();
       if (user && !user.username) {
-        if (step !== 'name') setStep('name');
-      } else {
+        setStep('name');
+      } else if (user?.username) {
         router.replace('/');
+        return;
       }
     }
-  }, [router, step]);
+    setReady(true);
+  }, []);
 
   const handleSendOtp = async (e) => {
     e.preventDefault();
@@ -94,6 +97,8 @@ export default function AuthPage() {
       setLoading(false);
     }
   };
+
+  if (!ready) return null;
 
   return (
     <div className="min-h-screen flex flex-col font-sans text-gray-900 bg-[#FAFAFA]">

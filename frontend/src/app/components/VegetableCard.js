@@ -145,11 +145,11 @@ export default function VegetableCard({ item }) {
         <div className="flex items-center justify-between mt-auto pt-1 gap-2">
           {/* Prices */}
           <div className="flex flex-col min-w-0">
-            <span className="text-xs sm:text-sm font-extrabold text-gray-900 truncate">
+            <span className="text-sm sm:text-base font-black text-gray-900 truncate leading-none">
               ₹{parseInt(item.price)}
             </span>
             {Number(item.discount_percentage) > 0 && (
-              <span className="text-[9px] sm:text-[10px] text-gray-400 line-through font-semibold leading-none mt-0.5">
+              <span className="text-[11px] sm:text-xs text-red-400 line-through font-bold leading-none mt-1">
                 ₹{parseInt(item.mrp || item.price)}
               </span>
             )}

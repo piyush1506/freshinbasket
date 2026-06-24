@@ -607,7 +607,7 @@ export default function CartPage() {
                       {/* Checkout Button */}
                       <button
                         onClick={handleProceedToAddress}
-                        className="w-full bg-green-700 hover:bg-green-800 text-white py-3 rounded-lg font-semibold transition flex items-center justify-center gap-2 mb-4"
+                        className="w-full bg-green-900 hover:bg-green-800 text-white py-3 rounded-lg font-semibold transition flex items-center justify-center gap-2 mb-4"
                       >
                         <Lock size={18} />
                         Proceed to Checkout
