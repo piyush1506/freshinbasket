@@ -29,19 +29,20 @@ export default function OrderSuccessPage() {
   }, [id]);
 
   useEffect(() => {
-    // Redirect after 5 seconds
+    // Countdown display only — no router calls inside setState
     const timer = setInterval(() => {
-      setCountdown((prev) => {
-        if (prev <= 1) {
-          clearInterval(timer);
-          router.push("/order");
-          return 0;
-        }
-        return prev - 1;
-      });
+      setCountdown((prev) => (prev <= 1 ? 0 : prev - 1));
     }, 1000);
 
-    return () => clearInterval(timer);
+    // Redirect separately after 5 seconds
+    const redirect = setTimeout(() => {
+      router.push("/orders");
+    }, 5000);
+
+    return () => {
+      clearInterval(timer);
+      clearTimeout(redirect);
+    };
   }, [router]);
 
   return (

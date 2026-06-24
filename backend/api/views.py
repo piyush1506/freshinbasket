@@ -100,7 +100,7 @@ class HomeApiView(APIView):
         categories = Category.objects.prefetch_related(
             Prefetch(
                 'products',
-                queryset=Product.objects.select_related('unit').prefetch_related('categories').defer('description'),
+                queryset=Product.objects.select_related('unit').prefetch_related('categories').defer('description').filter(stock__gt=0),
                 to_attr='cached_products'
             )
         )

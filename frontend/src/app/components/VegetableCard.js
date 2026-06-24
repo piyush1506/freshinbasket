@@ -149,7 +149,7 @@ export default function VegetableCard({ item }) {
               ₹{parseInt(item.price)}
             </span>
             {Number(item.discount_percentage) > 0 && (
-              <span className="text-[11px] sm:text-xs text-red-400 line-through font-bold leading-none mt-1">
+              <span className="text-[11px] sm:text-xs text-green-800 line-through font-bold leading-none mt-1">
                 ₹{parseInt(item.mrp || item.price)}
               </span>
             )}
