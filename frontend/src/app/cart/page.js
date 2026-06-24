@@ -1,9 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { Trash2, ShoppingBag, ArrowLeft, Lock, Truck, Crosshair, RefreshCw } from "lucide-react";
+import { Trash2, ShoppingBag, ArrowLeft, Lock, Truck, Crosshair, RefreshCw, Minus, Plus } from "lucide-react";
 import { useCart } from "../context/CartContext";
 import Navbar from "../components/Navbar";
+import VegetableCard from "../components/VegetableCard";
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import toast from "react-hot-toast";
@@ -27,6 +28,7 @@ export default function CartPage() {
   const [lng, setLng] = useState(74.6408);
   const [isProcessing, setIsProcessing] = useState(false);
   const [razorpayLoaded, setRazorpayLoaded] = useState(false);
+  const [suggestedProducts, setSuggestedProducts] = useState([]);
   const mapRef = useRef(null);
   const mapInstance = useRef(null);
   const markerRef = useRef(null);
@@ -46,6 +48,24 @@ export default function CartPage() {
       if (document.body.contains(script)) document.body.removeChild(script);
     };
   }, []);
+
+  useEffect(() => {
+    if (showAddressForm || cartItems.length === 0) return;
+    const fetchSuggested = async () => {
+      try {
+        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/products/`);
+        if (res.ok) {
+          const data = await res.json();
+          const cartItemIds = cartItems.map(item => item.id);
+          const suggestions = data.filter(p => !cartItemIds.includes(p.id)).slice(0, 4);
+          setSuggestedProducts(suggestions);
+        }
+      } catch (e) {
+        console.error("Failed to fetch suggested products", e);
+      }
+    };
+    fetchSuggested();
+  }, [cartItems, showAddressForm]);
 
   // Load Leaflet from npm when address form opens
   useEffect(() => {
@@ -233,19 +253,19 @@ export default function CartPage() {
           if (verifyRes.ok) {
             toast.success("Payment verified and order created successfully!");
             clearCart();
-            window.location.href = "/";
+            window.location.href = `/order-success/${verifyResult.order_id}`;
           } else {
-            toast.error(verifyResult.error || "Payment verification failed");
+            window.location.href = `/order-fail?reason=${encodeURIComponent(verifyResult.error || "Payment verification failed")}`;
           }
         } catch (err) {
-          toast.error("An error occurred during verification.");
+          window.location.href = `/order-fail?reason=${encodeURIComponent("An error occurred during verification.")}`;
         }
       }
     };
     try {
       const rzp = new window.Razorpay(options);
       rzp.on('payment.failed', function (response) {
-        toast.error(response.error?.description || "Payment failed");
+        window.location.href = `/order-fail?reason=${encodeURIComponent(response.error?.description || "Payment failed")}`;
       });
       rzp.open();
     } catch (err) {
@@ -266,11 +286,14 @@ export default function CartPage() {
     });
 
     const data = await res.json();
-    if (!res.ok) return toast.error(data.error || "Failed to create COD order");
+    if (!res.ok) {
+      router.push(`/order-fail?reason=${encodeURIComponent(data.error || "Failed to create COD order")}`);
+      return;
+    }
 
     toast.success("COD order placed successfully! Pay on delivery.");
     clearCart();
-    setTimeout(() => router.push("/"), 1500);
+    setTimeout(() => router.push(`/order-success/${data.order_id}`), 1500);
   };
 
   const handleCheckout = async () => {
@@ -474,23 +497,23 @@ export default function CartPage() {
                               {/* Quantity Controls */}
                               <div className="flex items-center gap-2 bg-gray-100 rounded-lg p-1 w-fit md:col-span-1">
                                 <button
-                                  className="px-2 py-1 hover:bg-gray-200 rounded"
+                                  className="px-2 py-1 hover:bg-gray-200 rounded flex items-center justify-center"
                                   onClick={() => {
                                     if (item.quantity > 1) {
                                       handleQuantityChange(item, item.quantity - 1);
                                     }
                                   }}
                                 >
-                                  −
+                                  <Minus size={16} />
                                 </button>
                                 <span className="px-3 py-1 text-center min-w-[30px]">
                                   {item.quantity || 1}
                                 </span>
                                 <button
-                                  className="px-2 py-1 hover:bg-gray-200 rounded"
+                                  className="px-2 py-1 hover:bg-gray-200 rounded flex items-center justify-center"
                                   onClick={() => handleQuantityChange(item, (item.quantity || 1) + 1)}
                                 >
-                                  +
+                                  <Plus size={16} />
                                 </button>
                               </div>
 
@@ -522,11 +545,23 @@ export default function CartPage() {
                     {/* Continue Shopping */}
                     <Link
                       href="/"
-                      className="flex items-center gap-2 text-green-700 hover:text-green-800 mt-6 font-semibold"
+                      className="flex items-center gap-2 text-green-700 hover:text-green-800 mt-6 font-semibold inline-flex"
                     >
                       <ArrowLeft size={18} />
                       Continue Shopping
                     </Link>
+
+                    {/* Product Suggestions */}
+                    {suggestedProducts.length > 0 && (
+                      <div className="mt-10">
+                        <h3 className="text-xl font-bold text-gray-900 mb-4">You might also like</h3>
+                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 sm:gap-6">
+                          {suggestedProducts.map(item => (
+                            <VegetableCard key={item.id} item={item} />
+                          ))}
+                        </div>
+                      </div>
+                    )}
                   </div>
 
                   {/* Order Summary Sidebar */}

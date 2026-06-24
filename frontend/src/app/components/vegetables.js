@@ -63,7 +63,7 @@ export default function Vegetables({ initialSections = [] }) {
                 }}
               >
                 {s.products.map((item) => (
-                  <SwiperSlide key={item.id} style={{ width: "auto" }}>
+                  <SwiperSlide key={item.id}>
                     <VegetableCard item={item} />
                   </SwiperSlide>
                 ))}

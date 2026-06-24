@@ -110,7 +110,7 @@ export default function ProductDetailPage() {
         <div className="grid md:grid-cols-2 gap-8 lg:gap-12 mb-16">
           <div className="relative aspect-square rounded-2xl overflow-hidden bg-gray-100 shadow-lg">
             <Image
-              src={product.image_url || "https://via.placeholder.com/600x600?text=No+Image"}
+              src={product.image_url || "/placeholder.svg"}
               alt={product.name}
               fill
               className="object-cover"
@@ -137,9 +137,25 @@ export default function ProductDetailPage() {
               <Leaf size={14} className="text-green-600" /> Fresh & Organic
             </p>
 
-            <div className="text-3xl sm:text-4xl font-extrabold text-green-700 my-4">
-              ₹{Number(product.price).toFixed(2)}
-              <span className="text-lg font-semibold text-gray-400 ml-1">/{product.unit?.name || 'kg'}</span>
+            <div className="my-4">
+              <div className="flex items-center gap-3">
+                <span className="text-3xl sm:text-4xl font-extrabold text-green-700">
+                  ₹{Number(product.price).toFixed(2)}
+                </span>
+                {Number(product.mrp) > Number(product.price) && (
+                  <>
+                    <span className="text-xl text-gray-400 line-through font-semibold">
+                      ₹{Number(product.mrp).toFixed(2)}
+                    </span>
+                    {Number(product.discount_percentage) > 0 && (
+                      <span className="bg-[#2470f1] text-white text-xs font-bold px-2 py-1 rounded-md">
+                        {product.discount_percentage}% OFF
+                      </span>
+                    )}
+                  </>
+                )}
+              </div>
+              <span className="text-lg font-semibold text-gray-400">/{product.unit?.name || 'kg'}</span>
             </div>
 
             {Number(product.tax_percentage) > 0 && (
