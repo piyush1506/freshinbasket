@@ -481,3 +481,40 @@ class WishlistItemSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         validated_data['user'] = self.context['request'].user
         return super().create(validated_data)
+
+
+class DeliveryRegisterSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = ('phone_number', 'username', 'email')
+        extra_kwargs = {
+            'phone_number': {'required': True},
+            'username': {'required': True},
+            'email': {'required': False, 'allow_blank': True, 'allow_null': True},
+        }
+
+    def validate_email(self, value):
+        if not value:
+            return value
+        value = value.strip().lower()
+        if User.objects.filter(email=value).exists():
+            raise serializers.ValidationError('A user with this email already exists.')
+        return value
+
+    def validate_phone_number(self, value):
+        if User.objects.filter(phone_number=value).exists():
+            raise serializers.ValidationError('A user with this phone number already exists.')
+        return value
+
+    def create(self, validated_data):
+        user = User(
+            username=validated_data['username'],
+            email=validated_data.get('email'),
+            phone_number=validated_data['phone_number'],
+            role=User.Role.DELIVERY,
+        )
+        user.set_unusable_password()
+        user.save()
+        from users.models import DeliveryProfile
+        DeliveryProfile.objects.get_or_create(user=user, defaults={'is_active': True})
+        return user

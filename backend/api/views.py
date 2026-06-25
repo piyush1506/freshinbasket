@@ -473,6 +473,22 @@ class OrderViewSet(viewsets.ModelViewSet):
     def perform_create(self, serializer):
         serializer.save(customer=self.request.user)
 
+    @action(detail=True, methods=['POST'], permission_classes=[permissions.IsAuthenticated])
+    def cancel(self, request, pk=None):
+        order = self.get_object()
+        
+        # Only allow cancellation if the order is not yet out for delivery
+        if order.status in [Order.Status.OUT_FOR_DELIVERY, Order.Status.DELIVERED, Order.Status.CANCELLED]:
+            return Response(
+                {'error': 'Cannot cancel this order. It is already processed, out for delivery, or cancelled.'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+            
+        order.status = Order.Status.CANCELLED
+        order.save(update_fields=['status'])
+        
+        return Response({'message': 'Order cancelled successfully', 'status': order.status})
+
 
 class DeliveryAssignmentViewSet(viewsets.ModelViewSet):
     serializer_class = DeliveryAssignmentSerializer
@@ -741,4 +757,27 @@ class VerifyOTPView(APIView):
             'user': UserSerializer(user).data,
             'is_new_user': created
         })
+
+from .serializers import DeliveryRegisterSerializer
+
+class DeliveryRegisterView(mixins.CreateModelMixin, viewsets.GenericViewSet):
+    queryset = User.objects.all()
+    serializer_class = DeliveryRegisterSerializer
+    permission_classes = [permissions.AllowAny]
+    throttle_classes = [RegisterRateThrottle]
+
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        user = serializer.save()
+        refresh = RefreshToken.for_user(user)
+        logger.info(
+            'Delivery Register success email=%s ip=%s',
+            user.email, request.META.get('REMOTE_ADDR')
+        )
+        return Response({
+            'refresh': str(refresh),
+            'access': str(refresh.access_token),
+            'user': UserSerializer(user).data
+        }, status=status.HTTP_201_CREATED)
 

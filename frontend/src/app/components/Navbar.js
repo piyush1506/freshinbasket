@@ -345,6 +345,9 @@ export default function Navbar({ item }) {
                                     </Link>
                                 </li>
                                 <li className="px-2">
+                                    <Link href="/order" className="block px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50 rounded-lg">My Orders</Link>
+                                </li>
+                                <li className="px-2">
                                     <Link href="/contact" className="block px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50 rounded-lg">Contact Us</Link>
                                 </li>
                                 {user ? (

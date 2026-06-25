@@ -58,11 +58,11 @@ INSTALLED_APPS = [
     'corsheaders',
     'cloudinary_storage',
     'cloudinary',
+    'django_celery_beat',
     'users',
     'orders',
     'api',
     'store.apps.StoreConfig',
-    'leaflet',
 ]
 
 MIDDLEWARE = [
@@ -81,7 +81,7 @@ ROOT_URLCONF = 'greenmart_core.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
+        'DIRS': [BASE_DIR / 'templates'],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -331,6 +331,29 @@ LOGGING = {
 }
 
 # =============================================================================
+# ADMIN (JAZZMIN) SETTINGS
+# =============================================================================
+JAZZMIN_SETTINGS = {
+    "site_title": "Freshinbasket Admin",
+    "site_header": "Freshinbasket",
+    "site_brand": "Freshinbasket",
+    "custom_links": {
+        "orders": [{
+            "name": "Delivery Map Dashboard", 
+            "url": "admin_delivery_dashboard", 
+            "icon": "fas fa-map-marked-alt",
+        }]
+    }
+}
+
+# =============================================================================
 # DEFAULT AUTO FIELD
 # =============================================================================
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+# =============================================================================
+# CELERY
+# =============================================================================
+CELERY_BROKER_URL = os.getenv('REDIS_URL', 'redis://localhost:6379/0')
+CELERY_RESULT_BACKEND = os.getenv('REDIS_URL', 'redis://localhost:6379/0')
+CELERY_TIMEZONE = TIME_ZONE

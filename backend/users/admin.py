@@ -1,6 +1,6 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
-from .models import User
+from .models import User, DeliveryProfile
 
 @admin.register(User)
 class CustomUserAdmin(UserAdmin):
@@ -11,3 +11,9 @@ class CustomUserAdmin(UserAdmin):
     add_fieldsets = UserAdmin.add_fieldsets + (
         ('Extra Fields', {'fields': ('role', 'phone_number', 'address')}),
     )
+
+class DeliveryProfileInline(admin.StackedInline):
+    model = DeliveryProfile
+    can_delete = False
+
+CustomUserAdmin.inlines = [DeliveryProfileInline]

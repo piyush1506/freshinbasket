@@ -7,7 +7,7 @@ from .views import (
     OrderViewSet, DeliveryAssignmentViewSet,
     CartViewSet, LoginView, RegisterView, LogoutView, ContactView,
     upload_image, HomeApiView, StoreSettingsView, ReviewViewSet,
-    WishlistViewSet, SendOTPView, VerifyOTPView
+    WishlistViewSet, SendOTPView, VerifyOTPView, DeliveryRegisterView
 )
 from orders.views import CreateRazorpayOrderView, VerifyPaymentView, CreateCODOrderView
 from orders.delivery_views import (
@@ -40,6 +40,7 @@ urlpatterns = [
     # JWT Auth
     path('auth/login/', LoginView.as_view({'post': 'login'}), name='login'),
     path('auth/register/', RegisterView.as_view({'post': 'create'}), name='register'),
+    path('auth/delivery-register/', DeliveryRegisterView.as_view({'post': 'create'}), name='delivery_register'),
     path('auth/logout/', LogoutView.as_view(), name='logout'),
     path('auth/token/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
     path('auth/refresh/', TokenRefreshView.as_view(), name='token_refresh'),

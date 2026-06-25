@@ -1,7 +1,7 @@
 from django.contrib import admin
 from django.utils.html import format_html
 from django.db.models import Q
-from .models import Order, OrderItem, Cart, CartItem, DeliveryAssignment, Review
+from .models import Order, OrderItem, Cart, CartItem, DeliveryAssignment, Review, DeliveryCluster
 
 
 class OrderItemInline(admin.TabularInline):
@@ -183,3 +183,22 @@ class ReviewAdmin(admin.ModelAdmin):
     list_filter = ('rating', 'created_at')
     search_fields = ('user__username', 'user__email', 'order__order_number')
     ordering = ('-created_at',)
+
+@admin.register(DeliveryCluster)
+class DeliveryClusterAdmin(admin.ModelAdmin):
+    list_display = ('cluster_number', 'delivery_slot', 'assignment_date', 'assigned_delivery_boy')
+    list_filter = ('delivery_slot', 'assignment_date')
+
+@admin.register(DeliveryAssignment)
+class DeliveryAssignmentAdmin(admin.ModelAdmin):
+    list_display = ('id', 'order', 'delivery_boy', 'cluster', 'assigned_at', 'delivered_at')
+    list_filter = ('assigned_at', 'delivered_at', 'delivery_boy')
+    search_fields = ('order__order_number', 'delivery_boy__username')
+
+    def formfield_for_foreignkey(self, db_field, request, **kwargs):
+        """Restrict delivery_boy dropdown to only DELIVERY role users."""
+        if db_field.name == "delivery_boy":
+            from django.contrib.auth import get_user_model
+            User = get_user_model()
+            kwargs["queryset"] = User.objects.filter(role='DELIVERY')
+        return super().formfield_for_foreignkey(db_field, request, **kwargs)

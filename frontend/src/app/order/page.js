@@ -7,7 +7,7 @@ import ChangeAddressModal from "../components/ChangeAddressModal";
 import OrderDetailModal from "../components/OrderDetailModal";
 import ReviewModal from "../components/ReviewModal";
 import { getAccessToken } from "@/lib/auth";
-import { ArrowLeft, Truck, CheckCircle2, RotateCcw, Star, ChevronDown, SlidersHorizontal, MapPin } from "lucide-react";
+import { ArrowLeft, Truck, CheckCircle2, RotateCcw, Star, ChevronDown, SlidersHorizontal, MapPin, XCircle } from "lucide-react";
 import { useCart } from "../context/CartContext";
 import { useRouter } from "next/navigation";
 import toast from "react-hot-toast";
@@ -146,6 +146,35 @@ export default function OrdersPage() {
         } catch (error) {
             console.error("Failed to reorder:", error);
             toast.error("Failed to reorder items.");
+        }
+    };
+
+    const handleCancelOrder = async (orderId) => {
+        if (!window.confirm("Are you sure you want to cancel this order?")) return;
+        
+        try {
+            const token = getAccessToken();
+            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/orders/${orderId}/cancel/`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+            
+            if (res.ok) {
+                const data = await res.json();
+                toast.success("Order cancelled successfully");
+                setOrders(prevOrders => prevOrders.map(order => 
+                    order.id === orderId ? { ...order, status: data.status || "CANCELLED" } : order
+                ));
+            } else {
+                let errData;
+                try { errData = await res.json(); } catch(e){}
+                toast.error(errData?.error || "Failed to cancel order.");
+            }
+        } catch (error) {
+            console.error("Error cancelling order:", error);
+            toast.error("Error cancelling order.");
         }
     };
 
@@ -331,6 +360,7 @@ export default function OrdersPage() {
                                                             >
                                                                 Details
                                                             </button>
+                                                            {/* Removed Cancel button from list, moved to Details modal */}
                                                         </div>
                                                     </div>
                                                 </div>
@@ -382,6 +412,10 @@ export default function OrdersPage() {
                     setIsDetailModalOpen(false);
                     setSelectedOrderForReview(order);
                     setIsReviewModalOpen(true);
+                }}
+                onCancelClick={(orderId) => {
+                    setIsDetailModalOpen(false);
+                    handleCancelOrder(orderId);
                 }}
             />
 

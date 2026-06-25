@@ -18,7 +18,7 @@ const statusColors = {
   CANCELLED: "bg-red-100 text-red-700",
 };
 
-export default function OrderDetailModal({ isOpen, onClose, order, onReviewClick }) {
+export default function OrderDetailModal({ isOpen, onClose, order, onReviewClick, onCancelClick }) {
   if (!isOpen || !order) return null;
 
   const review = order.review;
@@ -30,9 +30,19 @@ export default function OrderDetailModal({ isOpen, onClose, order, onReviewClick
           <h2 className="text-xl font-bold text-gray-900">
             Order {order.order_number ? `#${order.order_number}` : `#${order.id}`}
           </h2>
-          <button onClick={onClose} className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition-colors">
-            <X size={20} />
-          </button>
+          <div className="flex items-center gap-3">
+            {["PENDING", "CONFIRMED"].includes(order.status) && (
+              <button
+                onClick={() => onCancelClick?.(order.id)}
+                className="flex items-center gap-1.5 px-3 py-1.5 border border-red-200 bg-red-50 text-sm font-semibold text-red-600 rounded-lg hover:bg-red-100 transition-colors"
+              >
+                Cancel
+              </button>
+            )}
+            <button onClick={onClose} className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition-colors">
+              <X size={20} />
+            </button>
+          </div>
         </div>
 
         <div className="p-6 space-y-6">
@@ -157,6 +167,8 @@ export default function OrderDetailModal({ isOpen, onClose, order, onReviewClick
               )}
             </div>
           )}
+
+
         </div>
       </div>
     </div>

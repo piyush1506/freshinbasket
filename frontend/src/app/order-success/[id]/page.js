@@ -36,7 +36,7 @@ export default function OrderSuccessPage() {
 
     // Redirect separately after 5 seconds
     const redirect = setTimeout(() => {
-      router.push("/orders");
+      router.push("/order");
     }, 5000);
 
     return () => {
@@ -81,7 +81,7 @@ export default function OrderSuccessPage() {
           </div>
           
           <button 
-            onClick={() => router.push("/orders")}
+            onClick={() => router.push("/order")}
             className="mt-6 w-full bg-gray-100 hover:bg-gray-200 text-gray-800 font-semibold py-3 rounded-xl transition-colors"
           >
             View Orders Now

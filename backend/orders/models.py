@@ -146,6 +146,27 @@ class OrderItem(models.Model):
       
 
 # =========================
+# DELIVERY CLUSTER
+# =========================
+class DeliveryCluster(models.Model):
+    assignment_date = models.DateField(auto_now_add=True)
+    delivery_slot = models.CharField(max_length=20)
+    cluster_number = models.PositiveIntegerField()
+    center_latitude = models.DecimalField(max_digits=10, decimal_places=6)
+    center_longitude = models.DecimalField(max_digits=10, decimal_places=6)
+    assigned_delivery_boy = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        related_name='assigned_clusters',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True
+    )
+
+    def __str__(self):
+        return f"Cluster {self.cluster_number} - {self.delivery_slot}"
+
+
+# =========================
 # DELIVERY ASSIGNMENT
 # =========================
 class DeliveryAssignment(models.Model):
@@ -159,6 +180,14 @@ class DeliveryAssignment(models.Model):
         settings.AUTH_USER_MODEL,
         related_name='assignments',
         on_delete=models.CASCADE
+    )
+
+    cluster = models.ForeignKey(
+        DeliveryCluster,
+        related_name='assignments',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True
     )
 
     assigned_at = models.DateTimeField(auto_now_add=True)

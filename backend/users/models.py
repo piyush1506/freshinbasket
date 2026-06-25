@@ -67,3 +67,22 @@ class OTPVerification(models.Model):
 
     def __str__(self):
         return f"{self.phone_number} - {self.otp_code}"
+
+
+class DeliveryProfile(models.Model):
+    user = models.OneToOneField(
+        User,
+        on_delete=models.CASCADE,
+        related_name='delivery_profile'
+    )
+    is_active = models.BooleanField(default=True)
+    max_orders = models.PositiveIntegerField(default=40)
+    current_latitude = models.DecimalField(
+        max_digits=10, decimal_places=6, null=True, blank=True
+    )
+    current_longitude = models.DecimalField(
+        max_digits=10, decimal_places=6, null=True, blank=True
+    )
+
+    def __str__(self):
+        return f"Profile for {self.user.username or self.user.phone_number}"
