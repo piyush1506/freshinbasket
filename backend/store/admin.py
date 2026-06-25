@@ -154,7 +154,22 @@ class SlideAdmin(admin.ModelAdmin):
         return "No Image"
     image_preview.short_description = 'Image'
 
-from .models import StoreSettings
+from .models import StoreSettings, SubProduct
+
+@admin.register(SubProduct)
+class SubProductAdmin(admin.ModelAdmin):
+    list_display = ('name', 'product', 'price', 'mrp', 'discount_display', 'stock', 'unit')
+    list_editable = ('price', 'mrp', 'stock')
+    list_filter = ('product', 'unit')
+    search_fields = ('name', 'product__name')
+    readonly_fields = ('created_at',)
+
+    def discount_display(self, obj):
+        if obj.discount_percentage > 0:
+            return f'{obj.discount_percentage}% OFF'
+        return '-'
+    discount_display.short_description = 'Discount'
+
 
 @admin.register(StoreSettings)
 class StoreSettingsAdmin(admin.ModelAdmin):

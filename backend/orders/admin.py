@@ -17,9 +17,16 @@ class OrderItemInline(admin.TabularInline):
 
 class DeliveryAssignmentInline(admin.StackedInline):
     model = DeliveryAssignment
-    extra = 1          # Shows one blank row so admin can assign quickly
+    extra = 1
+    max_num = 1
     can_delete = True
     readonly_fields = ('assigned_at', 'delivered_at')
+
+    def get_extra(self, request, obj=None, **kwargs):
+        """Show extra form only if order has no assignment yet."""
+        if obj and hasattr(obj, 'delivery_assignment'):
+            return 0
+        return self.extra
 
     def formfield_for_foreignkey(self, db_field, request, **kwargs):
         """Restrict delivery_boy dropdown to only DELIVERY role users."""

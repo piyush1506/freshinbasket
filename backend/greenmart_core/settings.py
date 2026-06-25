@@ -62,6 +62,7 @@ INSTALLED_APPS = [
     'orders',
     'api',
     'store.apps.StoreConfig',
+    'leaflet',
 ]
 
 MIDDLEWARE = [

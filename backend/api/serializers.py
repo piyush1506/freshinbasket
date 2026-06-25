@@ -1,7 +1,7 @@
 import cloudinary.uploader
 from rest_framework import serializers
 from users.models import User
-from store.models import Category, Product, Slide, ContactQuery, Unit, WishlistItem
+from store.models import Category, Product, Slide, ContactQuery, Unit, WishlistItem, SubProduct
 from orders.models import Order, OrderItem, DeliveryAssignment, Cart, CartItem, Review
 from django.contrib.auth import authenticate
 from django.contrib.auth.password_validation import validate_password as django_validate_password
@@ -119,9 +119,9 @@ def get_transformed_cloudinary_url(url, width=None):
             # q_auto,f_auto: Automatic quality and format
             # e_sharpen:60: Increases clarity of edges (essential for upscaling)
             # e_improve: AI-based color and contrast enhancement
-            transformation = "q_auto,f_auto,e_sharpen:60,e_improve"
+            transformation = "q_auto:best,f_auto,e_sharpen:60,e_improve"
             if width:
-                transformation = f"c_scale,w_{width},{transformation}"
+                transformation = f"c_limit,w_{width},{transformation}"
             return f"{parts[0]}/upload/{transformation}/{parts[1]}"
     
     return url
@@ -146,6 +146,27 @@ class UnitSerializer(serializers.ModelSerializer):
         fields = ('id', 'name', 'slug')
 
 
+class SubProductSerializer(serializers.ModelSerializer):
+    image_url = serializers.SerializerMethodField()
+    unit = UnitSerializer(read_only=True)
+    discount_amount = serializers.ReadOnlyField()
+    discount_percentage = serializers.ReadOnlyField()
+
+    class Meta:
+        model = SubProduct
+        fields = (
+            'id', 'name', 'price', 'mrp', 'stock', 'image_url', 'unit',
+            'description', 'discount_amount', 'discount_percentage', 'created_at',
+        )
+
+    def get_image_url(self, obj):
+        if obj.image_url and hasattr(obj.image_url, 'url'):
+            url = obj.image_url.url
+        else:
+            url = obj.image_url
+        return get_transformed_cloudinary_url(url, width=400)
+
+
 class ProductSerializer(serializers.ModelSerializer):
     category_names = serializers.SerializerMethodField()
     image = serializers.ImageField(write_only=True, required=False)
@@ -156,16 +177,17 @@ class ProductSerializer(serializers.ModelSerializer):
     )
     discount_amount = serializers.ReadOnlyField()
     discount_percentage = serializers.ReadOnlyField()
+    subproducts = SubProductSerializer(many=True, read_only=True)
 
     class Meta:
         model = Product
         fields = (
-            'id', 'name', 'slug', 'description', 'price', 'stock','mrp',
+            'id', 'name', 'slug', 'description', 'price', 'stock', 'mrp',
             'tax_percentage',
             'discount_percentage', 'discount_amount',
             'unit', 'unit_id',
             'image', 'image_url', 'created_at', 'updated_at',
-            'categories', 'category_names',
+            'categories', 'category_names', 'subproducts',
         )
 
     def get_image_url(self, obj):
@@ -174,7 +196,7 @@ class ProductSerializer(serializers.ModelSerializer):
         else:
             url = obj.image_url
         
-        return get_transformed_cloudinary_url(url, width=800)
+        return get_transformed_cloudinary_url(url, width=1200)
 
     def get_category_names(self, obj):
         return [c.name for c in obj.categories.all()]

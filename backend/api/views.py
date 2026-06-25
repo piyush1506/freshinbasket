@@ -12,7 +12,7 @@ from django.views.decorators.cache import cache_page
 from django.utils.decorators import method_decorator
 from django.db.models import Prefetch, F, Q, Case, When, Value, IntegerField
 from rest_framework.exceptions import ValidationError
-from store.models import Category, Product, Slide, ContactQuery, WishlistItem
+from store.models import Category, Product, Slide, ContactQuery, WishlistItem, SubProduct
 from orders.models import Order, DeliveryAssignment, Cart, CartItem, Review
 from users.models import OTPVerification
 import random
@@ -335,7 +335,10 @@ class ProductViewSet(viewsets.ModelViewSet):
     throttle_classes = [SearchRateThrottle]
 
     def get_queryset(self):
-        qs = Product.objects.select_related('unit').prefetch_related('categories').defer('description')
+        qs = Product.objects.select_related('unit').prefetch_related(
+            'categories',
+            Prefetch('subproducts', queryset=SubProduct.objects.select_related('unit'))
+        ).defer('description')
         category_slug = self.request.query_params.get('category')
         if category_slug:
             qs = qs.filter(categories__slug=category_slug)

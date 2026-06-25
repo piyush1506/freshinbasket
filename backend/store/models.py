@@ -147,6 +147,38 @@ class WishlistItem(models.Model):
         return f"{self.user.email} - {self.product.name}"
 
 
+class SubProduct(models.Model):
+    product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='subproducts')
+    name = models.CharField(max_length=200)
+    price = models.DecimalField(max_digits=10, decimal_places=2)
+    mrp = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    stock = models.PositiveIntegerField(default=0)
+    image_url = models.ImageField(upload_to='subproducts/', blank=True, null=True)
+    unit = models.ForeignKey(Unit, on_delete=models.SET_NULL, null=True, blank=True)
+    description = models.TextField(blank=True, default='')
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.product.name} - {self.name}"
+
+    @property
+    def discount_amount(self):
+        if self.mrp and self.mrp > self.price:
+            return self.mrp - self.price
+        return 0
+
+    @property
+    def discount_percentage(self):
+        if self.mrp and self.mrp > self.price:
+            return round(((self.mrp - self.price) / self.mrp) * 100)
+        return 0
+
+    class Meta:
+        ordering = ['created_at']
+        verbose_name = 'Sub Product'
+        verbose_name_plural = 'Sub Products'
+
+
 class StoreSettings(models.Model):
     free_delivery_threshold = models.DecimalField(
         max_digits=10, decimal_places=2, default=100.00,

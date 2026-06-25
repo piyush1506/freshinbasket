@@ -6,7 +6,7 @@ import Link from "next/link";
 import Navbar from "../../components/Navbar";
 import VegetableCard from "../../components/VegetableCard";
 import { useCart } from "../../context/CartContext";
-import { ArrowLeft, Minus, Plus, ShoppingCart, Leaf, Heart } from "lucide-react";
+import { ArrowLeft, Minus, Plus, ShoppingCart, Leaf, Heart, Check } from "lucide-react";
 import toast from "react-hot-toast";
 
 export default function ProductDetailPage() {
@@ -19,8 +19,22 @@ export default function ProductDetailPage() {
   const [loading, setLoading] = useState(true);
   const [qty, setQty] = useState(1);
   const [adding, setAdding] = useState(false);
+  const [selectedSub, setSelectedSub] = useState(null);
 
-  const cartItem = cartItems.find((c) => Number(c.id) === Number(id));
+  const active = selectedSub || product || {};
+  const hasSubs = product?.subproducts?.length > 0;
+  const activeImg = selectedSub?.image_url || active.image_url;
+  const activeName = selectedSub ? `${product.name} - ${selectedSub.name}` : active.name;
+  const activePrice = selectedSub?.price ?? active.price;
+  const activeMrp = selectedSub?.mrp ?? active.mrp;
+  const activeStock = selectedSub?.stock ?? active.stock;
+  const activeUnit = selectedSub?.unit || active.unit;
+  const activeDiscount = selectedSub?.discount_percentage ?? active.discount_percentage;
+  const activeDesc = selectedSub?.description || active.description;
+
+  const getCartKey = (subId) => subId ? `s_${id}_${subId}` : `p_${id}`;
+  const activeCartKey = getCartKey(selectedSub?.id);
+  const cartItem = cartItems.find((c) => c.cartKey === activeCartKey);
   const cartQty = cartItem ? Number(cartItem.quantity) : 0;
 
   useEffect(() => {
@@ -63,17 +77,18 @@ export default function ProductDetailPage() {
     setAdding(true);
     try {
       if (qty === 0) {
-        await removeFromCart(product.id);
+        await removeFromCart(product.id, selectedSub?.id);
         toast.success("Removed from cart");
       } else {
         const delta = cartQty > 0 ? qty - cartQty : qty;
         await addToCart({
           id: product.id,
-          name: product.name,
-          price: product.price,
-          image_url: product.image_url,
+          subProductId: selectedSub?.id,
+          name: activeName,
+          price: activePrice,
+          image_url: activeImg,
           quantity: delta,
-          unit: product.unit?.name || 'kg',
+          unit: activeUnit?.name || 'kg',
         });
         toast.success(cartQty > 0 ? "Cart updated!" : "Added to cart!");
       }
@@ -98,6 +113,7 @@ export default function ProductDetailPage() {
   if (!product) return null;
 
   const firstCategory = product.category_names?.[0];
+  const isOutOfStock = activeStock <= 0;
 
   return (
     <>
@@ -108,14 +124,59 @@ export default function ProductDetailPage() {
         </button>
 
         <div className="grid md:grid-cols-2 gap-8 lg:gap-12 mb-16">
-          <div className="relative aspect-square rounded-2xl overflow-hidden bg-gray-100 shadow-lg">
-            <Image
-              src={product.image_url || "/placeholder.svg"}
-              alt={product.name}
-              fill
-              className="object-cover"
-              sizes="(max-width: 768px) 100vw, 50vw"
-            />
+          <div>
+            <div className="relative rounded-2xl overflow-hidden bg-white border border-gray-100 shadow-lg flex items-center justify-center" style={{ minHeight: '300px', maxHeight: '500px' }}>
+              <img
+                src={activeImg || "/placeholder.svg"}
+                alt={activeName}
+                className="object-contain w-full h-full max-h-[500px]"
+                loading="eager"
+                fetchPriority="high"
+              />
+            </div>
+
+            {hasSubs && (
+              <div className="mt-4">
+                <p className="text-sm font-semibold text-gray-700 mb-3">Select Variety:</p>
+                <div className="flex gap-3 overflow-x-auto pb-2">
+                  <button
+                    onClick={() => { setSelectedSub(null); setQty(1); }}
+                    className={`flex flex-col items-center gap-1.5 p-2.5 rounded-xl border-2 transition-all shrink-0 min-w-[80px] ${
+                      !selectedSub ? "border-[#216140] bg-green-50" : "border-gray-200 hover:border-gray-300"
+                    }`}
+                  >
+                    <div className="w-12 h-12 rounded-lg overflow-hidden bg-gray-100">
+                      {product.image_url ? (
+                        <Image src={product.image_url} alt={product.name} width={48} height={48} className="object-cover w-full h-full" />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center text-gray-300"><Leaf size={20} /></div>
+                      )}
+                    </div>
+                    <span className="text-[10px] font-semibold text-gray-700 text-center leading-tight">{product.name}</span>
+                    {!selectedSub && <Check size={12} className="text-[#216140]" />}
+                  </button>
+                  {product.subproducts.map((sub) => (
+                    <button
+                      key={sub.id}
+                      onClick={() => { setSelectedSub(sub); setQty(1); }}
+                      className={`flex flex-col items-center gap-1.5 p-2.5 rounded-xl border-2 transition-all shrink-0 min-w-[80px] ${
+                        selectedSub?.id === sub.id ? "border-[#216140] bg-green-50" : "border-gray-200 hover:border-gray-300"
+                      } ${sub.stock <= 0 ? "opacity-50" : ""}`}
+                    >
+                      <div className="w-12 h-12 rounded-lg overflow-hidden bg-gray-100">
+                        {sub.image_url ? (
+                          <Image src={sub.image_url} alt={sub.name} width={48} height={48} className="object-cover w-full h-full" />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center text-gray-300"><Leaf size={20} /></div>
+                        )}
+                      </div>
+                      <span className="text-[10px] font-semibold text-gray-700 text-center leading-tight">{sub.name}</span>
+                      {selectedSub?.id === sub.id && <Check size={12} className="text-[#216140]" />}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
 
           <div className="flex flex-col justify-center">
@@ -125,14 +186,14 @@ export default function ProductDetailPage() {
                   {cat}
                 </Link>
               ))}
-              {product.stock <= 0 ? (
+              {isOutOfStock ? (
                 <span className="text-xs font-semibold text-red-600 bg-red-50 px-3 py-1 rounded-full">Out of Stock</span>
               ) : (
                 <span className="text-xs font-semibold text-green-600 bg-green-50 px-3 py-1 rounded-full">In Stock</span>
               )}
             </div>
 
-            <h1 className="text-3xl sm:text-4xl font-extrabold text-gray-900 capitalize mb-2">{product.name}</h1>
+            <h1 className="text-3xl sm:text-4xl font-extrabold text-gray-900 capitalize mb-2">{activeName}</h1>
             <p className="text-gray-500 text-sm mb-1 flex items-center gap-1.5">
               <Leaf size={14} className="text-green-600" /> Fresh & Organic
             </p>
@@ -140,22 +201,22 @@ export default function ProductDetailPage() {
             <div className="my-4">
               <div className="flex items-center gap-3">
                 <span className="text-3xl sm:text-4xl font-extrabold text-green-700">
-                  ₹{Number(product.price).toFixed(2)}
+                  ₹{Number(activePrice).toFixed(2)}
                 </span>
-                {Number(product.mrp) > Number(product.price) && (
+                {Number(activeMrp) > Number(activePrice) && (
                   <>
                     <span className="text-xl text-gray-400 line-through font-semibold">
-                      ₹{Number(product.mrp).toFixed(2)}
+                      ₹{Number(activeMrp).toFixed(2)}
                     </span>
-                    {Number(product.discount_percentage) > 0 && (
+                    {Number(activeDiscount) > 0 && (
                       <span className="bg-[#2470f1] text-white text-xs font-bold px-2 py-1 rounded-md">
-                        {product.discount_percentage}% OFF
+                        {activeDiscount}% OFF
                       </span>
                     )}
                   </>
                 )}
               </div>
-              <span className="text-lg font-semibold text-gray-400">/{product.unit?.name || 'kg'}</span>
+              <span className="text-lg font-semibold text-gray-400">/{activeUnit?.name || 'kg'}</span>
             </div>
 
             {Number(product.tax_percentage) > 0 && (
@@ -164,7 +225,7 @@ export default function ProductDetailPage() {
               </p>
             )}
 
-            <p className="text-gray-600 leading-relaxed mb-6">{product.description}</p>
+            <p className="text-gray-600 leading-relaxed mb-6">{activeDesc}</p>
 
             <div className="flex items-center gap-4 mb-6">
               <span className="text-sm font-semibold text-gray-700">Quantity:</span>
@@ -195,7 +256,7 @@ export default function ProductDetailPage() {
             <div className="flex items-center gap-3">
               <button
                 onClick={handleAddToCart}
-                disabled={product.stock <= 0 || adding}
+                disabled={isOutOfStock || adding}
                 className="flex-1 sm:flex-none bg-green-700 text-white px-8 py-3.5 rounded-xl text-base font-extrabold hover:bg-green-800 transition-colors flex items-center justify-center gap-2 disabled:bg-green-400 disabled:cursor-not-allowed shadow-lg shadow-green-700/20"
               >
                 <ShoppingCart size={20} />
@@ -216,7 +277,7 @@ export default function ProductDetailPage() {
 
             {cartQty > 0 && (
               <p className="text-sm text-gray-500 mt-3">
-                {cartQty} kg in cart — <button onClick={() => { removeFromCart(product.id); toast.success("Removed from cart"); }} className="text-red-500 hover:underline font-semibold">Remove</button>
+                {cartQty} {activeUnit?.name || 'kg'} in cart — <button onClick={() => { removeFromCart(product.id, selectedSub?.id); toast.success("Removed from cart"); }} className="text-red-500 hover:underline font-semibold">Remove</button>
               </p>
             )}
           </div>

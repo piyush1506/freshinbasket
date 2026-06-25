@@ -175,13 +175,15 @@ export function CartProvider({ children }) {
     }
   };
 
+  const getCartKey = (id, subProductId) => subProductId ? `s_${id}_${subProductId}` : `p_${id}`;
+
   const addToCart = async (product) => {
     const previousCart = cartItems;
     const quantityDelta = Number(product.quantity) || 1;
+    const cartKey = getCartKey(product.id, product.subProductId);
 
-    // Optimistic UI update
     setCartItems((prev) => {
-      const existingIndex = prev.findIndex((item) => Number(item.id) === Number(product.id));
+      const existingIndex = prev.findIndex((item) => item.cartKey === cartKey);
       if (existingIndex > -1) {
         const updated = [...prev];
         const newQty = Number(updated[existingIndex].quantity) + quantityDelta;
@@ -190,12 +192,12 @@ export function CartProvider({ children }) {
         return updated;
       }
       if (quantityDelta <= 0) return prev;
-      return [...prev, { ...product, quantity: quantityDelta, id: Number(product.id) }];
+      return [...prev, { ...product, quantity: quantityDelta, id: Number(product.id), cartKey }];
     });
 
     let token = typeof window !== "undefined" ? getAccessToken() : null;
     if (token) {
-      setLoadingItems((prev) => ({ ...prev, [product.id]: true }));
+      setLoadingItems((prev) => ({ ...prev, [cartKey]: true }));
       try {
         let res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/cart/add_item/`, {
           method: 'POST',
@@ -203,27 +205,32 @@ export function CartProvider({ children }) {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${token}`
           },
-          body: JSON.stringify({ product_id: product.id, quantity: quantityDelta })
+          body: JSON.stringify({
+            product_id: product.id,
+            sub_product_id: product.subProductId || null,
+            quantity: quantityDelta,
+          })
         });
 
-        // Handle expired token
         if (res.status === 401) {
           const { refreshAccessToken, clearAuth } = await import("@/lib/auth");
           const newToken = await refreshAccessToken();
           if (newToken) {
-            // Retry with new token
             res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/cart/add_item/`, {
               method: 'POST',
               headers: {
                 'Content-Type': 'application/json',
                 'Authorization': `Bearer ${newToken}`
               },
-              body: JSON.stringify({ product_id: product.id, quantity: quantityDelta })
+              body: JSON.stringify({
+                product_id: product.id,
+                sub_product_id: product.subProductId || null,
+                quantity: quantityDelta,
+              })
             });
           } else {
             clearAuth();
             setUser(null);
-            // After clearing auth, the cart is now a guest cart, so we're done
             return;
           }
         }
@@ -233,7 +240,6 @@ export function CartProvider({ children }) {
           setCartItems(formatCartItems(updatedCartData));
           setBackendTotals(updatedCartData);
         } else {
-          // If still not OK, we don't throw but we log and rollback
           console.error("Server cart update failed", res.status);
           setCartItems(previousCart);
         }
@@ -241,14 +247,15 @@ export function CartProvider({ children }) {
         console.error("Failed to add item", e);
         setCartItems(previousCart);
       } finally {
-        setLoadingItems((prev) => ({ ...prev, [product.id]: false }));
+        setLoadingItems((prev) => ({ ...prev, [cartKey]: false }));
       }
     }
   };
 
-  const removeFromCart = async (id) => {
+  const removeFromCart = async (id, subProductId) => {
+    const cartKey = getCartKey(id, subProductId);
     const previousCart = cartItems;
-    setCartItems((prev) => prev.filter((item) => Number(item.id) !== Number(id)));
+    setCartItems((prev) => prev.filter((item) => item.cartKey !== cartKey));
 
     let token = typeof window !== "undefined" ? getAccessToken() : null;
     if (token) {
@@ -259,7 +266,7 @@ export function CartProvider({ children }) {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${token}`
           },
-          body: JSON.stringify({ product_id: id })
+          body: JSON.stringify({ product_id: id, sub_product_id: subProductId || null })
         });
 
         if (res.status === 401) {
@@ -272,7 +279,7 @@ export function CartProvider({ children }) {
                 'Content-Type': 'application/json',
                 'Authorization': `Bearer ${newToken}`
               },
-              body: JSON.stringify({ product_id: id })
+              body: JSON.stringify({ product_id: id, sub_product_id: subProductId || null })
             });
           } else {
             clearAuth();
