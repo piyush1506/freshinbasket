@@ -171,7 +171,7 @@ function ProductRow({ product, uploadingId, onUpload }) {
         <span className="text-sm text-gray-500">{(product.category_names || []).join(", ") || "—"}</span>
       </td>
       <td className="px-5 py-4">
-        <span className="text-sm font-medium text-gray-900">${product.price}</span>
+        <span className="text-sm font-medium text-gray-900">₹{product.price}</span>
       </td>
       <td className="px-5 py-4">
         <div className="w-16 h-16 rounded-xl bg-gray-100 border border-gray-200 overflow-hidden flex items-center justify-center">

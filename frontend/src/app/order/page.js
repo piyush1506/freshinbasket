@@ -328,7 +328,7 @@ export default function OrdersPage() {
                                                     <div className="flex flex-wrap items-center justify-between mt-6 pt-4 border-t border-gray-100 gap-4">
                                                         <div>
                                                             <div className="text-[11px] text-gray-400 uppercase tracking-widest">Total</div>
-                                                            <div className="text-xl font-bold text-gray-900">${order.total_amount}</div>
+                                                            <div className="text-xl font-bold text-gray-900">₹{order.total_amount}</div>
                                                         </div>
 
                                                         <div className="flex flex-wrap gap-2">
