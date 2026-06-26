@@ -10,6 +10,7 @@ from .views import (
     WishlistViewSet, SendOTPView, VerifyOTPView, DeliveryRegisterView
 )
 from orders.views import CreateRazorpayOrderView, VerifyPaymentView, CreateCODOrderView
+from .import_views import ProductImportView, ProductTemplateDownloadView
 from orders.delivery_views import (
     DeliveryDashboardView,
     DeliveryAssignedOrdersView,
@@ -70,6 +71,10 @@ urlpatterns = [
 
     # Image Upload
     path('upload/', upload_image, name='upload_image'),
+
+    # Excel Import
+    path('import/products/', ProductImportView.as_view(), name='import_products'),
+    path('import/products/template/', ProductTemplateDownloadView.as_view(), name='import_products_template'),
 
     # Router URLs
     path('', include(router.urls)),

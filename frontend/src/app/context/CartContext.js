@@ -51,6 +51,8 @@ export function CartProvider({ children }) {
     } catch {}
   };
 
+  const getCartKey = (id, subProductId) => subProductId ? `s_${id}_${subProductId}` : `p_${id}`;
+
   const formatCartItems = (cartData) => {
     if (!cartData || !cartData.items) return [];
     return cartData.items.map((item) => ({
@@ -61,6 +63,7 @@ export function CartProvider({ children }) {
       quantity: Number(item.quantity),
       unit: item.unit || 'kg',
       tax_percentage: parseFloat(item.tax_percentage) || 0,
+      cartKey: getCartKey(Number(item.product), item.sub_product),
     }));
   };
 
@@ -175,7 +178,7 @@ export function CartProvider({ children }) {
     }
   };
 
-  const getCartKey = (id, subProductId) => subProductId ? `s_${id}_${subProductId}` : `p_${id}`;
+
 
   const addToCart = async (product) => {
     const previousCart = cartItems;
