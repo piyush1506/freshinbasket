@@ -15,12 +15,15 @@ client = razorpay.Client(auth=(settings.RAZORPAY_KEY_ID, settings.RAZORPAY_KEY_S
 
 
 def _get_delivery_slot():
-    hour = timezone.localtime(timezone.now()).hour
-    if hour >= 22:
-        return "7 AM - 10 AM"
-    if hour < 12:
-        return "7 AM - 12 PM"
-    return "4 PM - 10 PM"
+    from orders.models import DeliverySlot
+    now = timezone.localtime(timezone.now()).time()
+    slot = DeliverySlot.objects.filter(
+        is_active=True,
+        order_cutoff_time__gt=now
+    ).order_by('order_cutoff_time').first()
+    if not slot:
+        slot = DeliverySlot.objects.filter(is_active=True).order_by('order_cutoff_time').first()
+    return slot.display_label if slot else "7 AM - 12 PM"
 
 
 class CreateRazorpayOrderView(APIView):
@@ -175,20 +178,13 @@ class VerifyPaymentView(APIView):
 
                 items.delete()
 
-            from django.contrib.auth import get_user_model
-            from .models import DeliveryAssignment
-            User = get_user_model()
-            delivery_boys = User.objects.filter(role='DELIVERY')
-            if delivery_boys.count() == 1:
-                DeliveryAssignment.objects.create(
-                    order=order,
-                    delivery_boy=delivery_boys.first(),
-                    notes='Auto-assigned (only one delivery boy available).'
-                )
+            from orders.services.assignment_service import AssignmentService
+            AssignmentService.assign_realtime_order(order)
 
             return Response({
                 'message': 'Payment verified and order created successfully',
-                'order_id': order.id
+                'order_id': order.id,
+                'order_number': order.order_number,
             })
         except Cart.DoesNotExist:
             return Response({'error': 'Cart not found'}, status=404)
@@ -280,16 +276,8 @@ class CreateCODOrderView(APIView):
 
             items.delete()
 
-        from django.contrib.auth import get_user_model
-        from .models import DeliveryAssignment
-        User = get_user_model()
-        delivery_boys = User.objects.filter(role='DELIVERY')
-        if delivery_boys.count() == 1:
-            DeliveryAssignment.objects.create(
-                order=order,
-                delivery_boy=delivery_boys.first(),
-                notes='Auto-assigned (only one delivery boy available).'
-            )
+        from orders.services.assignment_service import AssignmentService
+        AssignmentService.assign_realtime_order(order)
 
         return Response({
             'message': 'COD order created successfully',

@@ -221,3 +221,89 @@ class Review(models.Model):
 
     def __str__(self):
         return f"Review for Order {self.order.order_number} - {self.rating}★"
+
+
+class DeliverySlot(models.Model):
+    name = models.CharField(max_length=50, unique=True)
+    display_label = models.CharField(
+        max_length=50,
+        help_text="e.g. '7 AM - 12 PM' — stored on orders"
+    )
+    order_cutoff_time = models.TimeField(
+        help_text="Orders placed before this time get assigned to this slot"
+    )
+    delivery_start_time = models.TimeField()
+    delivery_end_time = models.TimeField()
+    assignment_hour = models.PositiveSmallIntegerField(
+        default=6,
+        help_text="Hour (0-23) when auto-assignment runs"
+    )
+    assignment_minute = models.PositiveSmallIntegerField(
+        default=30,
+        help_text="Minute when auto-assignment runs"
+    )
+    cleanup_hour = models.PositiveSmallIntegerField(
+        default=12,
+        help_text="Hour (0-23) when cluster cleanup runs"
+    )
+    cleanup_minute = models.PositiveSmallIntegerField(
+        default=30,
+        help_text="Minute when cluster cleanup runs"
+    )
+    is_active = models.BooleanField(default=True)
+    sort_order = models.PositiveSmallIntegerField(
+        default=0,
+        help_text="Lower = processed first in order assignment"
+    )
+
+    class Meta:
+        ordering = ['sort_order', 'order_cutoff_time']
+        verbose_name = "Delivery Slot"
+        verbose_name_plural = "Delivery Slots"
+
+    def __str__(self):
+        return f"{self.name} ({self.display_label})"
+
+    def save(self, *args, **kwargs):
+        is_new = self._state.adding
+        super().save(*args, **kwargs)
+        self._sync_periodic_tasks()
+
+    def _sync_periodic_tasks(self):
+        from django_celery_beat.models import PeriodicTask, CrontabSchedule
+
+        slot_key = self.name.lower().replace(" ", "-")
+
+        assign_crontab, _ = CrontabSchedule.objects.get_or_create(
+            hour=self.assignment_hour,
+            minute=self.assignment_minute,
+            day_of_week='*',
+            day_of_month='*',
+            month_of_year='*',
+        )
+        PeriodicTask.objects.update_or_create(
+            name=f'auto-assign-{slot_key}',
+            defaults={
+                'task': 'orders.tasks.run_slot_assignment',
+                'crontab': assign_crontab,
+                'args': f'["{self.display_label}"]',
+                'enabled': self.is_active,
+            }
+        )
+
+        cleanup_crontab, _ = CrontabSchedule.objects.get_or_create(
+            hour=self.cleanup_hour,
+            minute=self.cleanup_minute,
+            day_of_week='*',
+            day_of_month='*',
+            month_of_year='*',
+        )
+        PeriodicTask.objects.update_or_create(
+            name=f'cleanup-{slot_key}',
+            defaults={
+                'task': 'orders.tasks.cleanup_slot_clusters',
+                'crontab': cleanup_crontab,
+                'args': f'["{self.display_label}"]',
+                'enabled': self.is_active,
+            }
+        )

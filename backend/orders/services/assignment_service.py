@@ -6,33 +6,45 @@ import numpy as np
 
 from users.models import User
 from orders.models import Order, DeliveryCluster, DeliveryAssignment
+from orders.utils import haversine_distance, combined_rider_score
 
 logger = logging.getLogger(__name__)
 
+
 class AssignmentService:
-    
+
+    LOAD_BALANCE_FACTOR = 5.0
+
     @staticmethod
-    def get_eligible_orders():
+    def get_eligible_orders(delivery_slot=None):
         from django.db.models import Q
-        # Confirmed, Paid OR Cash on Delivery, Has Coordinates, Not already assigned
-        return Order.objects.filter(
+        qs = Order.objects.filter(
             Q(is_paid=True) | Q(payment_method=Order.PaymentMethod.COD),
             status=Order.Status.CONFIRMED,
             delivery_latitude__isnull=False,
             delivery_longitude__isnull=False,
             delivery_assignment__isnull=True
         )
-        
+        if delivery_slot:
+            from orders.models import DeliverySlot
+            current = DeliverySlot.objects.filter(display_label=delivery_slot).first()
+            if current:
+                earlier = DeliverySlot.objects.filter(
+                    sort_order__lte=current.sort_order,
+                    is_active=True
+                ).values_list('display_label', flat=True)
+                qs = qs.filter(delivery_slot__in=list(earlier))
+            else:
+                qs = qs.filter(delivery_slot=delivery_slot)
+        return qs
+
     @staticmethod
     def get_active_riders():
-        # Primary: Get delivery boys with an active profile
         riders = User.objects.filter(
             role=User.Role.DELIVERY,
             delivery_profile__is_active=True
         ).select_related('delivery_profile')
 
-        # Fallback: If no profiled riders found, get all DELIVERY users
-        # and auto-create their profiles so the assignment can proceed
         if not riders.exists():
             all_delivery_users = User.objects.filter(role=User.Role.DELIVERY)
             from users.models import DeliveryProfile
@@ -44,43 +56,63 @@ class AssignmentService:
             ).select_related('delivery_profile')
 
         return riders
-        
+
+    @staticmethod
+    def _get_rider_distance(rider, target_lat, target_lon):
+        profile = getattr(rider, 'delivery_profile', None)
+        if profile and profile.current_latitude and profile.current_longitude:
+            return haversine_distance(
+                float(profile.current_latitude),
+                float(profile.current_longitude),
+                target_lat,
+                target_lon
+            )
+        return None
+
+    @classmethod
+    def _score_rider(cls, rider, target_lat, target_lon, load_dict):
+        dist = cls._get_rider_distance(rider, target_lat, target_lon)
+        active_load = load_dict.get(rider.id, 0)
+        max_load = rider.delivery_profile.max_orders if hasattr(rider, 'delivery_profile') and rider.delivery_profile else 40
+        return combined_rider_score(dist, active_load, max_load, cls.LOAD_BALANCE_FACTOR)
+
+    @classmethod
+    def _pick_best_rider(cls, rider_list, target_lat, target_lon, load_dict, exclude=None):
+        candidates = [r for r in rider_list if r.id != exclude]
+        if not candidates:
+            return None
+        return min(candidates, key=lambda r: cls._score_rider(r, target_lat, target_lon, load_dict))
+
     @classmethod
     @transaction.atomic
     def run_assignment(cls, delivery_slot):
-        orders = cls.get_eligible_orders()
+        orders = cls.get_eligible_orders(delivery_slot)
         riders = cls.get_active_riders()
-        
+
         if not orders.exists():
             return {"status": "success", "message": "No eligible orders to assign."}
-            
+
         if not riders.exists():
             return {"status": "error", "message": "No active riders available."}
-            
+
         k = riders.count()
         order_list = list(orders)
-        
-        # Prepare coordinates
+
         coords = np.array([
-            [float(order.delivery_latitude), float(order.delivery_longitude)] 
+            [float(order.delivery_latitude), float(order.delivery_longitude)]
             for order in order_list
         ])
-        
-        # Run KMeans
+
         n_clusters = min(k, len(order_list))
         kmeans = KMeans(n_clusters=n_clusters, random_state=42, n_init='auto')
         kmeans.fit(coords)
-        
+
         labels = kmeans.labels_
         centers = kmeans.cluster_centers_
-        
-        # Distribute clusters to riders
+
         rider_list = list(riders)
-        
         assignments_created = 0
 
-        # Pre-count current active assignments per rider for fair load balancing
-        from django.db.models import Count
         rider_load = {
             r.id: DeliveryAssignment.objects.filter(
                 delivery_boy=r, delivered_at__isnull=True
@@ -91,27 +123,8 @@ class AssignmentService:
         for cluster_idx in range(len(centers)):
             center_lat, center_lon = centers[cluster_idx]
 
-            from orders.utils import haversine_distance
+            rider = cls._pick_best_rider(rider_list, center_lat, center_lon, rider_load)
 
-            def get_rider_score(r):
-                profile = getattr(r, 'delivery_profile', None)
-                if profile and profile.current_latitude and profile.current_longitude:
-                    # Rider has coordinates: primary sort by distance, secondary by load
-                    dist = haversine_distance(
-                        float(profile.current_latitude),
-                        float(profile.current_longitude),
-                        center_lat,
-                        center_lon
-                    )
-                    return (0, dist, rider_load.get(r.id, 0))
-                else:
-                    # No coordinates: push to bottom priority, but sort by load among themselves
-                    return (1, 0, rider_load.get(r.id, 0))
-
-            # Pick the nearest rider (or least loaded if coordinates are missing)
-            rider = min(rider_list, key=get_rider_score)
-            
-            # Create cluster record
             cluster_record = DeliveryCluster.objects.create(
                 delivery_slot=delivery_slot,
                 cluster_number=cluster_idx + 1,
@@ -119,42 +132,27 @@ class AssignmentService:
                 center_longitude=center_lon,
                 assigned_delivery_boy=rider
             )
-            
-            # Assign orders in this cluster
+
             cluster_orders = [order_list[i] for i in range(len(order_list)) if labels[i] == cluster_idx]
-            
+
             for order in cluster_orders:
-                # Capacity check
-                current_assigned_count = DeliveryAssignment.objects.filter(
-                    delivery_boy=rider, 
-                    delivered_at__isnull=True
-                ).count()
-                
-                current_assigned_count = rider_load[rider.id]
-                max_orders = rider.delivery_profile.max_orders if hasattr(rider, 'delivery_profile') else 40
-                
-                if current_assigned_count >= max_orders:
-                    # Rider full, fallback to next available rider
-                    fallback_rider = None
-                    for r in rider_list:
-                        r_count = DeliveryAssignment.objects.filter(
-                            delivery_boy=r, delivered_at__isnull=True
-                        ).count()
-                        r_max = r.delivery_profile.max_orders if hasattr(r, 'delivery_profile') else 40
-                        if r_count < r_max:
-                            fallback_rider = r
-                            break
-                            
-                    if fallback_rider:
-                        assignee = fallback_rider
-                        # Also update the fallback rider's load in our dict
-                        rider_load[fallback_rider.id] += 1
+                max_orders = rider.delivery_profile.max_orders if hasattr(rider, 'delivery_profile') and rider.delivery_profile else 40
+
+                if rider_load[rider.id] >= max_orders:
+                    fallback = cls._pick_best_rider(
+                        rider_list, center_lat, center_lon, rider_load,
+                        exclude=rider.id
+                    )
+                    if fallback and rider_load.get(fallback.id, 0) < (
+                        fallback.delivery_profile.max_orders if hasattr(fallback, 'delivery_profile') and fallback.delivery_profile else 40
+                    ):
+                        assignee = fallback
+                        rider_load[fallback.id] += 1
                     else:
-                        logger.warning(f"All riders are at maximum capacity! Cannot assign order {order.id}")
+                        logger.warning(f"All riders at capacity! Cannot assign order {order.id}")
                         continue
                 else:
                     assignee = rider
-                    # Increment the primary rider's load
                     rider_load[rider.id] += 1
 
                 DeliveryAssignment.objects.create(
@@ -166,50 +164,88 @@ class AssignmentService:
                 order.status = Order.Status.OUT_FOR_DELIVERY
                 order.save(update_fields=['status'])
                 assignments_created += 1
-                
+
         return {
-            "status": "success", 
+            "status": "success",
             "message": f"Successfully created {assignments_created} assignments across {len(centers)} clusters."
         }
-        
+
+    @staticmethod
+    @transaction.atomic
+    def cleanup_clusters_by_slot(delivery_slot):
+        today = timezone.now().date()
+        all_clusters = DeliveryCluster.objects.filter(
+            assignment_date=today,
+            delivery_slot=delivery_slot
+        )
+        total = all_clusters.count()
+        deleted = 0
+        skipped = 0
+        for cluster in all_clusters:
+            has_active = cluster.assignments.filter(delivered_at__isnull=True).exists()
+            if has_active:
+                skipped += 1
+            else:
+                cluster.delete()
+                deleted += 1
+        logger.info(f"Cleaned up {deleted} clusters for slot '{delivery_slot}' ({skipped} skipped — active orders)")
+        return {"status": "success", "message": f"Cleaned up {deleted} clusters, {skipped} skipped (active orders pending)"}
+
     @classmethod
     @transaction.atomic
     def assign_realtime_order(cls, order):
         if order.status != Order.Status.CONFIRMED or not (order.is_paid or order.payment_method == Order.PaymentMethod.COD):
             return {"status": "error", "message": "Order not eligible"}
-            
+
         if not order.delivery_latitude or not order.delivery_longitude:
             return {"status": "error", "message": "Order missing coordinates"}
-            
-        today = timezone.now().date()
-        clusters = DeliveryCluster.objects.filter(assignment_date=today)
-        
-        if not clusters.exists():
-            return {"status": "error", "message": "No clusters available for today. Run batch assignment first."}
-            
-        # Find nearest cluster center
-        min_dist = float('inf')
-        nearest_cluster = None
-        
+
         order_lat = float(order.delivery_latitude)
         order_lon = float(order.delivery_longitude)
-        
+        slot = order.delivery_slot
+        today = timezone.now().date()
+
+        riders = cls.get_active_riders()
+        if not riders.exists():
+            return {"status": "error", "message": "No active riders available"}
+
+        rider_list = list(riders)
+        rider_load = {
+            r.id: DeliveryAssignment.objects.filter(
+                delivery_boy=r, delivered_at__isnull=True
+            ).count()
+            for r in rider_list
+        }
+
+        clusters = DeliveryCluster.objects.filter(
+            assignment_date=today,
+            delivery_slot=slot
+        )
+
+        # Pick rider with best combined score (distance + load penalty)
+        best_rider = cls._pick_best_rider(rider_list, order_lat, order_lon, rider_load)
+
+        if not best_rider:
+            return {"status": "error", "message": "No suitable rider found"}
+
+        # Find nearest cluster to link the assignment
+        nearest_cluster = None
+        min_sq_dist = float('inf')
         for cluster in clusters:
             c_lat = float(cluster.center_latitude)
             c_lon = float(cluster.center_longitude)
-            dist = (order_lat - c_lat)**2 + (order_lon - c_lon)**2
-            if dist < min_dist:
-                min_dist = dist
+            sq_dist = (order_lat - c_lat) ** 2 + (order_lon - c_lon) ** 2
+            if sq_dist < min_sq_dist:
+                min_sq_dist = sq_dist
                 nearest_cluster = cluster
-                
-        if nearest_cluster and nearest_cluster.assigned_delivery_boy:
-            DeliveryAssignment.objects.create(
-                order=order,
-                delivery_boy=nearest_cluster.assigned_delivery_boy,
-                cluster=nearest_cluster
-            )
-            order.status = Order.Status.OUT_FOR_DELIVERY
-            order.save(update_fields=['status'])
-            return {"status": "success", "message": f"Assigned to {nearest_cluster.assigned_delivery_boy.username}"}
-            
-        return {"status": "error", "message": "Failed to find suitable cluster"}
+
+        DeliveryAssignment.objects.create(
+            order=order,
+            delivery_boy=best_rider,
+            cluster=nearest_cluster if nearest_cluster and nearest_cluster.assigned_delivery_boy == best_rider else None,
+            notes='Real-time assigned by balanced score.'
+        )
+        order.status = Order.Status.OUT_FOR_DELIVERY
+        order.save(update_fields=['status'])
+
+        return {"status": "success", "message": f"Assigned to {best_rider.username}"}

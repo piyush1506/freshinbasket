@@ -1,7 +1,7 @@
 from django.contrib import admin
 from django.utils.html import format_html
 from django.db.models import Q
-from .models import Order, OrderItem, Cart, CartItem, DeliveryAssignment, Review, DeliveryCluster
+from .models import Order, OrderItem, Cart, CartItem, DeliveryAssignment, Review, DeliveryCluster, DeliverySlot
 
 
 class OrderItemInline(admin.TabularInline):
@@ -188,6 +188,22 @@ class ReviewAdmin(admin.ModelAdmin):
 class DeliveryClusterAdmin(admin.ModelAdmin):
     list_display = ('cluster_number', 'delivery_slot', 'assignment_date', 'assigned_delivery_boy')
     list_filter = ('delivery_slot', 'assignment_date')
+
+@admin.register(DeliverySlot)
+class DeliverySlotAdmin(admin.ModelAdmin):
+    list_display = ('name', 'display_label', 'order_cutoff_time', 'delivery_start_time', 'delivery_end_time', 'assignment_time', 'cleanup_time', 'is_active', 'sort_order')
+    list_editable = ('is_active', 'sort_order')
+    list_filter = ('is_active',)
+    ordering = ('sort_order', 'order_cutoff_time')
+
+    def assignment_time(self, obj):
+        return f"{obj.assignment_hour:02d}:{obj.assignment_minute:02d}"
+    assignment_time.short_description = 'Auto-Assign Time'
+
+    def cleanup_time(self, obj):
+        return f"{obj.cleanup_hour:02d}:{obj.cleanup_minute:02d}"
+    cleanup_time.short_description = 'Cleanup Time'
+
 
 @admin.register(DeliveryAssignment)
 class DeliveryAssignmentAdmin(admin.ModelAdmin):

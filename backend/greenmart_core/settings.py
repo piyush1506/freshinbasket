@@ -3,6 +3,7 @@ from datetime import timedelta
 import os
 from dotenv import load_dotenv
 
+
 load_dotenv()
 
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -357,3 +358,6 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 CELERY_BROKER_URL = os.getenv('REDIS_URL', 'redis://localhost:6379/0')
 CELERY_RESULT_BACKEND = os.getenv('REDIS_URL', 'redis://localhost:6379/0')
 CELERY_TIMEZONE = TIME_ZONE
+# Dynamic schedules are managed via DeliverySlot model (Django admin).
+# PeriodicTask entries are auto-created/updated when DeliverySlot is saved.
+# Legacy static tasks (run_morning_assignment, etc.) are preserved as wrappers.
