@@ -1,0 +1,25 @@
+{% extends "admin/change_list.html" %}
+
+{% block object-tools %}
+  {{ block.super }}
+  
+  <div class="row" style="margin: 15px 0 25px 0; width: 100%;">
+    <div class="col-12" style="background: #ffffff; padding: 15px 20px; border-radius: 12px; border: 1px solid #e3e6f0; box-shadow: 0 4px 6px rgba(0,0,0,0.02); display: flex; align-items: center; flex-wrap: wrap; gap: 10px; width: 100%;">
+      <span style="font-weight: 800; font-size: 13px; text-transform: uppercase; letter-spacing: 0.5px; color: #5a5c69; margin-right: 15px;">Filter by Section:</span>
+      
+      <a href="?" 
+         class="btn btn-sm {% if not request.GET.section__id__exact %}btn-success{% else %}btn-outline-success{% endif %}" 
+         style="border-radius: 20px; font-weight: bold; padding: 6px 16px; font-size: 12px; transition: all 0.2s;">
+        All Products
+      </a>
+      
+      {% for sec in admin_sections %}
+        <a href="?section__id__exact={{ sec.id }}" 
+           class="btn btn-sm {% if request.GET.section__id__exact == sec.id|stringformat:'i' %}btn-success{% else %}btn-outline-success{% endif %}" 
+           style="border-radius: 20px; font-weight: bold; padding: 6px 16px; font-size: 12px; transition: all 0.2s;">
+          {% if sec.icon %}{{ sec.icon }} {% endif %}{{ sec.name }}
+        </a>
+      {% endfor %}
+    </div>
+  </div>
+{% endblock %}

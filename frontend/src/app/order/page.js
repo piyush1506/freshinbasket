@@ -42,6 +42,7 @@ function ActiveBadge() {
 
 export default function OrdersPage() {
     const [activeTab, setActiveTab] = useState("All Orders");
+    const [timeFilter, setTimeFilter] = useState("30_DAYS");
     const [orders, setOrders] = useState([]);
     const [loading, setLoading] = useState(true);
     const [isAddressModalOpen, setIsAddressModalOpen] = useState(false);
@@ -228,11 +229,20 @@ export default function OrdersPage() {
                             ))}
                         </div>
 
-                        <button className="flex items-center gap-2 px-4 py-1.5 border border-gray-300 rounded-lg text-sm text-gray-600 hover:bg-gray-50 transition-colors mb-2">
-                            <SlidersHorizontal size={14} />
-                            Last 30 Days
-                            <ChevronDown size={14} />
-                        </button>
+                        <div className="relative flex items-center mb-2">
+                            <SlidersHorizontal size={14} className="absolute left-3 text-gray-500 pointer-events-none" />
+                            <select
+                                value={timeFilter}
+                                onChange={(e) => setTimeFilter(e.target.value)}
+                                className="pl-9 pr-8 py-1.5 border border-gray-300 rounded-lg text-sm text-gray-600 bg-white hover:bg-gray-50 transition-colors appearance-none cursor-pointer focus:outline-none focus:ring-1 focus:ring-green-700"
+                            >
+                                <option value="30_DAYS">Last 30 Days</option>
+                                <option value="6_MONTHS">Last 6 Months</option>
+                                <option value="1_YEAR">Last 1 Year</option>
+                                <option value="ALL">All Time</option>
+                            </select>
+                            <ChevronDown size={14} className="absolute right-2.5 text-gray-500 pointer-events-none" />
+                        </div>
                     </div>
 
                     {/* Orders List */}
@@ -248,12 +258,31 @@ export default function OrdersPage() {
                             (() => {
                                 const filteredOrders = orders.filter(order => {
                                     if (activeTab === "Active") {
-                                        return ["PENDING", "CONFIRMED", "OUT_FOR_DELIVERY"].includes(order.status);
+                                        if (!["PENDING", "CONFIRMED", "OUT_FOR_DELIVERY"].includes(order.status)) return false;
                                     }
                                     if (activeTab === "Past Orders") {
-                                        return ["DELIVERED", "CANCELLED"].includes(order.status);
+                                        if (!["DELIVERED", "CANCELLED"].includes(order.status)) return false;
                                     }
-                                    return true; // All Orders
+
+                                    if (timeFilter !== "ALL" && order.created_at) {
+                                        const orderDate = new Date(order.created_at);
+                                        const now = new Date();
+                                        if (timeFilter === "30_DAYS") {
+                                            const limit = new Date();
+                                            limit.setDate(now.getDate() - 30);
+                                            if (orderDate < limit) return false;
+                                        } else if (timeFilter === "6_MONTHS") {
+                                            const limit = new Date();
+                                            limit.setMonth(now.getMonth() - 6);
+                                            if (orderDate < limit) return false;
+                                        } else if (timeFilter === "1_YEAR") {
+                                            const limit = new Date();
+                                            limit.setFullYear(now.getFullYear() - 1);
+                                            if (orderDate < limit) return false;
+                                        }
+                                    }
+
+                                    return true;
                                 });
 
                                 if (filteredOrders.length === 0) {
@@ -301,21 +330,6 @@ export default function OrdersPage() {
                                                                         <p className="text-xs text-gray-400 leading-relaxed break-words min-w-0 flex-1">
                                                                             {order.delivery_address}
                                                                         </p>
-                                                                        {canChangeAddress ? (
-                                                                            <button
-                                                                                onClick={() => {
-                                                                                    setSelectedOrderForAddress(order);
-                                                                                    setIsAddressModalOpen(true);
-                                                                                }}
-                                                                                className="text-xs text-green-700 font-semibold hover:underline shrink-0 ml-2"
-                                                                            >
-                                                                                Change
-                                                                            </button>
-                                                                        ) : order.status === "OUT_FOR_DELIVERY" ? (
-                                                                            <span className="text-xs text-gray-400 font-semibold shrink-0 ml-2">
-                                                                                Locked
-                                                                            </span>
-                                                                        ) : null}
                                                                     </div>
                                                                 )
                                                             }
@@ -370,24 +384,9 @@ export default function OrdersPage() {
                                 })
                             })()
                         )}
-                    </div>
                 </div>
-
-                {/* Footer */}
-                <footer className="mt-12 border-t border-gray-200 px-6 py-8 flex flex-col md:flex-row items-center justify-between text-sm text-gray-400 bg-white gap-6">
-                    <div className="text-center md:text-left">
-                        <div className="font-serif font-bold text-green-900 text-base mb-1">FreshinBasket</div>
-                        © 2026 FreshinBasket. Freshness guaranteed.
-                    </div>
-                    <div className="flex flex-wrap justify-center gap-4 md:gap-6">
-                        {["About Us", "Contact Support", "Privacy Policy", "Terms of Service"].map((item) => (
-                            <Link key={item} href="#" className="hover:text-gray-700 transition-colors whitespace-nowrap">
-                                {item}
-                            </Link>
-                        ))}
-                    </div>
-                </footer>
             </div>
+        </div>
 
             <ChangeAddressModal
                 isOpen={isAddressModalOpen}

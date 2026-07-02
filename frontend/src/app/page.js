@@ -1,26 +1,28 @@
 import Image from "next/image";
 import Link from "next/link";
-import Footer from './components/Footer';
 import Navbar from "./components/Navbar";
-import Hero from "./components/hero";
 import About from "./about/AboutComponent";
 import Vegetables from "./components/vegetables";
 import CategoryNav from "./components/CategoryNav";
 import Testimonials from "./components/Testimonials";
 import HowItWorks from "./components/HowItWorks";
+import AnnouncementBanner from "./components/AnnouncementBanner";
+import HomeSections from "./components/HomeSections";
+
+export const dynamic = 'force-dynamic';
 
 export default async function Home() {
-  // Fetch dynamic categories and products from the backend (Cloudinary images)
+  // Fetch sections (with nested categories & products) and slides from the backend
   let sections = [];
   let slides = [];
 
   try {
     const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/home/`, {
-      next: { revalidate: 60 }
+      next: { revalidate: 0 }
     });
     if (res.ok) {
       const data = await res.json();
-      sections = data.categories || [];
+      sections = data.sections || [];
       slides = data.slides || [];
     }
   } catch (error) {
@@ -29,28 +31,19 @@ export default async function Home() {
 
   return (
     <div className="min-h-screen bg-[#FDFDFD] text-[#1A1A1A] font-sans">
-      {/* Header */}
-      <Navbar />
-
-      {/* Hero Section - slides passed from server to avoid client-side fetch delay */}
-      <Hero slides={slides} />
-
-      {/* Dynamic Category Section (Restored Cloudinary Images) */}
-      <CategoryNav initialCategories={sections} />
-
-      {/* Dynamic Products Section (Restored Cloudinary Images) */}
-      <Vegetables initialSections={sections} />
+      {/* Section Tabs + Category Nav + Products (Client Component handles tab state) */}
+      <HomeSections sections={sections}>
+        {/* Announcement Banner (conditionally displayed if active in Admin) */}
+        <AnnouncementBanner />
+      </HomeSections>
 
       <About />
-
-      {/* Testimonials */}
-      {/* <Testimonials /> */}
 
       {/* How it Works Section */}
       <HowItWorks />
 
       {/* Assistance Banner */}
-      <section className="px-4 sm:px-8 md:px-16 mt-10 pb-20 max-w-7xl mx-auto">
+      <section className="px-4 sm:px-8 md:px-16 mt-10 pb-18 max-w-7xl mx-auto">
         <div className="relative rounded-3xl bg-white shadow-lg border border-gray-100 overflow-hidden">
           <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-[#216140] via-[#2e8b57] to-[#216140]" />
           <div className="absolute -top-20 -right-20 w-64 h-64 bg-[#216140]/5 rounded-full blur-3xl" />
@@ -77,9 +70,6 @@ export default async function Home() {
           </div>
         </div>
       </section>
-
-      {/* Footer */}
-      <Footer />
     </div>
   );
 }

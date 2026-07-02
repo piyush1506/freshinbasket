@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 
-export default function CategoryNav({ initialCategories = [] }) {
+export default function CategoryNav({ initialCategories = [], sectionName = "" }) {
   const categories = initialCategories;
 
   if (categories.length === 0) return null;
@@ -12,7 +12,7 @@ export default function CategoryNav({ initialCategories = [] }) {
     <section className="py-8 px-4 sm:px-8 md:px-16">
       <div className="max-w-7xl mx-auto">
         <h2 className="text-lg md:text-xl font-bold text-green-900 mb-5 text-center md:text-left">
-          Shop by Category
+          {sectionName ? `${sectionName} — Shop by Category` : "Shop by Category"}
         </h2>
         <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-4 sm:gap-7">
           {categories.map((cat) => (

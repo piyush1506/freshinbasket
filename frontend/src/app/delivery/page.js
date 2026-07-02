@@ -506,22 +506,6 @@ export default function DeliveryDashboard() {
         onClose={() => { setIsDetailModalOpen(false); setSelectedOrder(null); }}
         order={selectedOrder}
       />
-
-      {/* Footer */}
-      <footer className="border-t border-gray-200 pt-6 pb-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-gray-400">
-        <p>© 2024 Freshinbasket Logistics. Freshness Delivered.</p>
-        <div className="flex gap-6">
-          <a href="#" className="hover:text-gray-600 transition-colors">
-            Privacy Policy
-          </a>
-          <a href="#" className="hover:text-gray-600 transition-colors">
-            Driver Terms
-          </a>
-          <a href="#" className="hover:text-gray-600 transition-colors">
-            Help Center
-          </a>
-        </div>
-      </footer>
     </div>
   );
 }

@@ -46,7 +46,7 @@ export default function Vegetables({ initialSections = [] }) {
               /* SSR fallback: show products in a regular grid until Swiper hydrates */
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 sm:gap-6">
                 {s.products.slice(0, 5).map((item) => (
-                  <VegetableCard key={item.id} item={item} />
+                  <VegetableCard key={item.id} item={item} isHome={true} />
                 ))}
               </div>
             ) : (
@@ -60,11 +60,13 @@ export default function Vegetables({ initialSections = [] }) {
                   640: { slidesPerView: 3, spaceBetween: 24 },
                   768: { slidesPerView: 4, spaceBetween: 24 },
                   1024: { slidesPerView: 5, spaceBetween: 24 },
+                  1280: { slidesPerView: 6, spaceBetween: 24 },
                 }}
+                className="pb-4"
               >
                 {s.products.map((item) => (
                   <SwiperSlide key={item.id}>
-                    <VegetableCard item={item} />
+                    <VegetableCard item={item} isHome={true} />
                   </SwiperSlide>
                 ))}
               </Swiper>

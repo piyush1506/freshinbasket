@@ -16,15 +16,6 @@ export default function WishlistPage() {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    const token = getAccessToken();
-    if (!token) {
-      router.push("/login");
-      return;
-    }
-    fetchProducts();
-  }, [wishlistIds]);
-
   const fetchProducts = async () => {
     if (wishlistIds.length === 0) {
       setProducts([]);
@@ -43,6 +34,15 @@ export default function WishlistPage() {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    const token = getAccessToken();
+    if (!token) {
+      router.push("/login");
+      return;
+    }
+    fetchProducts();
+  }, [wishlistIds]);
 
   if (loading) {
     return (

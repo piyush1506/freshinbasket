@@ -36,22 +36,9 @@ export default function AdminSlidesPage() {
     order: 0,
     is_active: true,
     image_url: "",
+    imageFile: null,
   });
   const [preview, setPreview] = useState(null);
-
-  useEffect(() => {
-    const token = getAccessToken();
-    if (!token) {
-      router.push("/login");
-      return;
-    }
-    const user = getUser();
-    if (!user || user.role !== "ADMIN") {
-      router.push("/");
-      return;
-    }
-    fetchSlides();
-  }, []);
 
   const fetchSlides = async () => {
     try {
@@ -68,8 +55,22 @@ export default function AdminSlidesPage() {
     }
   };
 
+  useEffect(() => {
+    const token = getAccessToken();
+    if (!token) {
+      router.push("/login");
+      return;
+    }
+    const user = getUser();
+    if (!user || user.role !== "ADMIN") {
+      router.push("/");
+      return;
+    }
+    fetchSlides();
+  }, []);
+
   const resetForm = () => {
-    setForm({ title: "", subtitle: "", tag: "Organic", link: "", button_text: "Shop Now", link_two: "", button_text_two: "View Offers", order: 0, is_active: true, image_url: "" });
+    setForm({ title: "", subtitle: "", tag: "Organic", link: "", button_text: "Shop Now", link_two: "", button_text_two: "View Offers", order: 0, is_active: true, image_url: "", imageFile: null });
     setPreview(null);
     setEditingId(null);
     setShowForm(false);
@@ -87,6 +88,7 @@ export default function AdminSlidesPage() {
       order: slide.order,
       is_active: slide.is_active,
       image_url: slide.image_url || "",
+      imageFile: null,
     });
     setPreview(slide.image_url || null);
     setEditingId(slide.id);
@@ -94,25 +96,40 @@ export default function AdminSlidesPage() {
   };
 
   const handleSave = async () => {
-    if (!form.image_url && !editingId) {
-      toast.error("Please enter an image URL");
+    if (!form.image_url && !form.imageFile && !editingId) {
+      toast.error("Please enter an image URL or upload an image");
       return;
     }
     setSaving(true);
     try {
       const token = getAccessToken();
-      const body = {
-        title: form.title,
-        subtitle: form.subtitle,
-        tag: form.tag,
-        link: form.link,
-        button_text: form.button_text,
-        link_two: form.link_two,
-        button_text_two: form.button_text_two,
-        order: form.order,
-        is_active: form.is_active,
-        image_url: form.image_url,
-      };
+      let body;
+      let headers = { Authorization: `Bearer ${token}` };
+
+      if (form.imageFile) {
+        body = new FormData();
+        Object.keys(form).forEach(key => {
+          if (key === 'imageFile' && form[key]) {
+            body.append('image', form[key]);
+          } else if (key !== 'imageFile' && form[key] !== null && form[key] !== undefined) {
+            body.append(key, form[key]);
+          }
+        });
+      } else {
+        body = JSON.stringify({
+          title: form.title,
+          subtitle: form.subtitle,
+          tag: form.tag,
+          link: form.link,
+          button_text: form.button_text,
+          link_two: form.link_two,
+          button_text_two: form.button_text_two,
+          order: form.order,
+          is_active: form.is_active,
+          image_url: form.image_url,
+        });
+        headers["Content-Type"] = "application/json";
+      }
 
       const url = editingId
         ? `${process.env.NEXT_PUBLIC_API_URL}/api/v1/slides/${editingId}/`
@@ -121,11 +138,8 @@ export default function AdminSlidesPage() {
 
       const res = await fetch(url, {
         method,
-        headers: { 
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify(body),
+        headers,
+        body,
       });
 
       if (!res.ok) {
@@ -314,17 +328,37 @@ export default function AdminSlidesPage() {
                   </label>
                 </div>
                 <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-1.5">Image URL or Base64</label>
+                  <label className="block text-sm font-semibold text-gray-700 mb-1.5">Image</label>
                   <input
                     type="text"
                     value={form.image_url}
                     onChange={(e) => {
-                      setForm({ ...form, image_url: e.target.value });
+                      setForm({ ...form, image_url: e.target.value, imageFile: null });
                       setPreview(e.target.value);
                     }}
-                    className="w-full px-4 py-2.5 border border-gray-300 rounded-xl text-sm focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none"
+                    className="w-full px-4 py-2.5 border border-gray-300 rounded-xl text-sm focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none mb-3"
                     placeholder="https://example.com/image.jpg"
                   />
+                  <div className="flex items-center gap-3">
+                    <span className="text-sm font-medium text-gray-500">OR</span>
+                    <label className="cursor-pointer bg-gray-100 hover:bg-gray-200 px-4 py-2 rounded-xl text-sm font-semibold text-gray-700 transition-colors flex items-center gap-2">
+                      <ImageIcon size={16} />
+                      Upload Image
+                      <input
+                        type="file"
+                        ref={fileRef}
+                        accept="image/*"
+                        className="hidden"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) {
+                            setForm({ ...form, imageFile: file, image_url: "" });
+                            setPreview(URL.createObjectURL(file));
+                          }
+                        }}
+                      />
+                    </label>
+                  </div>
                   {preview && (
                     <img
                       src={preview}

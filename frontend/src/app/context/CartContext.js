@@ -1,7 +1,7 @@
 "use client";
 import { createContext, useContext, useEffect, useState } from "react";
 import { Toaster } from "react-hot-toast";
-import { getAccessToken, isAuthenticated, getUser, authFetch } from "@/lib/auth";
+import { getAccessToken, isAuthenticated, getUser, authFetch, setUser as saveUserLocal } from "@/lib/auth";
 
 const CartContext = createContext();
 const GUEST_CART_KEY = "guest_cart";
@@ -63,6 +63,8 @@ export function CartProvider({ children }) {
       quantity: Number(item.quantity),
       unit: item.unit || 'kg',
       tax_percentage: parseFloat(item.tax_percentage) || 0,
+      order_step: Number(item.order_step) || 1,
+      min_order_qty: Number(item.min_order_qty) || 0,
       cartKey: getCartKey(Number(item.product), item.sub_product),
     }));
   };
@@ -118,6 +120,21 @@ export function CartProvider({ children }) {
 
     const savedUser = getUser();
     if (savedUser) setUser(savedUser);
+
+    if (isAuthenticated()) {
+      authFetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/users/me/`)
+        .then((res) => {
+          if (res.ok) return res.json();
+          throw new Error("Failed to fetch profile");
+        })
+        .then((data) => {
+          setUser(data);
+          saveUserLocal(data);
+        })
+        .catch((err) => {
+          console.error("Failed to restore user session:", err);
+        });
+    }
 
     fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/store-info/`)
       .then((res) => res.json())
@@ -307,7 +324,7 @@ export function CartProvider({ children }) {
 
   const clearCart = () => setCartItems([]);
 
-  const cartCount = cartItems.reduce((total, item) => total + item.quantity, 0);
+  const cartCount = cartItems.length;
   
   // Calculate locally for guest users, use backend values for logged in users if available
   const subtotal = backendTotals?.subtotal !== undefined 

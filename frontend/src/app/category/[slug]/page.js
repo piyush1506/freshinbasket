@@ -58,9 +58,14 @@ export default function CategoryPage() {
 
         if (catRes.ok) {
           const catData = await catRes.json();
-          setCategories(catData);
           const currentCat = catData.find((c) => c.slug?.toLowerCase() === slug?.toLowerCase());
-          if (currentCat?.name) setCategoryName(currentCat.name);
+          if (currentCat) {
+            if (currentCat.name) setCategoryName(currentCat.name);
+            const sectionFiltered = catData.filter((c) => c.section === currentCat.section);
+            setCategories(sectionFiltered);
+          } else {
+            setCategories(catData);
+          }
         }
       } catch (err) {
         console.error("Category page fetch error:", err);

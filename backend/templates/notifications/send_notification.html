@@ -1,0 +1,217 @@
+{% extends "admin/base_site.html" %}
+{% load i18n %}
+
+{% block title %}Send Push Notification | {{ site_title }}{% endblock %}
+
+{% block extrastyle %}
+{{ block.super }}
+<style>
+  .notif-panel {
+    max-width: 720px;
+    margin: 24px auto;
+    background: #fff;
+    border-radius: 10px;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+    overflow: hidden;
+  }
+  .notif-header {
+    background: linear-gradient(135deg, #1a6b3c 0%, #164431 100%);
+    padding: 28px 32px;
+    color: #fff;
+  }
+  .notif-header h2 { margin: 0; font-size: 22px; font-weight: 600; }
+  .notif-header p  { margin: 6px 0 0; opacity: 0.85; font-size: 14px; }
+  .notif-body { padding: 32px; }
+  .stat-row { display: flex; gap: 16px; margin-bottom: 28px; }
+  .stat-box {
+    flex: 1; background: #f0fdf4; border: 1px solid #86efac;
+    border-radius: 8px; padding: 16px 20px; text-align: center;
+  }
+  .stat-box .num { font-size: 28px; font-weight: 700; color: #164431; }
+  .stat-box .lbl { font-size: 12px; color: #555; margin-top: 4px; }
+  .form-group { margin-bottom: 20px; }
+  .form-group label {
+    display: block; font-weight: 600; font-size: 13px;
+    color: #333; margin-bottom: 7px;
+  }
+  .form-group input[type="text"],
+  .form-group textarea,
+  .form-group select {
+    width: 100%; padding: 10px 14px;
+    border: 1px solid #d1d5db; border-radius: 7px;
+    font-size: 14px; outline: none; box-sizing: border-box;
+    transition: border-color .2s;
+  }
+  .form-group input:focus,
+  .form-group textarea:focus,
+  .form-group select:focus { border-color: #164431; box-shadow: 0 0 0 3px rgba(22,68,49,.1); }
+  .form-group textarea { resize: vertical; min-height: 90px; }
+  .char-hint { font-size: 12px; color: #888; margin-top: 4px; }
+  .preview-box {
+    background: #1e1e2e; border-radius: 10px; padding: 16px 18px;
+    margin-bottom: 24px; display: flex; align-items: flex-start; gap: 14px;
+  }
+  .preview-icon {
+    width: 42px; height: 42px; background: #164431; border-radius: 10px;
+    display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+    font-size: 20px;
+  }
+  .preview-content { color: #fff; }
+  .preview-title { font-weight: 600; font-size: 14px; }
+  .preview-body  { font-size: 13px; opacity: .8; margin-top: 3px; }
+  .preview-app   { font-size: 11px; opacity: .5; margin-top: 6px; }
+  .btn-send {
+    background: linear-gradient(135deg, #1a6b3c, #164431);
+    color: #fff; border: none; border-radius: 8px;
+    padding: 13px 32px; font-size: 15px; font-weight: 600;
+    cursor: pointer; width: 100%; transition: opacity .2s;
+  }
+  .btn-send:hover { opacity: .9; }
+  .section-title {
+    font-size: 13px; font-weight: 700; color: #888;
+    text-transform: uppercase; letter-spacing: .6px;
+    margin: 28px 0 16px; border-top: 1px solid #f0f0f0; padding-top: 20px;
+  }
+  .channel-grid { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 8px; }
+  .channel-pill {
+    border: 2px solid #e5e7eb; border-radius: 20px; padding: 7px 16px;
+    font-size: 13px; cursor: pointer; transition: all .15s; background: #fff;
+    color: #444;
+  }
+  .channel-pill:has(input:checked) {
+    border-color: #164431; background: #f0fdf4; color: #164431; font-weight: 600;
+  }
+  .channel-pill input { display: none; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="notif-panel">
+  <div class="notif-header">
+    <h2>📣 Send Push Notification</h2>
+    <p>Compose and send a push notification to your customers</p>
+  </div>
+  <div class="notif-body">
+
+    <!-- Stats -->
+    <div class="stat-row">
+      <div class="stat-box">
+        <div class="num">{{ total_tokens }}</div>
+        <div class="lbl">Registered Devices</div>
+      </div>
+      <div class="stat-box">
+        <div class="num">{{ users|length }}</div>
+        <div class="lbl">Users with Notifications</div>
+      </div>
+    </div>
+
+    <!-- Messages -->
+    {% if messages %}
+      {% for msg in messages %}
+        <div style="padding:12px 16px; border-radius:7px; margin-bottom:16px;
+          background:{% if msg.tags == 'error' %}#fef2f2{% elif msg.tags == 'warning' %}#fffbeb{% else %}#f0fdf4{% endif %};
+          border:1px solid {% if msg.tags == 'error' %}#fca5a5{% elif msg.tags == 'warning' %}#fcd34d{% else %}#86efac{% endif %};
+          color:{% if msg.tags == 'error' %}#b91c1c{% elif msg.tags == 'warning' %}#92400e{% else %}#166534{% endif %};
+          font-size:14px;">
+          {{ msg }}
+        </div>
+      {% endfor %}
+    {% endif %}
+
+    <form method="post" id="notifForm">
+      {% csrf_token %}
+
+      <!-- Notification Preview -->
+      <div class="section-title">Live Preview</div>
+      <div class="preview-box">
+        <div class="preview-icon">🛒</div>
+        <div class="preview-content">
+          <div class="preview-title" id="previewTitle">Notification Title</div>
+          <div class="preview-body"  id="previewBody">Your message will appear here...</div>
+          <div class="preview-app">FreshInBasket • now</div>
+        </div>
+      </div>
+
+      <!-- Title -->
+      <div class="form-group">
+        <label>📌 Notification Title *</label>
+        <input type="text" name="title" id="titleInput" maxlength="65"
+               placeholder="e.g. 🎉 Special Offer Today!" required>
+        <div class="char-hint"><span id="titleCount">0</span>/65 characters</div>
+      </div>
+
+      <!-- Body -->
+      <div class="form-group">
+        <label>💬 Message Body *</label>
+        <textarea name="body" id="bodyInput" maxlength="178"
+                  placeholder="e.g. Get 20% off on all vegetables today. Order now!" required></textarea>
+        <div class="char-hint"><span id="bodyCount">0</span>/178 characters</div>
+      </div>
+
+      <!-- Channel -->
+      <div class="section-title">Notification Channel</div>
+      <div class="channel-grid">
+        <label class="channel-pill">
+          <input type="radio" name="channel" value="promotions" checked>
+          🎁 Promotions
+        </label>
+        <label class="channel-pill">
+          <input type="radio" name="channel" value="order_updates">
+          📦 Order Updates
+        </label>
+      </div>
+
+      <!-- Target -->
+      <div class="section-title">Send To</div>
+      <div class="form-group">
+        <label>Target Audience</label>
+        <select name="target" id="targetSelect">
+          <option value="all">📢 All Users ({{ users|length }} users)</option>
+          {% for user in users %}
+            <option value="{{ user.pk }}">
+              👤 {{ user.username|default:user.phone_number }}
+              {% if user.phone_number %}({{ user.phone_number }}){% endif %}
+            </option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <button type="submit" class="btn-send" id="sendBtn">
+        🚀 Send Notification
+      </button>
+    </form>
+  </div>
+</div>
+
+<script>
+  const titleInput = document.getElementById('titleInput');
+  const bodyInput  = document.getElementById('bodyInput');
+  const prevTitle  = document.getElementById('previewTitle');
+  const prevBody   = document.getElementById('previewBody');
+  const titleCount = document.getElementById('titleCount');
+  const bodyCount  = document.getElementById('bodyCount');
+  const sendBtn    = document.getElementById('sendBtn');
+
+  titleInput.addEventListener('input', () => {
+    prevTitle.textContent = titleInput.value || 'Notification Title';
+    titleCount.textContent = titleInput.value.length;
+  });
+  bodyInput.addEventListener('input', () => {
+    prevBody.textContent = bodyInput.value || 'Your message will appear here...';
+    bodyCount.textContent = bodyInput.value.length;
+  });
+
+  // Confirm before broadcasting to all
+  document.getElementById('notifForm').addEventListener('submit', function(e) {
+    const target = document.getElementById('targetSelect').value;
+    if (target === 'all') {
+      if (!confirm('Send this notification to ALL users? This cannot be undone.')) {
+        e.preventDefault();
+        return;
+      }
+    }
+    sendBtn.textContent = '⏳ Sending...';
+    sendBtn.disabled = true;
+  });
+</script>
+{% endblock %}

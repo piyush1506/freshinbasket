@@ -1,3 +1,4 @@
+import datetime
 from django.db import models
 from django.conf import settings
 from store.models import Product
@@ -29,7 +30,7 @@ class CartItem(models.Model):
         on_delete=models.CASCADE
     )
     product = models.ForeignKey(Product, on_delete=models.CASCADE)
-    quantity = models.PositiveIntegerField(default=1)
+    quantity = models.DecimalField(max_digits=8, decimal_places=3, default=1)
 
     def __str__(self):
         return f"{self.quantity} x {self.product.name}"
@@ -103,7 +104,17 @@ class Order(models.Model):
         default=PaymentMethod.ONLINE
     )
 
-    delivery_slot = models.CharField(max_length=20, blank=True, null=True)
+    delivery_slot = models.CharField(max_length=100, blank=True, null=True)
+    delivery_slot_ref = models.ForeignKey(
+        'DeliverySlot',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='orders',
+        help_text="FK reference for robust slot querying — survives label renames"
+    )
+
+    payment_id = models.CharField(max_length=100, blank=True, null=True, help_text="Razorpay payment ID for online payments")
 
     order_number = models.CharField(max_length=20, unique=True, blank=True, null=True)
 
@@ -130,7 +141,7 @@ class OrderItem(models.Model):
     product = models.ForeignKey(Product, on_delete=models.CASCADE)
 
     product_name = models.CharField(max_length=255)
-    quantity = models.PositiveIntegerField(default=1)
+    quantity = models.DecimalField(max_digits=8, decimal_places=3, default=1)
     unit_name = models.CharField(max_length=50, blank=True, default='kg', help_text="Unit label at time of order")
 
     unit_price = models.DecimalField(max_digits=10, decimal_places=2)
@@ -150,7 +161,7 @@ class OrderItem(models.Model):
 # =========================
 class DeliveryCluster(models.Model):
     assignment_date = models.DateField(auto_now_add=True)
-    delivery_slot = models.CharField(max_length=20)
+    delivery_slot = models.CharField(max_length=100)
     cluster_number = models.PositiveIntegerField()
     center_latitude = models.DecimalField(max_digits=10, decimal_places=6)
     center_longitude = models.DecimalField(max_digits=10, decimal_places=6)
@@ -229,11 +240,19 @@ class DeliverySlot(models.Model):
         max_length=50,
         help_text="e.g. '7 AM - 12 PM' — stored on orders"
     )
-    order_cutoff_time = models.TimeField(
-        help_text="Orders placed before this time get assigned to this slot"
+    order_start_time = models.TimeField(
+        help_text="Orders placed FROM this time onwards get this slot. If start > cutoff, the range crosses midnight.",
+        default=datetime.time(0, 0),
     )
-    delivery_start_time = models.TimeField()
-    delivery_end_time = models.TimeField()
+    order_cutoff_time = models.TimeField(
+        help_text="Orders placed BEFORE this time get this slot."
+    )
+    delivery_start_time = models.TimeField(
+        help_text="When delivery boy actually starts delivering"
+    )
+    delivery_end_time = models.TimeField(
+        help_text="When delivery window closes"
+    )
     assignment_hour = models.PositiveSmallIntegerField(
         default=6,
         help_text="Hour (0-23) when auto-assignment runs"
@@ -253,7 +272,7 @@ class DeliverySlot(models.Model):
     is_active = models.BooleanField(default=True)
     sort_order = models.PositiveSmallIntegerField(
         default=0,
-        help_text="Lower = processed first in order assignment"
+        help_text="Lower = processed first. Determines which slot is the 'first' (fallback after midnight)."
     )
 
     class Meta:
@@ -264,46 +283,77 @@ class DeliverySlot(models.Model):
     def __str__(self):
         return f"{self.name} ({self.display_label})"
 
+    @classmethod
+    def get_current_slot(cls):
+        from django.utils import timezone
+        now = timezone.localtime(timezone.now()).time()
+        matching = []
+        for slot in cls.objects.filter(is_active=True):
+            start = slot.order_start_time
+            end = slot.order_cutoff_time
+            if start < end:
+                if start <= now < end:
+                    matching.append((slot, False))
+            else:
+                if now >= start:
+                    matching.append((slot, True))
+                elif now < end:
+                    matching.append((slot, False))
+        if not matching:
+            return {'slot': None, 'is_next_day': True}
+        matching.sort(key=lambda x: (x[0].sort_order, x[0].order_cutoff_time))
+        best, is_next_day = matching[0]
+        return {'slot': best, 'is_next_day': is_next_day}
+
     def save(self, *args, **kwargs):
         is_new = self._state.adding
         super().save(*args, **kwargs)
         self._sync_periodic_tasks()
 
     def _sync_periodic_tasks(self):
-        from django_celery_beat.models import PeriodicTask, CrontabSchedule
+        try:
+            from django_celery_beat.models import PeriodicTask, CrontabSchedule
+        except ImportError:
+            return  # django-celery-beat not installed
 
         slot_key = self.name.lower().replace(" ", "-")
 
-        assign_crontab, _ = CrontabSchedule.objects.get_or_create(
-            hour=self.assignment_hour,
-            minute=self.assignment_minute,
-            day_of_week='*',
-            day_of_month='*',
-            month_of_year='*',
-        )
-        PeriodicTask.objects.update_or_create(
-            name=f'auto-assign-{slot_key}',
-            defaults={
-                'task': 'orders.tasks.run_slot_assignment',
-                'crontab': assign_crontab,
-                'args': f'["{self.display_label}"]',
-                'enabled': self.is_active,
-            }
-        )
+        try:
+            assign_crontab, _ = CrontabSchedule.objects.get_or_create(
+                hour=self.assignment_hour,
+                minute=self.assignment_minute,
+                day_of_week='*',
+                day_of_month='*',
+                month_of_year='*',
+            )
+            PeriodicTask.objects.update_or_create(
+                name=f'auto-assign-{slot_key}',
+                defaults={
+                    'task': 'orders.tasks.run_slot_assignment',
+                    'crontab': assign_crontab,
+                    'args': f'["{self.display_label}"]',
+                    'enabled': self.is_active,
+                }
+            )
+        except Exception:
+            pass
 
-        cleanup_crontab, _ = CrontabSchedule.objects.get_or_create(
-            hour=self.cleanup_hour,
-            minute=self.cleanup_minute,
-            day_of_week='*',
-            day_of_month='*',
-            month_of_year='*',
-        )
-        PeriodicTask.objects.update_or_create(
-            name=f'cleanup-{slot_key}',
-            defaults={
-                'task': 'orders.tasks.cleanup_slot_clusters',
-                'crontab': cleanup_crontab,
-                'args': f'["{self.display_label}"]',
-                'enabled': self.is_active,
-            }
-        )
+        try:
+            cleanup_crontab, _ = CrontabSchedule.objects.get_or_create(
+                hour=self.cleanup_hour,
+                minute=self.cleanup_minute,
+                day_of_week='*',
+                day_of_month='*',
+                month_of_year='*',
+            )
+            PeriodicTask.objects.update_or_create(
+                name=f'cleanup-{slot_key}',
+                defaults={
+                    'task': 'orders.tasks.cleanup_slot_clusters',
+                    'crontab': cleanup_crontab,
+                    'args': f'["{self.display_label}"]',
+                    'enabled': self.is_active,
+                }
+            )
+        except Exception:
+            pass

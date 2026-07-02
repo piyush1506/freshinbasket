@@ -141,8 +141,6 @@ class AssignmentService:
                     cluster=cluster_record,
                     notes='Auto-assigned by batch clustering.'
                 )
-                order.status = Order.Status.OUT_FOR_DELIVERY
-                order.save(update_fields=['status'])
                 assignments_created += 1
 
         return {
@@ -179,6 +177,23 @@ class AssignmentService:
 
         if not order.delivery_latitude or not order.delivery_longitude:
             return {"status": "error", "message": "Order missing coordinates"}
+
+        # Time-based assignment logic:
+        # Only assign instantly if we are past the batch assignment time for today's slot.
+        from orders.models import DeliverySlot
+        import datetime
+        slot_obj = DeliverySlot.objects.filter(display_label=order.delivery_slot).first()
+        if slot_obj:
+            now_time = timezone.localtime(timezone.now()).time()
+            assignment_time = datetime.time(slot_obj.assignment_hour, slot_obj.assignment_minute)
+            
+            # If the current time is past the order cutoff, this order is for tomorrow's slot.
+            if now_time > slot_obj.order_cutoff_time:
+                return {"status": "skipped", "message": "Order is for tomorrow, will be bulk assigned."}
+                
+            # If we haven't reached the batch assignment time yet today, let the batch job handle it.
+            if now_time < assignment_time:
+                return {"status": "skipped", "message": "Will be bulk assigned before delivery window opens."}
 
         order_lat = float(order.delivery_latitude)
         order_lon = float(order.delivery_longitude)
@@ -234,7 +249,5 @@ class AssignmentService:
             cluster=nearest_cluster if nearest_cluster and nearest_cluster.assigned_delivery_boy == best_rider else None,
             notes='Real-time assigned by load balance and cluster proximity.'
         )
-        order.status = Order.Status.OUT_FOR_DELIVERY
-        order.save(update_fields=['status'])
 
         return {"status": "success", "message": f"Assigned to {best_rider.username}"}

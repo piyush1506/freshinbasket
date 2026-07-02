@@ -16,9 +16,33 @@ import toast from "react-hot-toast";
 export default function AdminProductsPage() {
   const router = useRouter();
   const [products, setProducts] = useState([]);
+  const [sections, setSections] = useState([]);
+  const [activeSectionId, setActiveSectionId] = useState("all");
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [uploadingId, setUploadingId] = useState(null);
+
+  const fetchData = async () => {
+    try {
+      const [prodRes, secRes] = await Promise.all([
+        fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/products/`),
+        fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/sections/`)
+      ]);
+
+      if (prodRes.ok) {
+        const prodData = await prodRes.json();
+        setProducts(prodData);
+      }
+      if (secRes.ok) {
+        const secData = await secRes.json();
+        setSections(secData);
+      }
+    } catch {
+      toast.error("Failed to load admin data");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
     const token = getAccessToken();
@@ -31,22 +55,8 @@ export default function AdminProductsPage() {
       router.push("/");
       return;
     }
-    fetchProducts();
+    fetchData();
   }, []);
-
-  const fetchProducts = async () => {
-    try {
-      const res = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/v1/products/`
-      );
-      const data = await res.json();
-      setProducts(data);
-    } catch {
-      toast.error("Failed to load products");
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const handleImageUpload = async (productId, file) => {
     if (!file) return;
@@ -82,9 +92,17 @@ export default function AdminProductsPage() {
     }
   };
 
-  const filtered = products.filter((p) =>
-    p.name?.toLowerCase().includes(search.toLowerCase())
-  );
+  // Determine if there are unassigned products
+  const hasUnassigned = products.some((p) => !p.section);
+
+  const filtered = products.filter((p) => {
+    const matchesSearch = p.name?.toLowerCase().includes(search.toLowerCase());
+    if (!matchesSearch) return false;
+
+    if (activeSectionId === "all") return true;
+    if (activeSectionId === "unassigned") return !p.section;
+    return p.section === activeSectionId;
+  });
 
   if (loading) {
     return (
@@ -97,7 +115,7 @@ export default function AdminProductsPage() {
   return (
     <div className="max-w-7xl mx-auto px-6 py-8">
       <div className="flex items-center gap-3 mb-6">
-        <button onClick={() => router.push("/")} className="text-gray-400 hover:text-gray-600">
+        <button onClick={() => router.push("/")} className="text-gray-400 hover:text-gray-600 cursor-pointer">
           <ArrowLeft size={20} />
         </button>
         <div>
@@ -111,15 +129,69 @@ export default function AdminProductsPage() {
         </div>
       </div>
 
-      <div className="relative mb-6 max-w-md">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
-        <input
-          type="text"
-          placeholder="Search products..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-green-500/20 focus:border-green-500"
-        />
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+        {/* Search */}
+        <div className="relative w-full sm:max-w-md">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+          <input
+            type="text"
+            placeholder="Search products..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-green-500/20 focus:border-green-500"
+          />
+        </div>
+
+        {/* Dynamic Section Switcher Tabs */}
+        <div className="flex items-center gap-1.5 p-1 bg-gray-100 rounded-xl overflow-x-auto no-scrollbar shrink-0 self-start sm:self-auto">
+          <button
+            onClick={() => setActiveSectionId("all")}
+            className={`px-4 py-2 rounded-lg text-xs font-bold whitespace-nowrap transition-all cursor-pointer
+              ${
+                activeSectionId === "all"
+                  ? "bg-white text-green-800 shadow-sm"
+                  : "text-gray-500 hover:text-gray-800"
+              }
+            `}
+          >
+            All Products ({products.length})
+          </button>
+          
+          {sections.map((sec) => {
+            const count = products.filter((p) => p.section === sec.id).length;
+            return (
+              <button
+                key={sec.id}
+                onClick={() => setActiveSectionId(sec.id)}
+                className={`px-4 py-2 rounded-lg text-xs font-bold whitespace-nowrap transition-all cursor-pointer flex items-center gap-1.5
+                  ${
+                    activeSectionId === sec.id
+                      ? "bg-white text-green-800 shadow-sm"
+                      : "text-gray-500 hover:text-gray-800"
+                  }
+                `}
+              >
+                {sec.icon && <span>{sec.icon}</span>}
+                <span>{sec.name} ({count})</span>
+              </button>
+            );
+          })}
+
+          {hasUnassigned && (
+            <button
+              onClick={() => setActiveSectionId("unassigned")}
+              className={`px-4 py-2 rounded-lg text-xs font-bold whitespace-nowrap transition-all cursor-pointer
+                ${
+                  activeSectionId === "unassigned"
+                    ? "bg-white text-green-800 shadow-sm"
+                    : "text-gray-500 hover:text-gray-800"
+                }
+              `}
+            >
+              Unassigned ({products.filter((p) => !p.section).length})
+            </button>
+          )}
+        </div>
       </div>
 
       <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden">

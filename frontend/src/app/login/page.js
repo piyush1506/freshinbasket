@@ -88,7 +88,8 @@ export default function AuthPage() {
 
     setLoading(true);
     try {
-      await AUTH_API.updateProfile({ username: name.trim() });
+      const updatedUser = await AUTH_API.updateProfile({ username: name.trim() });
+      setUser(updatedUser);
       toast.success(`Welcome, ${name}! Your account is ready.`);
       setTimeout(() => router.push("/"), 1500);
     } catch (err) {

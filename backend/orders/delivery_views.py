@@ -5,10 +5,14 @@ from rest_framework.throttling import UserRateThrottle
 from django.utils import timezone
 from django.db.models import Sum, Count, Q
 from datetime import timedelta
+import logging
+
+logger = logging.getLogger(__name__)
 from .models import Order, DeliveryAssignment, Review
 from .delivery.models import DeliveryLocation
 from api.serializers import UserSerializer, UserUpdateSerializer
 from django.db.models import Avg
+from notifications.fcm import send_status_notification
 
 
 class IsDeliveryUser(permissions.BasePermission):
@@ -211,6 +215,12 @@ class DeliveryUpdateStatusView(APIView):
         if new_status == 'DELIVERED':
             assignment.delivered_at = timezone.now()
             assignment.save()
+
+        # ── Notify customer about status change (Out for Delivery / Delivered) ─
+        try:
+            send_status_notification(order)
+        except Exception as e:
+            logger.warning("FCM status notification failed for order %s: %s", order.id, e)
 
         return Response({
             'message': f'Order status updated to {new_status}',

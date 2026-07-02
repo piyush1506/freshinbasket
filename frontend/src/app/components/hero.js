@@ -35,17 +35,22 @@ function AnimatedContent({ slide }) {
       )}
       <h1
         className="text-4xl md:text-6xl font-extrabold z-10 leading-tight mb-4 drop-shadow-lg whitespace-pre-line animate-hero-title"
-        style={{
-          background: "linear-gradient(135deg, #ffffff 40%, #B4F044 100%)",
-          WebkitBackgroundClip: "text",
-          WebkitTextFillColor: "transparent",
-          backgroundClip: "text",
-        }}
+        style={
+          slide.text_color
+            ? { color: slide.text_color }
+            : {
+                background: "linear-gradient(135deg, #ffffff 40%, #B4F044 100%)",
+                WebkitBackgroundClip: "text",
+                WebkitTextFillColor: "transparent",
+                backgroundClip: "text",
+              }
+        }
       >
         {slide.title}
       </h1>
       <p
-        className="text-[#d4f5b0] text-sm md:text-lg mb-8 max-w-lg drop-shadow-md font-medium animate-hero-subtitle"
+        className="text-sm md:text-lg mb-8 max-w-lg drop-shadow-md font-medium animate-hero-subtitle"
+        style={slide.text_color ? { color: slide.text_color } : { color: "#d4f5b0" }}
       >
         {slide.subtitle}
       </p>

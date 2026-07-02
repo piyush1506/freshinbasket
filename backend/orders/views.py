@@ -8,22 +8,48 @@ from django.db import transaction
 from .models import Order, OrderItem, Cart, CartItem
 from .utils import haversine_distance
 
+import logging
+import threading
 import razorpay
-from django.utils import timezone
+
+logger = logging.getLogger(__name__)
+
+
+def _fire_and_forget_post_order(order_id):
+    """Run assignment + FCM notification in a background thread.
+    Never blocks the HTTP response. Never raises."""
+    def _run():
+        try:
+            from .tasks import auto_assign_realtime_order
+            auto_assign_realtime_order.apply_async(
+                args=[order_id], retry=False, expires=60
+            )
+        except Exception:
+            logger.info("Celery unavailable — order %s skipped realtime assign", order_id)
+
+        # Send FCM directly (no Celery dependency)
+        try:
+            from orders.models import Order
+            from notifications.fcm import send_order_notification
+            order = Order.objects.get(id=order_id)
+            send_order_notification(order)
+        except Exception as e:
+            logger.warning("FCM notification failed for order %s: %s", order_id, e)
+
+    thread = threading.Thread(target=_run, daemon=True)
+    thread.start()
 
 client = razorpay.Client(auth=(settings.RAZORPAY_KEY_ID, settings.RAZORPAY_KEY_SECRET))
 
 
 def _get_delivery_slot():
     from orders.models import DeliverySlot
-    now = timezone.localtime(timezone.now()).time()
-    slot = DeliverySlot.objects.filter(
-        is_active=True,
-        order_cutoff_time__gt=now
-    ).order_by('order_cutoff_time').first()
-    if not slot:
-        slot = DeliverySlot.objects.filter(is_active=True).order_by('order_cutoff_time').first()
-    return slot.display_label if slot else "7 AM - 12 PM"
+    result = DeliverySlot.get_current_slot()
+    if result['slot']:
+        return result['slot']
+    if result['is_next_day']:
+        return DeliverySlot.objects.filter(is_active=True).order_by('sort_order', 'order_cutoff_time').first()
+    return None
 
 
 class CreateRazorpayOrderView(APIView):
@@ -143,6 +169,7 @@ class VerifyPaymentView(APIView):
             total = subtotal + tax_amount + delivery_charge
 
             with transaction.atomic():
+                slot = _get_delivery_slot()
                 order = Order.objects.create(
                     customer=request.user,
                     subtotal=subtotal,
@@ -151,10 +178,12 @@ class VerifyPaymentView(APIView):
                     delivery_address=delivery_address,
                     delivery_latitude=delivery_latitude,
                     delivery_longitude=delivery_longitude,
-                    delivery_slot=_get_delivery_slot(),
+                    delivery_slot=slot.display_label if slot else "7 AM - 12 PM",
+                    delivery_slot_ref=slot,
                     status=Order.Status.CONFIRMED,
                     is_paid=True,
-                    payment_method=Order.PaymentMethod.ONLINE
+                    payment_method=Order.PaymentMethod.ONLINE,
+                    payment_id=razorpay_payment_id
                 )
 
                 for item in items:
@@ -178,8 +207,8 @@ class VerifyPaymentView(APIView):
 
                 items.delete()
 
-            from orders.services.assignment_service import AssignmentService
-            AssignmentService.assign_realtime_order(order)
+            # ── Fire-and-forget: assignment + FCM in background thread ──
+            _fire_and_forget_post_order(order.id)
 
             return Response({
                 'message': 'Payment verified and order created successfully',
@@ -241,6 +270,7 @@ class CreateCODOrderView(APIView):
         total = subtotal + tax_amount + delivery_charge
 
         with transaction.atomic():
+            slot = _get_delivery_slot()
             order = Order.objects.create(
                 customer=request.user,
                 subtotal=subtotal,
@@ -249,7 +279,8 @@ class CreateCODOrderView(APIView):
                 delivery_address=delivery_address,
                 delivery_latitude=delivery_latitude,
                 delivery_longitude=delivery_longitude,
-                delivery_slot=_get_delivery_slot(),
+                delivery_slot=slot.display_label if slot else "7 AM - 12 PM",
+                delivery_slot_ref=slot,
                 status=Order.Status.CONFIRMED,
                 is_paid=False,
                 payment_method=Order.PaymentMethod.COD
@@ -276,8 +307,8 @@ class CreateCODOrderView(APIView):
 
             items.delete()
 
-        from orders.services.assignment_service import AssignmentService
-        AssignmentService.assign_realtime_order(order)
+        # ── Fire-and-forget: assignment + FCM in background thread ──
+        _fire_and_forget_post_order(order.id)
 
         return Response({
             'message': 'COD order created successfully',

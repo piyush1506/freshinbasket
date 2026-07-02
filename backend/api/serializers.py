@@ -1,8 +1,8 @@
 import cloudinary.uploader
 from rest_framework import serializers
 from users.models import User
-from store.models import Category, Product, Slide, ContactQuery, Unit, WishlistItem, SubProduct
-from orders.models import Order, OrderItem, DeliveryAssignment, Cart, CartItem, Review
+from store.models import Category, Product, Slide, ContactQuery, Unit, WishlistItem, SubProduct, Section
+from orders.models import Order, OrderItem, DeliveryAssignment, Cart, CartItem, Review, DeliverySlot
 from django.contrib.auth import authenticate
 from django.contrib.auth.password_validation import validate_password as django_validate_password
 from django.core.exceptions import ValidationError as DjangoValidationError
@@ -121,18 +121,33 @@ def get_transformed_cloudinary_url(url, width=None):
             # e_improve: AI-based color and contrast enhancement
             transformation = "q_auto:best,f_auto,e_sharpen:60,e_improve"
             if width:
-                transformation = f"c_limit,w_{width},{transformation}"
+                transformation = f"c_scale,w_{width},{transformation}"  # c_scale upscales small images
             return f"{parts[0]}/upload/{transformation}/{parts[1]}"
     
     return url
 
 
-class CategorySerializer(serializers.ModelSerializer):
+class SectionSerializer(serializers.ModelSerializer):
     image_url = serializers.SerializerMethodField()
 
     class Meta:
+        model = Section
+        fields = ('id', 'name', 'slug', 'description', 'icon', 'image', 'image_url', 'product_label', 'order', 'is_active')
+
+    def get_image_url(self, obj):
+        if obj.image and hasattr(obj.image, 'url'):
+            return get_transformed_cloudinary_url(obj.image.url, width=600)
+        return None
+
+
+class CategorySerializer(serializers.ModelSerializer):
+    image_url = serializers.SerializerMethodField()
+    section = serializers.PrimaryKeyRelatedField(queryset=Section.objects.all(), required=False, allow_null=True)
+    section_name = serializers.CharField(source='section.name', read_only=True, default=None)
+
+    class Meta:
         model = Category
-        fields = ('id', 'name', 'description', 'slug', 'image', 'image_url')
+        fields = ('id', 'name', 'description', 'slug', 'image', 'image_url', 'section', 'section_name')
 
     def get_image_url(self, obj):
         if obj.image and hasattr(obj.image, 'url'):
@@ -175,6 +190,12 @@ class ProductSerializer(serializers.ModelSerializer):
     unit_id = serializers.PrimaryKeyRelatedField(
         queryset=Unit.objects.all(), source='unit', write_only=True, required=False, allow_null=True
     )
+    section_id = serializers.PrimaryKeyRelatedField(
+        queryset=Section.objects.all(), source='section', write_only=True, required=False, allow_null=True
+    )
+    section_name = serializers.CharField(source='section.name', read_only=True, default=None)
+    section_slug = serializers.CharField(source='section.slug', read_only=True, default=None)
+    section_product_label = serializers.CharField(source='section.product_label', read_only=True, default=None)
     discount_amount = serializers.ReadOnlyField()
     discount_percentage = serializers.ReadOnlyField()
     subproducts = SubProductSerializer(many=True, read_only=True)
@@ -186,6 +207,8 @@ class ProductSerializer(serializers.ModelSerializer):
             'tax_percentage',
             'discount_percentage', 'discount_amount',
             'unit', 'unit_id',
+            'section', 'section_id', 'section_name', 'section_slug', 'section_product_label',
+            'order_step', 'min_order_qty',
             'image', 'image_url', 'created_at', 'updated_at',
             'categories', 'category_names', 'subproducts',
         )
@@ -244,10 +267,12 @@ class SearchProductSerializer(serializers.ModelSerializer):
     discount_amount = serializers.ReadOnlyField()
     discount_percentage = serializers.ReadOnlyField()
     mrp = serializers.ReadOnlyField()
+    section_slug = serializers.CharField(source='section.slug', read_only=True, default=None)
+    section_product_label = serializers.CharField(source='section.product_label', read_only=True, default=None)
 
     class Meta:
         model = Product
-        fields = ('id', 'name', 'price', 'stock', 'tax_percentage','mrp', 'discount_percentage','discount_amount','image_url', 'unit')
+        fields = ('id', 'name', 'price', 'stock', 'tax_percentage', 'mrp', 'discount_percentage', 'discount_amount', 'image_url', 'unit', 'order_step', 'min_order_qty', 'section_slug', 'section_product_label')
 
     def get_unit(self, obj):
         if obj.unit:
@@ -308,7 +333,7 @@ class OrderSerializer(serializers.ModelSerializer):
             'subtotal', 'delivery_charge', 'total_amount',
             'delivery_address', 'created_at',
             'delivery_latitude', 'delivery_longitude', 'delivery_slot',
-            'is_paid', 'payment_method', 'items', 'review',
+            'is_paid', 'payment_method', 'payment_id', 'items', 'review',
         )
 
     def get_review(self, obj):
@@ -344,10 +369,12 @@ class CartItemSerializer(serializers.ModelSerializer):
     discount_percentage = serializers.ReadOnlyField(source='product.discount_percentage')
     unit = serializers.SerializerMethodField()
     tax_percentage = serializers.DecimalField(source='product.tax_percentage', max_digits=5, decimal_places=2, read_only=True)
+    order_step = serializers.DecimalField(source='product.order_step', max_digits=8, decimal_places=3, read_only=True)
+    min_order_qty = serializers.DecimalField(source='product.min_order_qty', max_digits=8, decimal_places=3, read_only=True)
 
     class Meta:
         model = CartItem
-        fields = ('id', 'product', 'name', 'price', 'image', 'quantity', 'unit', 'mrp', 'discount_percentage', 'total_price', 'tax_percentage')
+        fields = ('id', 'product', 'name', 'price', 'image', 'quantity', 'unit', 'mrp', 'discount_percentage', 'total_price', 'tax_percentage', 'order_step', 'min_order_qty')
 
     def get_image(self, obj):
         if obj.product.image_url and hasattr(obj.product.image_url, 'url'):
@@ -410,14 +437,47 @@ class ContactQuerySerializer(serializers.ModelSerializer):
 
 class SlideSerializer(serializers.ModelSerializer):
     image_url = serializers.SerializerMethodField()
+    image = serializers.ImageField(write_only=True, required=False)
+    section_id = serializers.PrimaryKeyRelatedField(
+        queryset=Section.objects.all(), source='section', write_only=True, required=False, allow_null=True
+    )
+    section_name = serializers.CharField(source='section.name', read_only=True, default=None)
 
     class Meta:
         model = Slide
-        fields = ('id', 'image_url', 'title', 'subtitle', 'tag', 'link', 'button_text', 'link_two', 'button_text_two', 'order', 'is_active', 'created_at')
+        fields = ('id', 'image', 'image_url', 'title', 'subtitle', 'tag', 'text_color', 'link', 'button_text', 'link_two', 'button_text_two', 'order', 'is_active', 'section', 'section_id', 'section_name', 'created_at')
         read_only_fields = ('created_at',)
 
     def get_image_url(self, obj):
         return get_transformed_cloudinary_url(obj.image_url)
+
+    def create(self, validated_data):
+        image = validated_data.pop('image', None)
+        if image:
+            upload_result = cloudinary.uploader.upload(
+                image, folder='freshinbasket/slides',
+                resource_type='image',
+                allowed_formats=['jpg', 'png', 'webp', 'gif'],
+                quality='auto',
+                fetch_format='auto',
+                flags='progressive',
+            )
+            validated_data['image_url'] = upload_result['secure_url']
+        return super().create(validated_data)
+
+    def update(self, instance, validated_data):
+        image = validated_data.pop('image', None)
+        if image:
+            upload_result = cloudinary.uploader.upload(
+                image, folder='freshinbasket/slides',
+                resource_type='image',
+                allowed_formats=['jpg', 'png', 'webp', 'gif'],
+                quality='auto',
+                fetch_format='auto',
+                flags='progressive',
+            )
+            validated_data['image_url'] = upload_result['secure_url']
+        return super().update(instance, validated_data)
 
 
 class CartSerializer(serializers.ModelSerializer):
@@ -461,7 +521,11 @@ class StoreSettingsSerializer(serializers.ModelSerializer):
     class Meta:
         from store.models import StoreSettings
         model = StoreSettings
-        fields = ('free_delivery_threshold', 'delivery_charge')
+        fields = (
+            'free_delivery_threshold', 'delivery_charge', 'max_delivery_radius',
+            'is_announcement_active', 'announcement_message',
+            'announcement_bg_color', 'announcement_text_color'
+        )
 
 
 class WishlistItemSerializer(serializers.ModelSerializer):
@@ -518,3 +582,16 @@ class DeliveryRegisterSerializer(serializers.ModelSerializer):
         from users.models import DeliveryProfile
         DeliveryProfile.objects.get_or_create(user=user, defaults={'is_active': True})
         return user
+
+
+class DeliverySlotSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = DeliverySlot
+        fields = (
+            'id', 'name', 'display_label',
+            'order_start_time', 'order_cutoff_time',
+            'delivery_start_time', 'delivery_end_time',
+            'assignment_hour', 'assignment_minute',
+            'cleanup_hour', 'cleanup_minute',
+            'is_active', 'sort_order',
+        )

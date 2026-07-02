@@ -64,6 +64,7 @@ INSTALLED_APPS = [
     'orders',
     'api',
     'store.apps.StoreConfig',
+    'notifications',
 ]
 
 MIDDLEWARE = [
@@ -343,7 +344,12 @@ JAZZMIN_SETTINGS = {
             "name": "Delivery Map Dashboard", 
             "url": "admin_delivery_dashboard", 
             "icon": "fas fa-map-marked-alt",
-        }]
+        }],
+        "notifications": [{
+            "name": "Send Notification",
+            "url": "admin_send_notification",
+            "icon": "fas fa-bell",
+        }],
     }
 }
 
@@ -361,3 +367,10 @@ CELERY_TIMEZONE = TIME_ZONE
 # Dynamic schedules are managed via DeliverySlot model (Django admin).
 # PeriodicTask entries are auto-created/updated when DeliverySlot is saved.
 # Legacy static tasks (run_morning_assignment, etc.) are preserved as wrappers.
+
+# =============================================================================
+# FIREBASE CLOUD MESSAGING (FCM)
+# =============================================================================
+# Place your Firebase service account JSON at this path.
+# Download from: Firebase Console → Project Settings → Service Accounts → Generate new private key
+FCM_CREDENTIALS_FILE = BASE_DIR / 'firebase_credentials.json'

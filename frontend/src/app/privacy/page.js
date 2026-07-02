@@ -1,6 +1,5 @@
 "use client";
 import Navbar from "../components/Navbar";
-import Footer from "../components/Footer";
 import Link from "next/link";
 import { ArrowLeft, ShieldCheck } from "lucide-react";
 
@@ -280,8 +279,6 @@ export default function PrivacyPolicy() {
 
         </div>
       </div>
-
-      <Footer />
     </div>
   );
 }

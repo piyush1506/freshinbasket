@@ -2,7 +2,7 @@ import logging
 from django.db.models.signals import post_save, post_delete
 from django.dispatch import receiver
 from django.core.cache import cache
-from .models import Product, Category, Slide, StoreSettings
+from .models import Product, Category, Slide, StoreSettings, Section
 
 logger = logging.getLogger(__name__)
 
@@ -34,3 +34,10 @@ def clear_slide_cache(sender, instance, **kwargs):
 @receiver([post_save, post_delete], sender=StoreSettings)
 def clear_settings_cache(sender, instance, **kwargs):
     cache.delete('store_settings')
+
+
+@receiver([post_save, post_delete], sender=Section)
+def clear_section_cache(sender, instance, **kwargs):
+    cache.delete('home_page')
+    cache.delete('sections_list')
+    cache.delete('categories_list')

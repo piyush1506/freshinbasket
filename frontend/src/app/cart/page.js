@@ -14,12 +14,36 @@ import "leaflet/dist/leaflet.css";
 export default function CartPage() {
   const router = useRouter()
   const { cartItems, removeFromCart, addToCart, clearCart, user, subtotal, deliveryCharge, grandTotal, storeSettings, taxAmount, hasTaxableItems } = useCart();
-  const deliverySlot = (() => {
-    const hour = new Date().getHours();
-    if (hour >= 22) return { label: "7 AM - 10 AM", slot: "early-morning" };
-    if (hour < 12) return { label: "7 AM - 12 PM", slot: "morning" };
-    return { label: "4 PM - 10 PM", slot: "evening" };
-  })();
+  const [deliverySlot, setDeliverySlot] = useState({ display_label: "7 AM - 12 PM", is_next_day: false });
+  const [slotLoading, setSlotLoading] = useState(true);
+
+  useEffect(() => {
+    let mounted = true;
+    const controller = new AbortController();
+
+    const fetchSlot = async () => {
+      try {
+        const res = await fetch(
+          `${process.env.NEXT_PUBLIC_API_URL}/api/v1/delivery-slots/current/`,
+          { signal: controller.signal }
+        );
+        if (!res.ok) throw new Error('Failed to fetch slot');
+        const data = await res.json();
+        if (mounted) {
+          setDeliverySlot(data);
+          setSlotLoading(false);
+        }
+      } catch {
+        if (mounted) {
+          setDeliverySlot({ display_label: "7 AM - 12 PM", is_next_day: false });
+          setSlotLoading(false);
+        }
+      }
+    };
+
+    fetchSlot();
+    return () => { mounted = false; controller.abort(); };
+  }, []);
   const [showAddressForm, setShowAddressForm] = useState(false);
   const [deliveryAddress, setDeliveryAddress] = useState(user?.address || "");
   const [pincode, setPincode] = useState("");
@@ -67,24 +91,6 @@ export default function CartPage() {
     fetchSuggested();
   }, [cartItems, showAddressForm]);
 
-  // Load Leaflet from npm when address form opens
-  useEffect(() => {
-    if (!showAddressForm) return;
-    let mounted = true;
-    (async () => {
-      const L = await import("leaflet");
-      if (!mounted) return;
-      initMap(L);
-    })();
-    return () => {
-      mounted = false;
-      if (mapInstance.current) {
-        mapInstance.current.remove();
-        mapInstance.current = null;
-      }
-    };
-  }, [showAddressForm]);
-
   const initMap = (L) => {
     if (mapInstance.current) {
       mapInstance.current.invalidateSize();
@@ -123,6 +129,24 @@ export default function CartPage() {
     mapInstance.current = map;
     markerRef.current = marker;
   };
+
+  // Load Leaflet from npm when address form opens
+  useEffect(() => {
+    if (!showAddressForm) return;
+    let mounted = true;
+    (async () => {
+      const L = await import("leaflet");
+      if (!mounted) return;
+      initMap(L);
+    })();
+    return () => {
+      mounted = false;
+      if (mapInstance.current) {
+        mapInstance.current.remove();
+        mapInstance.current = null;
+      }
+    };
+  }, [showAddressForm]);
 
   const reverseGeocode = async (latitude, longitude) => {
     try {
@@ -179,13 +203,21 @@ export default function CartPage() {
     );
   };
 
-  const handleQuantityChange = (item, newQuantity) => {
-    const currentQuantity = item.quantity || 1
-    const difference = newQuantity - currentQuantity;
-    if (difference !== 0) {
-      addToCart({ ...item, quantity: difference });
+  const handleCartDecrement = async (item) => {
+    const orderStep = Number(item.order_step) || 1;
+    const minOrderQty = Number(item.min_order_qty) || 0;
+    const newQty = parseFloat((item.quantity - orderStep).toFixed(3));
+    if (newQty <= 0 || (minOrderQty > 0 && newQty < minOrderQty)) {
+      removeFromCart(item.id);
+    } else {
+      addToCart({ ...item, quantity: -orderStep });
     }
-  }
+  };
+
+  const handleCartIncrement = (item) => {
+    const orderStep = Number(item.order_step) || 1;
+    addToCart({ ...item, quantity: orderStep });
+  };
 
   const handleProceedToAddress = () => {
     const token = getAccessToken()
@@ -298,8 +330,7 @@ export default function CartPage() {
 
   const handleCheckout = async () => {
     if (isProcessing) return;
-    const token = getAccessToken()
-    if (!token) return router.push('/login')
+    if (!isDeliverable) return;
 
     const fullAddress = `${deliveryAddress}${pincode ? `, Pincode: ${pincode}` : ""}`;
 
@@ -314,6 +345,21 @@ export default function CartPage() {
       setIsProcessing(false);
     }
   }
+
+  // Calculate distance for UI alert
+  const BHILWARA_LAT = 25.3471;
+  const BHILWARA_LNG = 74.6408;
+  const R = 6371;
+  const dLat = (lat - BHILWARA_LAT) * Math.PI / 180;
+  const dLng = (lng - BHILWARA_LNG) * Math.PI / 180;
+  const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+            Math.cos(BHILWARA_LAT * Math.PI / 180) * Math.cos(lat * Math.PI / 180) *
+            Math.sin(dLng/2) * Math.sin(dLng/2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+  const straightLineDistance = R * c;
+  const distance = straightLineDistance * 1.3; // 1.3 multiplier for road driving distance estimation
+  const maxDeliveryRadius = storeSettings?.max_delivery_radius ? parseFloat(storeSettings.max_delivery_radius) : 7;
+  const isDeliverable = distance <= maxDeliveryRadius;
 
   return (
     <div className="min-h-screen bg-white">
@@ -355,19 +401,18 @@ export default function CartPage() {
                   />
                 </div>
                 <div>
-                  <label className="text-xs text-gray-400 uppercase tracking-widest mb-1 block">Pincode</label>
-                  <input
-                    type="text"
-                    maxLength={6}
-                    value={pincode}
-                    onChange={(e) => setPincode(e.target.value.replace(/\D/g, ""))}
-                    placeholder="6-digit pincode"
-                    className="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-green-700"
-                  />
-                </div>
-                <div className="text-sm text-gray-500">
-                  <span className="font-semibold text-gray-700">Coordinates: </span>
-                  {lat}, {lng}
+                                  </div>
+                <div className="text-sm text-gray-500 space-y-1">
+                  <div>
+                    <span className="font-semibold text-gray-700">Coordinates: </span>
+                    {lat}, {lng}
+                  </div>
+                  <div>
+                    <span className="font-semibold text-gray-700">Distance: </span>
+                    <span className={distance > 10 ? "text-red-600 font-bold" : "text-green-700 font-bold"}>
+                      {distance.toFixed(2)} km
+                    </span>
+                  </div>
                 </div>
 
                 <div>
@@ -408,9 +453,20 @@ export default function CartPage() {
                   </div>
                 </div>
 
+                {!isDeliverable && (
+                  <div className="bg-red-50 text-red-600 p-4 rounded-lg text-sm font-semibold border border-red-200 shadow-sm flex items-start gap-3">
+                    <svg className="w-5 h-5 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                    </svg>
+                    <div>
+                      We currently do not provide services in your area. Delivery is restricted to a {maxDeliveryRadius}km radius within Bhilwara.
+                    </div>
+                  </div>
+                )}
+
                 <button
                   onClick={handleCheckout}
-                  disabled={isProcessing}
+                  disabled={isProcessing || !isDeliverable}
                   className="w-full bg-green-700 hover:bg-green-800 text-white py-3 rounded-lg font-semibold transition flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {isProcessing ? <RefreshCw size={18} className="animate-spin" /> : <Lock size={18} />}
@@ -447,100 +503,105 @@ export default function CartPage() {
 
                 <div className="grid lg:grid-cols-3 gap-8">
                   {/* Cart Items Section */}
-                  <div className="lg:col-span-2">
-                    <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
-                      {/* Table Header */}
-                      <div className="hidden md:grid grid-cols-6 gap-4 px-6 py-4 bg-gray-50 border-b border-gray-200 font-semibold text-gray-700 text-sm">
-                        <div className="col-span-2">Product</div>
-                        <div>Price</div>
-                        <div>Quantity</div>
-                        <div>Total</div>
-                        <div></div>
-                      </div>
+                  <div className="lg:col-span-2 space-y-3">
 
-                      {/* Cart Items */}
-                      <div className="divide-y divide-gray-200">
-                        {cartItems.map((item) => (
-                          <div
-                            key={item.id}
-                            className="flex flex-col md:grid md:grid-cols-6 gap-4 px-4 py-4 md:px-6 md:items-center relative"
-                          >
-                            {/* Product Info */}
-                            <div className="md:col-span-2 flex gap-4 pr-10 md:pr-0">
-                              {item.image_url && (
-                                <img
-                                  src={item.image_url}
-                                  alt={item.name}
-                                  className="w-16 h-16 sm:w-20 sm:h-20 rounded-lg object-cover"
-                                />
-                              )}
-                              <div>
-                                <h3 className="font-semibold text-gray-900">
-                                  {item.name}
-                                </h3>
-                                <p className="text-sm text-gray-500">
-                                  {item.size || "Standard"}
-                                </p>
-                                <div className="text-gray-900 font-semibold md:hidden mt-1">
-                                  ₹{parseInt(item.price)}/{item.unit || 'kg'}
-                                </div>
-                              </div>
-                            </div>
+                    {cartItems.map((item) => (
+                      <div
+                        key={item.id}
+                        className="bg-white border border-gray-200 rounded-xl p-4 flex gap-4 items-center shadow-sm hover:shadow-md transition-shadow"
+                      >
+                        {/* Product Image */}
+                        {item.image_url && (
+                          <img
+                            src={item.image_url}
+                            alt={item.name}
+                            className="w-16 h-16 sm:w-20 sm:h-20 rounded-xl object-cover shrink-0 border border-gray-100"
+                          />
+                        )}
 
-                            {/* Price (Desktop only) */}
-                            <div className="hidden md:block text-gray-900 font-semibold">
-                              ₹{parseInt(item.price)}/{item.unit || 'kg'}
-                            </div>
+                        {/* Product Info */}
+                        <div className="flex-1 min-w-0">
+                          <h3 className="font-bold text-gray-900 text-sm sm:text-base leading-tight truncate">
+                            {item.name}
+                          </h3>
+                          <p className="text-xs text-gray-400 mt-0.5">{item.unit || 'kg'} · ₹{parseInt(item.price)}/{item.unit || 'kg'}</p>
 
-                            {/* Mobile bottom row / Desktop columns */}
-                            <div className="flex items-center justify-between mt-2 md:mt-0 md:contents">
-                              {/* Quantity Controls */}
-                              <div className="flex items-center gap-2 bg-gray-100 rounded-lg p-1 w-fit md:col-span-1">
-                                <button
-                                  className="px-2 py-1 hover:bg-gray-200 rounded flex items-center justify-center"
-                                  onClick={() => {
-                                    if (item.quantity > 1) {
-                                      handleQuantityChange(item, item.quantity - 1);
-                                    }
-                                  }}
-                                >
-                                  <Minus size={16} />
-                                </button>
-                                <span className="px-3 py-1 text-center min-w-[30px]">
-                                  {item.quantity || 1}
-                                </span>
-                                <button
-                                  className="px-2 py-1 hover:bg-gray-200 rounded flex items-center justify-center"
-                                  onClick={() => handleQuantityChange(item, (item.quantity || 1) + 1)}
-                                >
-                                  <Plus size={16} />
-                                </button>
-                              </div>
-
-                              {/* Total */}
-                              <div className="font-semibold text-gray-900 md:col-span-1">
-                                <span className="md:hidden text-gray-500 text-sm font-normal mr-2">Total:</span>
-                                ₹{parseInt(item.price * (item.quantity || 1))}
-                                {Number(item.tax_percentage) > 0 && (
-                                  <div className="text-[10px] font-medium text-amber-600">+{Number(item.tax_percentage)}% tax</div>
-                                )}
-                              </div>
-                            </div>
-
-                            {/* Remove Button */}
-                            <div className="absolute top-4 right-4 md:static md:col-span-1 md:text-right">
+                          {/* Mobile: quantity + total inline */}
+                          <div className="flex items-center gap-3 mt-2 sm:hidden">
+                            {/* Stepper */}
+                            <div className="flex items-center gap-1 bg-[#0c831f] text-white rounded-lg p-1 select-none">
                               <button
-                                onClick={() => removeFromCart(item.id)}
-                                className="text-red-500 hover:text-red-700 transition"
+                                className="w-6 h-6 flex items-center justify-center hover:bg-green-800 rounded-md transition-colors"
+                                onClick={() => handleCartDecrement(item)}
                               >
-                                <span className="md:hidden"><Trash2 size={18} /></span>
-                                <span className="hidden md:inline">Remove</span>
+                                <Minus size={11} className="stroke-[3px]" />
+                              </button>
+                              <span className="text-xs font-extrabold px-1.5 min-w-[1.75rem] text-center">
+                                {parseFloat(Number(item.quantity).toFixed(3))}
+                              </span>
+                              <button
+                                className="w-6 h-6 flex items-center justify-center hover:bg-green-800 rounded-md transition-colors"
+                                onClick={() => handleCartIncrement(item)}
+                              >
+                                <Plus size={11} className="stroke-[3px]" />
                               </button>
                             </div>
+                            <span className="text-xs text-gray-500 font-medium">{item.unit || 'kg'}</span>
+                            <span className="ml-auto font-bold text-gray-900 text-sm">₹{parseInt(item.price * (item.quantity || 1))}</span>
                           </div>
-                        ))}
+                        </div>
+
+                        {/* Desktop: quantity + total + remove */}
+                        <div className="hidden sm:flex items-center gap-4 shrink-0">
+                          {/* Stepper */}
+                          <div className="flex items-center gap-1.5">
+                            <div className="flex items-center gap-1 bg-[#0c831f] text-white rounded-lg p-1 select-none shadow-sm">
+                              <button
+                                className="w-7 h-7 flex items-center justify-center hover:bg-green-800 rounded-md transition-colors"
+                                onClick={() => handleCartDecrement(item)}
+                              >
+                                <Minus size={12} className="stroke-[3px]" />
+                              </button>
+                              <span className="text-sm font-extrabold px-2 min-w-[2.5rem] text-center">
+                                {parseFloat(Number(item.quantity).toFixed(3))}
+                              </span>
+                              <button
+                                className="w-7 h-7 flex items-center justify-center hover:bg-green-800 rounded-md transition-colors"
+                                onClick={() => handleCartIncrement(item)}
+                              >
+                                <Plus size={12} className="stroke-[3px]" />
+                              </button>
+                            </div>
+                            <span className="text-xs font-bold text-gray-700">{item.unit || 'kg'}</span>
+                          </div>
+
+                          {/* Total */}
+                          <div className="text-right min-w-[60px]">
+                            <div className="font-bold text-gray-900 text-base">₹{parseInt(item.price * (item.quantity || 1))}</div>
+                            {Number(item.tax_percentage) > 0 && (
+                              <div className="text-[10px] font-medium text-amber-600">+{Number(item.tax_percentage)}% tax</div>
+                            )}
+                          </div>
+
+                          {/* Remove */}
+                          <button
+                            onClick={() => removeFromCart(item.id)}
+                            className="text-gray-600 hover:text-red-500 transition-colors p-1"
+                            title="Remove item"
+                          >
+                            <Trash2 size={18}  />
+                          </button>
+                        </div>
+
+                        {/* Mobile remove button */}
+                        <button
+                          onClick={() => removeFromCart(item.id)}
+                          className="sm:hidden text-gray-300 hover:text-red-500 transition-colors shrink-0 self-start"
+                        >
+                          <Trash2 size={16} />
+                        </button>
                       </div>
-                    </div>
+                    ))}
 
                     {/* Continue Shopping */}
                     <Link
@@ -594,7 +655,7 @@ export default function CartPage() {
                         <div className="flex justify-between items-center text-gray-600">
                           <span>Delivery Slot</span>
                           <span className="font-semibold text-gray-900 bg-green-50 text-green-800 text-xs px-2 py-1 rounded-full">
-                            {deliverySlot.label}
+                            {slotLoading ? "Loading..." : `${deliverySlot.is_next_day ? "Tomorrow " : ""}${deliverySlot.display_label}`}
                           </span>
                         </div>
 

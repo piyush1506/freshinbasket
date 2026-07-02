@@ -1,6 +1,5 @@
 "use client";
 import Navbar from "../components/Navbar";
-import Footer from "../components/Footer";
 import Link from "next/link";
 import { ArrowLeft, FileText } from "lucide-react";
 
@@ -350,8 +349,6 @@ export default function TermsAndConditions() {
 
         </div>
       </div>
-
-      <Footer />
     </div>
   );
 }

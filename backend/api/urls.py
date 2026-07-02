@@ -7,9 +7,11 @@ from .views import (
     OrderViewSet, DeliveryAssignmentViewSet,
     CartViewSet, LoginView, RegisterView, LogoutView, ContactView,
     upload_image, HomeApiView, StoreSettingsView, ReviewViewSet,
-    WishlistViewSet, SendOTPView, VerifyOTPView, DeliveryRegisterView
+    WishlistViewSet, SendOTPView, VerifyOTPView, DeliveryRegisterView,
+    DeliverySlotViewSet, SectionViewSet
 )
 from orders.views import CreateRazorpayOrderView, VerifyPaymentView, CreateCODOrderView
+from notifications.views import RegisterFCMTokenView
 from .import_views import ProductImportView, ProductTemplateDownloadView
 from orders.delivery_views import (
     DeliveryDashboardView,
@@ -23,6 +25,7 @@ from orders.delivery_views import (
 router = DefaultRouter()
 router.register(r'users', UserViewSet)
 router.register(r'slides', SlideViewSet)
+router.register(r'sections', SectionViewSet, basename='section')
 router.register(r'categories', CategoryViewSet)
 router.register(r'products', ProductViewSet, basename='product')
 router.register(r'orders', OrderViewSet, basename='order')
@@ -30,6 +33,7 @@ router.register(r'deliveries', DeliveryAssignmentViewSet, basename='delivery')
 router.register(r'cart', CartViewSet, basename='cart')
 router.register(r'reviews', ReviewViewSet, basename='review')
 router.register(r'wishlist', WishlistViewSet, basename='wishlist')
+router.register(r'delivery-slots', DeliverySlotViewSet, basename='delivery-slot')
 
 urlpatterns = [
     # Home Endpoint
@@ -75,6 +79,9 @@ urlpatterns = [
     # Excel Import
     path('import/products/', ProductImportView.as_view(), name='import_products'),
     path('import/products/template/', ProductTemplateDownloadView.as_view(), name='import_products_template'),
+
+    # Push Notifications — FCM token registration
+    path('notifications/register-token/', RegisterFCMTokenView.as_view(), name='register_fcm_token'),
 
     # Router URLs
     path('', include(router.urls)),

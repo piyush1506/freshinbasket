@@ -13,11 +13,7 @@ function isBrowser() {
 export function getAccessToken() {
   if (memoryToken) return memoryToken;
   if (isBrowser()) {
-    try {
-      return sessionStorage.getItem(TOKEN_KEYS.ACCESS);
-    } catch {
-      return localStorage.getItem('access');
-    }
+    return localStorage.getItem(TOKEN_KEYS.ACCESS) || localStorage.getItem('access');
   }
   return null;
 }
@@ -25,35 +21,24 @@ export function getAccessToken() {
 export function setTokens(access, refresh) {
   memoryToken = access;
   if (isBrowser()) {
-    try {
-      sessionStorage.setItem(TOKEN_KEYS.ACCESS, access);
-      sessionStorage.setItem(TOKEN_KEYS.REFRESH, refresh);
-    } catch {
-      localStorage.setItem('access', access);
-      localStorage.setItem('refresh', refresh);
-    }
+    localStorage.setItem(TOKEN_KEYS.ACCESS, access);
+    localStorage.setItem(TOKEN_KEYS.REFRESH, refresh);
+    localStorage.setItem('access', access);
+    localStorage.setItem('refresh', refresh);
   }
 }
 
 export function setUser(userData) {
   if (isBrowser()) {
-    try {
-      sessionStorage.setItem(TOKEN_KEYS.USER, JSON.stringify(userData));
-    } catch {
-      localStorage.setItem('user', JSON.stringify(userData));
-    }
+    localStorage.setItem(TOKEN_KEYS.USER, JSON.stringify(userData));
+    localStorage.setItem('user', JSON.stringify(userData));
   }
 }
 
 export function getUser() {
   if (isBrowser()) {
-    try {
-      const data = sessionStorage.getItem(TOKEN_KEYS.USER);
-      return data ? JSON.parse(data) : null;
-    } catch {
-      const data = localStorage.getItem('user');
-      return data ? JSON.parse(data) : null;
-    }
+    const data = localStorage.getItem(TOKEN_KEYS.USER) || localStorage.getItem('user');
+    return data ? JSON.parse(data) : null;
   }
   return null;
 }
@@ -61,8 +46,7 @@ export function getUser() {
 export function clearAuth() {
   memoryToken = null;
   if (isBrowser()) {
-    [TOKEN_KEYS.ACCESS, TOKEN_KEYS.REFRESH, TOKEN_KEYS.USER].forEach(k => {
-      try { sessionStorage.removeItem(k); } catch { }
+    [TOKEN_KEYS.ACCESS, TOKEN_KEYS.REFRESH, TOKEN_KEYS.USER, 'access', 'refresh', 'user'].forEach(k => {
       localStorage.removeItem(k);
     });
   }
@@ -98,7 +82,7 @@ export async function authFetch(url, options = {}) {
 
 export async function refreshAccessToken() {
   const refresh = isBrowser()
-    ? (sessionStorage.getItem(TOKEN_KEYS.REFRESH) || localStorage.getItem('refresh'))
+    ? (localStorage.getItem(TOKEN_KEYS.REFRESH) || localStorage.getItem('refresh'))
     : null;
 
   if (!refresh) return null;
@@ -176,7 +160,7 @@ export const AUTH_API = {
   async logout() {
     const token = getAccessToken();
     const refresh = isBrowser()
-      ? (sessionStorage.getItem(TOKEN_KEYS.REFRESH) || localStorage.getItem('refresh'))
+      ? (localStorage.getItem(TOKEN_KEYS.REFRESH) || localStorage.getItem('refresh'))
       : null;
 
     if (refresh) {
@@ -247,7 +231,18 @@ export const AUTH_API = {
     );
     const result = await res.json();
     if (!res.ok) {
-      throw new Error(result.error || result.detail || 'Failed to update profile');
+      let errorMessage = 'Failed to update profile';
+      if (result.detail) errorMessage = result.detail;
+      else if (result.error) errorMessage = result.error;
+      else if (typeof result === 'object') {
+        const firstKey = Object.keys(result)[0];
+        if (Array.isArray(result[firstKey])) {
+          errorMessage = result[firstKey][0];
+        } else if (typeof result[firstKey] === 'string') {
+          errorMessage = result[firstKey];
+        }
+      }
+      throw new Error(errorMessage);
     }
     setUser(result);
     return result;

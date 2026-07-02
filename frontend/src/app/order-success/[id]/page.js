@@ -70,7 +70,7 @@ export default function OrderSuccessPage() {
                 <Clock size={20} className="text-green-700" />
                 <div>
                   <p className="text-xs text-gray-500 font-semibold uppercase tracking-wider">Delivery Time</p>
-                  <p className="font-bold text-gray-900">10 mins ({order.delivery_slot})</p>
+                  <p className="font-bold text-gray-900"> ({order.delivery_slot})</p>
                 </div>
               </div>
             </div>

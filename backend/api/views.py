@@ -12,8 +12,8 @@ from django.views.decorators.cache import cache_page
 from django.utils.decorators import method_decorator
 from django.db.models import Prefetch, F, Q, Case, When, Value, IntegerField
 from rest_framework.exceptions import ValidationError
-from store.models import Category, Product, Slide, ContactQuery, WishlistItem, SubProduct
-from orders.models import Order, DeliveryAssignment, Cart, CartItem, Review
+from store.models import Category, Product, Slide, ContactQuery, WishlistItem, SubProduct, Section
+from orders.models import Order, DeliveryAssignment, Cart, CartItem, Review, DeliverySlot
 from users.models import OTPVerification
 import random
 import datetime
@@ -24,7 +24,7 @@ from .serializers import (
     SearchProductSerializer, SlideSerializer, ContactQuerySerializer,
     OrderSerializer, DeliveryAssignmentSerializer, ReviewSerializer,
     CartSerializer, CartItemSerializer, LoginSerializer, UserUpdateSerializer,
-    WishlistItemSerializer
+    WishlistItemSerializer, DeliverySlotSerializer, SectionSerializer
 )
 from rest_framework_simplejwt.tokens import RefreshToken, OutstandingToken, BlacklistedToken
 
@@ -97,34 +97,81 @@ class HomeApiView(APIView):
         if cached:
             return Response(cached)
 
-        categories = Category.objects.prefetch_related(
+        # Get default slides (unassigned slides, or fallback to all active slides if none unassigned)
+        default_slides = Slide.objects.filter(is_active=True, section__isnull=True).order_by('order', '-created_at')
+        if not default_slides.exists():
+            default_slides = Slide.objects.filter(is_active=True).order_by('order', '-created_at')
+        default_slides_data = SlideSerializer(default_slides, many=True, context={'request': request}).data
+
+        # Build section-based structure
+        sections = Section.objects.filter(is_active=True).prefetch_related(
             Prefetch(
-                'products',
-                queryset=Product.objects.select_related('unit').prefetch_related('categories').defer('description').filter(stock__gt=0),
-                to_attr='cached_products'
+                'slides',
+                queryset=Slide.objects.filter(is_active=True).order_by('order', '-created_at'),
+                to_attr='cached_slides'
+            ),
+            Prefetch(
+                'categories',
+                queryset=Category.objects.prefetch_related(
+                    Prefetch(
+                        'products',
+                        queryset=Product.objects.select_related('unit').prefetch_related('categories').defer('description').filter(stock__gt=0),
+                        to_attr='cached_products'
+                    )
+                )
             )
         )
 
-        sections = []
-        for category in categories:
-            products = category.cached_products[:10]
-            sections.append({
-                "id": category.id,
-                "name": category.name,
-                "slug": category.slug,
-                "description": category.description,
-                "image_url": category.image.url if category.image and hasattr(category.image, 'url') else None,
-                "products": ProductSerializer(
-                    products,
-                    many=True,
-                    context={'request': request}
-                ).data
+        sections_data = []
+        for section in sections:
+            categories_data = []
+            for category in section.categories.all():
+                products = category.cached_products[:10]
+                categories_data.append({
+                    "id": category.id,
+                    "name": category.name,
+                    "slug": category.slug,
+                    "description": category.description,
+                    "image_url": category.image.url if category.image and hasattr(category.image, 'url') else None,
+                    "section_name": section.name,
+                    "products": ProductSerializer(
+                        products,
+                        many=True,
+                        context={'request': request}
+                    ).data
+                })
+            
+            section_slides = section.cached_slides
+            if len(section_slides) > 0:
+                slides_data = SlideSerializer(section_slides, many=True, context={'request': request}).data
+            else:
+                slides_data = default_slides_data
+
+            sections_data.append({
+                "id": section.id,
+                "name": section.name,
+                "slug": section.slug,
+                "description": section.description,
+                "icon": section.icon,
+                "image_url": section.image.url if section.image and hasattr(section.image, 'url') else None,
+                "slides": slides_data,
+                "categories": categories_data
             })
 
-        slides = Slide.objects.filter(is_active=True).order_by('order', '-created_at')
-        slides_data = SlideSerializer(slides, many=True, context={'request': request}).data
+        # Extract a flat list of all categories for backwards compatibility with the mobile app
+        categories_data_flat = []
+        seen_category_ids = set()
+        for sec in sections_data:
+            for cat in sec["categories"]:
+                if cat["id"] not in seen_category_ids:
+                    categories_data_flat.append(cat)
+                    seen_category_ids.add(cat["id"])
 
-        data = {"slides": slides_data, "categories": sections}
+        data = {
+            "slides": default_slides_data,
+            "sections": sections_data,
+            "categories": categories_data_flat
+        }
         cache.set("home_page", data, timeout=300)
         return Response(data)
 
@@ -279,34 +326,73 @@ class SlideViewSet(viewsets.ModelViewSet):
         cache.set(cache_key, response.data, timeout=600)
         return response
 
+    def perform_create(self, serializer):
+        super().perform_create(serializer)
+        cache.delete('slides_list')
+        cache.delete('home_page')
+
+    def perform_update(self, serializer):
+        super().perform_update(serializer)
+        cache.delete('slides_list')
+        cache.delete('home_page')
+
+    def perform_destroy(self, instance):
+        super().perform_destroy(instance)
+        cache.delete('slides_list')
+        cache.delete('home_page')
+
 
 class ContactView(mixins.CreateModelMixin, mixins.ListModelMixin, mixins.RetrieveModelMixin, viewsets.GenericViewSet):
     queryset = ContactQuery.objects.all()
     serializer_class = ContactQuerySerializer
-    permission_classes = [permissions.IsAuthenticated]
+
+    def get_permissions(self):
+        if self.action == 'create':
+            return [permissions.AllowAny()]
+        return [permissions.IsAuthenticated()]
 
     def get_queryset(self):
         return ContactQuery.objects.filter(user=self.request.user)
 
     def perform_create(self, serializer):
-        serializer.save(user=self.request.user)
+        if self.request.user.is_authenticated:
+            serializer.save(user=self.request.user)
+        else:
+            serializer.save()
 
 
-# @method_decorator(cache_page(60 * 10), name='list')
-# class CategoryViewSet(viewsets.ModelViewSet):
-#     queryset = Category.objects.all()
-#     serializer_class = CategorySerializer
-#     permission_classes = [permissions.IsAuthenticatedOrReadOnly]
-#     pagination_class = None
-
-class CategoryViewSet(viewsets.ModelViewSet):
-    queryset = Category.objects.all()
-    serializer_class = CategorySerializer
+class SectionViewSet(viewsets.ModelViewSet):
+    queryset = Section.objects.filter(is_active=True)
+    serializer_class = SectionSerializer
     permission_classes = [permissions.IsAuthenticatedOrReadOnly]
     pagination_class = None
 
     def list(self, request, *args, **kwargs):
-        cache_key = 'categories_list'
+        cache_key = 'sections_list'
+        cached = cache.get(cache_key)
+        if cached is not None:
+            return Response(cached)
+        response = super().list(request, *args, **kwargs)
+        cache.set(cache_key, response.data, timeout=600)
+        return response
+
+
+class CategoryViewSet(viewsets.ModelViewSet):
+    queryset = Category.objects.select_related('section').all()
+    serializer_class = CategorySerializer
+    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
+    pagination_class = None
+
+    def get_queryset(self):
+        qs = Category.objects.select_related('section').all()
+        section_slug = self.request.query_params.get('section')
+        if section_slug:
+            qs = qs.filter(section__slug=section_slug)
+        return qs
+
+    def list(self, request, *args, **kwargs):
+        section_slug = request.query_params.get('section', '')
+        cache_key = f'categories_list:{section_slug}'
 
         cached = cache.get(cache_key)
         if cached is not None:
@@ -335,18 +421,22 @@ class ProductViewSet(viewsets.ModelViewSet):
     throttle_classes = [SearchRateThrottle]
 
     def get_queryset(self):
-        qs = Product.objects.select_related('unit').prefetch_related(
+        qs = Product.objects.select_related('unit', 'section').prefetch_related(
             'categories',
             Prefetch('subproducts', queryset=SubProduct.objects.select_related('unit'))
         ).defer('description')
         category_slug = self.request.query_params.get('category')
         if category_slug:
             qs = qs.filter(categories__slug=category_slug)
+        section_slug = self.request.query_params.get('section')
+        if section_slug:
+            qs = qs.filter(section__slug=section_slug)
         return qs
 
     def list(self, request, *args, **kwargs):
         category_slug = request.query_params.get('category', '')
-        cache_key = f'products_list:{category_slug}'
+        section_slug = request.query_params.get('section', '')
+        cache_key = f'products_list:{section_slug}:{category_slug}'
 
         cached = cache.get(cache_key)
         if cached is not None:
@@ -523,11 +613,12 @@ class CartViewSet(viewsets.ModelViewSet):
 
     @action(detail=False, methods=['POST'])
     def add_item(self, request):
+        from decimal import Decimal, InvalidOperation
         cart = self.get_object()
         product_id = request.data.get('product_id')
         try:
-            quantity = int(request.data.get('quantity', 1))
-        except (ValueError, TypeError):
+            quantity = Decimal(str(request.data.get('quantity', 1)))
+        except (InvalidOperation, TypeError, ValueError):
             return Response({'error': 'Invalid quantity'}, status=status.HTTP_400_BAD_REQUEST)
 
         try:
@@ -538,7 +629,7 @@ class CartViewSet(viewsets.ModelViewSet):
         cart_item, created = CartItem.objects.get_or_create(
             cart=cart,
             product=product,
-            defaults={'quantity': max(1, quantity)}
+            defaults={'quantity': max(Decimal('0.001'), quantity)}
         )
 
         if not created:
@@ -573,12 +664,13 @@ class CartViewSet(viewsets.ModelViewSet):
 
         for item in guest_items:
             product_id = item.get('product_id') or item.get('id')
+            from decimal import Decimal, InvalidOperation
             try:
-                quantity = int(item.get('quantity', 1))
-            except (ValueError, TypeError):
+                quantity = Decimal(str(item.get('quantity', 1)))
+            except (InvalidOperation, ValueError, TypeError):
                 continue
                 
-            if quantity < 1:
+            if quantity <= 0:
                 continue
 
             try:
@@ -780,4 +872,33 @@ class DeliveryRegisterView(mixins.CreateModelMixin, viewsets.GenericViewSet):
             'access': str(refresh.access_token),
             'user': UserSerializer(user).data
         }, status=status.HTTP_201_CREATED)
+
+
+class DeliverySlotViewSet(viewsets.ReadOnlyModelViewSet):
+    serializer_class = DeliverySlotSerializer
+    permission_classes = [permissions.AllowAny]
+
+    def get_queryset(self):
+        return DeliverySlot.objects.filter(is_active=True)
+
+    @action(detail=False, methods=['GET'])
+    def current(self, request):
+        result = DeliverySlot.get_current_slot()
+        slot = result['slot']
+        is_next_day = result['is_next_day']
+        if slot:
+            serializer = self.get_serializer(slot)
+            data = serializer.data
+            data['is_next_day'] = is_next_day
+            return Response(data)
+        first_slot = DeliverySlot.objects.filter(is_active=True).order_by('sort_order', 'order_cutoff_time').first()
+        if first_slot:
+            serializer = self.get_serializer(first_slot)
+            data = serializer.data
+            data['is_next_day'] = True
+            return Response(data)
+        return Response(
+            {'detail': 'No delivery slot available', 'display_label': '7 AM - 12 PM', 'is_next_day': True},
+            status=status.HTTP_200_OK
+        )
 

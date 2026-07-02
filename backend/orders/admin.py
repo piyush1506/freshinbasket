@@ -144,8 +144,8 @@ class CartItemAdmin(admin.ModelAdmin):
 class DeliveryOrder(Order):
     class Meta:
         proxy = True
-        verbose_name = "Delivery Assignment"
-        verbose_name_plural = "Delivery Assignments"
+        verbose_name = "Delivery Tracker (Orders)"
+        verbose_name_plural = "Delivery Tracker (Orders)"
 
 
 @admin.register(DeliveryOrder)
@@ -154,7 +154,8 @@ class DeliveryOrderAdmin(admin.ModelAdmin):
         'order_number', 'customer', 'short_address', 'status',
         'delivery_boy_name', 'is_paid', 'created_at'
     )
-    list_filter = ('status', 'is_paid', 'created_at')
+    list_filter = ('status', OrderAdmin.assignment_status, 'is_paid', 'created_at')
+    inlines = [DeliveryAssignmentInline]
     search_fields = ('order_number', 'customer__username', 'customer__email')
     ordering = ('-created_at',)
 
@@ -166,9 +167,15 @@ class DeliveryOrderAdmin(admin.ModelAdmin):
 
     def delivery_boy_name(self, obj):
         try:
-            return obj.delivery_assignment.delivery_boy.username
+            assignment = obj.delivery_assignment
+            from django.utils.html import format_html
+            return format_html(
+                '<span style="color:green; font-weight:bold;">✅ {}</span>',
+                assignment.delivery_boy.username
+            )
         except DeliveryAssignment.DoesNotExist:
-            return '-'
+            from django.utils.safestring import mark_safe
+            return mark_safe('<span style="color:red; font-weight:bold;"> Unassigned</span>')
     delivery_boy_name.short_description = 'Delivery Boy'
 
     def get_queryset(self, request):
@@ -191,18 +198,40 @@ class DeliveryClusterAdmin(admin.ModelAdmin):
 
 @admin.register(DeliverySlot)
 class DeliverySlotAdmin(admin.ModelAdmin):
-    list_display = ('name', 'display_label', 'order_cutoff_time', 'delivery_start_time', 'delivery_end_time', 'assignment_time', 'cleanup_time', 'is_active', 'sort_order')
-    list_editable = ('is_active', 'sort_order')
+    list_display = ('sort_order', 'name', 'display_label', 'active_range', 'order_start_time', 'order_cutoff_time', 'delivery_start_time', 'delivery_end_time', 'assignment_time', 'cleanup_time', 'is_active')
+    list_display_links = ('name',)
+    list_editable = ('sort_order', 'is_active')
     list_filter = ('is_active',)
     ordering = ('sort_order', 'order_cutoff_time')
+    fields = (
+        'name', 'display_label',
+        ('order_start_time', 'order_cutoff_time'), ('active_range_display',),
+        'delivery_start_time', 'delivery_end_time',
+        ('assignment_hour', 'assignment_minute'),
+        ('cleanup_hour', 'cleanup_minute'),
+        'is_active', 'sort_order',
+    )
+    readonly_fields = ('active_range_display',)
 
     def assignment_time(self, obj):
         return f"{obj.assignment_hour:02d}:{obj.assignment_minute:02d}"
-    assignment_time.short_description = 'Auto-Assign Time'
+    assignment_time.short_description = 'Auto-Assign'
 
     def cleanup_time(self, obj):
         return f"{obj.cleanup_hour:02d}:{obj.cleanup_minute:02d}"
-    cleanup_time.short_description = 'Cleanup Time'
+    cleanup_time.short_description = 'Cleanup'
+
+    def active_range(self, obj):
+        start = obj.order_start_time.strftime('%I:%M %p')
+        end = obj.order_cutoff_time.strftime('%I:%M %p')
+        return f"{start} → {end}"
+    active_range.short_description = 'Orders from → until'
+
+    def active_range_display(self, obj):
+        start = obj.order_start_time.strftime('%I:%M %p')
+        end = obj.order_cutoff_time.strftime('%I:%M %p')
+        return f"Orders placed from {start} to {end} → gets this slot"
+    active_range_display.short_description = 'When does this slot apply?'
 
 
 @admin.register(DeliveryAssignment)
