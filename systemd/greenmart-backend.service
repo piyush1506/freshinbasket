@@ -5,8 +5,8 @@ After=network.target
 [Service]
 User=ubuntu
 Group=www-data
-WorkingDirectory=/var/www/greenmart/backend
-ExecStart=/var/www/greenmart/backend/venv/bin/gunicorn \
+WorkingDirectory=/var/www/freshinbasket/backend
+ExecStart=/var/www/freshinbasket/backend/venv/bin/gunicorn \
           --access-logfile - \
           --workers 3 \
           --bind 127.0.0.1:8000 \
