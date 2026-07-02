@@ -5,8 +5,8 @@ services:
     image: postgres:15-alpine
     restart: unless-stopped
     environment:
-      POSTGRES_DB: greenmart
-      POSTGRES_USER: greenmart_user
+      POSTGRES_DB: freshinbasket
+      POSTGRES_USER: freshinbasket_user
       POSTGRES_PASSWORD: ${DB_PASSWORD}
     # Ports not exposed to host — only accessible within Docker network
     # For local dev, uncomment the line below:
@@ -16,7 +16,7 @@ services:
       - postgres_data:/var/lib/postgresql/data
       - ./init-db:/docker-entrypoint-initdb.d
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U greenmart_user -d greenmart"]
+      test: ["CMD-SHELL", "pg_isready -U freshinbasket_user -d freshinbasket"]
       interval: 10s
       timeout: 5s
       retries: 5

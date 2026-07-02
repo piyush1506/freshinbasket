@@ -1,6 +1,6 @@
 import psycopg2
 
-conn = psycopg2.connect(dbname='greenmart', user='postgres', password='1234', host='localhost', port='5432')
+conn = psycopg2.connect(dbname='freshinbasket', user='postgres', password='1234', host='localhost', port='5432')
 cur = conn.cursor()
 
 # List all tables
@@ -8,7 +8,7 @@ cur.execute("SELECT table_name FROM information_schema.tables WHERE table_schema
 tables = cur.fetchall()
 
 print("=" * 60)
-print(f"DATABASE: greenmart  |  Total tables: {len(tables)}")
+print(f"DATABASE: freshinbasket  |  Total tables: {len(tables)}")
 print("=" * 60)
 
 for (table_name,) in tables:

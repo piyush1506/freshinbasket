@@ -1,7 +1,7 @@
 const TOKEN_KEYS = {
-  ACCESS: 'greenmart_access',
-  REFRESH: 'greenmart_refresh',
-  USER: 'greenmart_user',
+  ACCESS: 'freshinbasket_access',
+  REFRESH: 'freshinbasket_refresh',
+  USER: 'freshinbasket_user',
 };
 
 let memoryToken = null;

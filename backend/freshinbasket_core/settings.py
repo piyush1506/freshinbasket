@@ -78,7 +78,7 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 
-ROOT_URLCONF = 'greenmart_core.urls'
+ROOT_URLCONF = 'freshinbasket_core.urls'
 
 TEMPLATES = [
     {
@@ -95,7 +95,7 @@ TEMPLATES = [
     },
 ]
 
-WSGI_APPLICATION = 'greenmart_core.wsgi.application'
+WSGI_APPLICATION = 'freshinbasket_core.wsgi.application'
 
 # =============================================================================
 # CACHE
@@ -120,7 +120,7 @@ else:
     CACHES = {
         'default': {
             'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
-            'LOCATION': 'greenmart-cache',
+            'LOCATION': 'freshinbasket-cache',
             'TIMEOUT': 300,
             'OPTIONS': {
                 'MAX_ENTRIES': 1000,
@@ -130,7 +130,7 @@ else:
 
 CACHE_MIDDLEWARE_ALIAS = 'default'
 CACHE_MIDDLEWARE_SECONDS = 120
-CACHE_MIDDLEWARE_KEY_PREFIX = 'greenmart'
+CACHE_MIDDLEWARE_KEY_PREFIX = 'freshinbasket'
 
 # =============================================================================
 # DATABASE (PostgreSQL with connection pooling)
@@ -138,8 +138,8 @@ CACHE_MIDDLEWARE_KEY_PREFIX = 'greenmart'
 DATABASES = {
     'default': {
         'ENGINE': 'dj_db_conn_pool.backends.postgresql',
-        'NAME': os.getenv('DB_NAME', 'greenmart'),
-        'USER': os.getenv('DB_USER', 'greenmart_user'),
+        'NAME': os.getenv('DB_NAME', 'freshinbasket'),
+        'USER': os.getenv('DB_USER', 'freshinbasket_user'),
         'PASSWORD': os.getenv('DB_PASSWORD', ''),
         'HOST': os.getenv('DB_HOST', 'localhost'),
         'PORT': os.getenv('DB_PORT', '5432'),

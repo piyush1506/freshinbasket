@@ -3,7 +3,7 @@ import os
 import django
 
 
-os.environ.setdefault('DJANGO_SETTINGS_MODULE','greenmart_core.settings')
+os.environ.setdefault('DJANGO_SETTINGS_MODULE','freshinbasket_core.settings')
 django.setup()
 
 

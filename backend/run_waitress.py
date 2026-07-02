@@ -1,10 +1,10 @@
 import os
 from waitress import serve
-from greenmart_core.wsgi import application
+from freshinbasket_core.wsgi import application
 
 if __name__ == '__main__':
     # Add project directory to python path
-    os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'greenmart_core.settings')
+    os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'freshinbasket_core.settings')
     
     port = int(os.environ.get("PORT", 8000))
     print(f"Starting Waitress server on 0.0.0.0:{port} with 4 threads...")

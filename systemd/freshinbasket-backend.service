@@ -1,5 +1,5 @@
 [Unit]
-Description=gunicorn daemon for greenmart backend
+Description=gunicorn daemon for freshinbasket backend
 After=network.target
 
 [Service]
@@ -10,7 +10,7 @@ ExecStart=/var/www/freshinbasket/backend/venv/bin/gunicorn \
           --access-logfile - \
           --workers 3 \
           --bind 127.0.0.1:8000 \
-          greenmart_core.wsgi:application
+          freshinbasket_core.wsgi:application
 Restart=always
 
 [Install]

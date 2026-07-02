@@ -1,0 +1,8 @@
+[Unit]
+Description=gunicorn socket for freshinbasket backend
+
+[Socket]
+ListenStream=/run/freshinbasket-backend.sock
+
+[Install]
+WantedBy=sockets.target
