@@ -120,8 +120,13 @@ class Order(models.Model):
 
     def save(self, *args, **kwargs):
         if not self.order_number:
-            import uuid
-            self.order_number = f"HF-{uuid.uuid4().hex[:6].upper()}"
+            import random
+            while True:
+                # Generate a 6-digit random number
+                new_number = str(random.randint(100000, 999999))
+                if not Order.objects.filter(order_number=new_number).exists():
+                    self.order_number = new_number
+                    break
         super().save(*args, **kwargs)
 
     def __str__(self):

@@ -362,7 +362,7 @@ export default function CartPage() {
   const isDeliverable = distance <= maxDeliveryRadius;
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="w-full flex-grow bg-white">
       <Navbar />
 
       <div className="max-w-7xl mx-auto px-4 md:px-6 py-8">

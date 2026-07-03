@@ -291,19 +291,38 @@ class DeliveryUpdateProfileView(APIView):
 
     def get(self, request):
         user = request.user
-        return Response(UserSerializer(user).data)
+        data = UserSerializer(user).data
+        from users.models import DeliveryProfile
+        profile, _ = DeliveryProfile.objects.get_or_create(user=user)
+        data['is_active'] = profile.is_active
+        return Response(data)
 
     def patch(self, request):
         user = request.user
+        data = request.data.copy()
+        is_active = data.pop('is_active', None)
+
         serializer = UserUpdateSerializer(
             user,
-            data=request.data,
+            data=data,
             partial=True,
             context={'request': request}
         )
         serializer.is_valid(raise_exception=True)
         serializer.save()
-        return Response(UserSerializer(user).data)
+
+        from users.models import DeliveryProfile
+        profile, _ = DeliveryProfile.objects.get_or_create(user=user)
+        if is_active is not None:
+            if isinstance(is_active, str):
+                profile.is_active = is_active.lower() == 'true'
+            else:
+                profile.is_active = bool(is_active)
+            profile.save()
+
+        res_data = UserSerializer(user).data
+        res_data['is_active'] = profile.is_active
+        return Response(res_data)
 
 
 class UpdateDeliveryLocationView(APIView):

@@ -131,7 +131,7 @@ export default function OrderDetailModal({ isOpen, onClose, order, onReviewClick
           {/* Dates */}
           <div className="flex items-center gap-2 text-xs text-gray-400 pt-2 border-t border-gray-100">
             <CalendarDays size={14} />
-            <span>Placed: {new Date(order.created_at).toLocaleDateString("en-IN", { year: "numeric", month: "long", day: "numeric", hour: "2-digit", minute: "2-digit" })}</span>
+            <span suppressHydrationWarning>Placed: {new Date(order.created_at).toLocaleDateString("en-IN", { year: "numeric", month: "long", day: "numeric", hour: "2-digit", minute: "2-digit" })}</span>
           </div>
 
           {/* Review */}

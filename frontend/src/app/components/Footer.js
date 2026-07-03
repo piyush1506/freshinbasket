@@ -103,7 +103,7 @@
             <h4 className="font-bold text-gray-900 mb-4 text-sm uppercase">Newsletter</h4>
             <p className="text-gray-500 text-xs mb-4">Get seasonal recipes and farm updates.</p>
             <div className="flex">
-              <input type="email" placeholder="Email addr..." className="bg-gray-50 border border-gray-200 rounded-l-lg px-3 py-2 text-sm w-full focus:outline-none" />
+              <input type="email" placeholder="Email addr..." className="bg-gray-50 border border-gray-200 rounded-l-lg px-3 py-2 text-sm w-full focus:outline-none" suppressHydrationWarning />
               <button className="bg-green-900 hover:bg-green-800 text-white px-4 py-2 rounded-r-lg transition-colors">
                 <ArrowRight className="w-4 h-4" />
               </button>

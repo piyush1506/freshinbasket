@@ -312,7 +312,7 @@ export default function OrdersPage() {
                                                                 </h3>
                                                                 {isStatusActive && <ActiveBadge />}
                                                             </div>
-                                                            <p className="text-xs text-gray-400 mt-1">
+                                                            <p className="text-xs text-gray-400 mt-1" suppressHydrationWarning>
                                                                 Placed: {new Date(order.created_at).toLocaleDateString()}
                                                             </p>
 

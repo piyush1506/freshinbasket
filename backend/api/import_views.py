@@ -228,3 +228,4 @@ class ProductImportView(APIView):
             'errors': errors[:20],  # Return max 20 errors
             'message': f'Import complete: {created_count} created, {updated_count} updated, {skipped_count} skipped.'
         })
+

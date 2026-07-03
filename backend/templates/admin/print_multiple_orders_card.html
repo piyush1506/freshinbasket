@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Print Selected Orders</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; background: #f4f4f4; }
+        .card { 
+            border: 2px dashed #000; 
+            padding: 20px; 
+            max-width: 400px; 
+            margin: 0 auto 30px auto; 
+            background: #fff;
+            page-break-inside: avoid;
+        }
+        .header { text-align: center; border-bottom: 1px solid #000; margin-bottom: 15px; padding-bottom: 10px; }
+        .header h2 { margin: 0; font-size: 20px; }
+        .info { margin-bottom: 15px; font-size: 14px; }
+        .info div { margin-bottom: 5px; }
+        .items table { width: 100%; border-collapse: collapse; font-size: 14px; }
+        .items th, .items td { border-bottom: 1px solid #ccc; padding: 5px; text-align: left; }
+        .total { text-align: right; font-weight: bold; margin-top: 15px; border-top: 1px solid #000; padding-top: 10px; font-size: 16px; }
+        
+        @media print {
+            body { background: #fff; padding: 0; }
+            .no-print { display: none; }
+            .card { 
+                border: 2px dashed #000; 
+                margin-bottom: 20px;
+                /* Avoid page break inside a card */
+                page-break-inside: avoid;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="no-print" style="text-align: center; margin-bottom: 20px; position: sticky; top: 20px;">
+        <button onclick="window.location.href = document.referrer || '/admin/orders/order/';" style="padding: 10px 20px; font-size: 16px; cursor: pointer; background: #666; color: white; border: none; border-radius: 4px; box-shadow: 0 2px 4px rgba(0,0,0,0.2); margin-right: 10px;">Back</button>
+        <button onclick="window.print()" style="padding: 10px 20px; font-size: 16px; cursor: pointer; background: #417690; color: white; border: none; border-radius: 4px; box-shadow: 0 2px 4px rgba(0,0,0,0.2);">Print All Selected Orders</button>
+    </div>
+
+    {% for order in orders %}
+    <div class="card">
+        <div class="header">
+            <h2>Order Card</h2>
+            <div><strong>#{{ order.order_number }}</strong></div>
+        </div>
+        <div class="info">
+            <div><strong>Customer:</strong> {{ order.customer.username }}</div>
+            <div><strong>Payment Status:</strong> {{ order.get_payment_method_display }} - {% if order.is_paid %}Paid{% else %}Unpaid{% endif %}</div>
+            <div><strong>Date:</strong> {{ order.created_at|date:"M d, Y H:i" }}</div>
+            {% if order.delivery_address %}
+            <div><strong>Address:</strong> {{ order.delivery_address }}</div>
+            {% endif %}
+        </div>
+        <div class="items">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Item</th>
+                        <th>Qty</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in order.items.all %}
+                    <tr>
+                        <td>{{ item.product_name }}</td>
+                        <td>{{ item.quantity }} * {{ item.unit_name }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        <div class="total">
+            Total Amount: Rs {{ order.total_amount }}
+        </div>
+    </div>
+    {% endfor %}
+
+    {% if not orders %}
+    <div style="text-align: center; margin-top: 50px;">
+        <h3>No orders were selected.</h3>
+    </div>
+    {% endif %}
+</body>
+</html>

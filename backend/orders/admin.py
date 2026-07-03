@@ -37,8 +37,40 @@ class DeliveryAssignmentInline(admin.StackedInline):
         return super().formfield_for_foreignkey(db_field, request, **kwargs)
 
 
+class PrintOrderMixin:
+    actions = ['print_selected_orders']
+
+    @admin.action(description='Print Selected Orders')
+    def print_selected_orders(self, request, queryset):
+        from django.shortcuts import render
+        orders = queryset.prefetch_related('items')
+        return render(request, 'admin/print_multiple_orders_card.html', {'orders': orders})
+
+    def get_urls(self):
+        from django.urls import path
+        urls = super().get_urls()
+        custom_urls = [
+            path('<path:object_id>/print/', self.admin_site.admin_view(self.print_card_view), name=f'{self.model._meta.app_label}_{self.model._meta.model_name}_print_card'),
+        ]
+        return custom_urls + urls
+
+    def print_card_view(self, request, object_id):
+        from django.shortcuts import get_object_or_404, render
+        order = get_object_or_404(self.model, pk=object_id)
+        return render(request, 'admin/print_order_card.html', {'order': order})
+
+    def print_action(self, obj):
+        from django.urls import reverse
+        from django.utils.html import format_html
+        if obj.pk:
+            url = reverse(f'admin:{self.model._meta.app_label}_{self.model._meta.model_name}_print_card', args=[obj.pk])
+            return format_html('<a class="button" href="{}" style="background:#417690; color:white; padding:5px 10px; border-radius:4px; text-decoration:none; font-weight:bold;">Print</a>', url)
+        return "-"
+    print_action.short_description = "Print"
+
+
 @admin.register(Order)
-class OrderAdmin(admin.ModelAdmin):
+class OrderAdmin(PrintOrderMixin, admin.ModelAdmin):
 
     class assignment_status(admin.SimpleListFilter):
         title = 'Assignment'
@@ -59,12 +91,12 @@ class OrderAdmin(admin.ModelAdmin):
 
     list_display = (
         'order_number', 'customer', 'status', 'total_amount',
-        'is_paid', 'payment_method', 'assigned_to', 'delivery_address_short', 'created_at'
+        'is_paid', 'payment_method', 'assigned_to', 'delivery_address_short', 'created_at', 'print_action'
     )
     list_filter = ('status', 'is_paid', 'created_at', assignment_status)
     list_editable = ('status',)
-    search_fields = ('order_number', 'customer__username', 'customer__email')
-    readonly_fields = ('order_number', 'created_at', 'updated_at', 'total_amount')
+    search_fields = ('id', 'order_number', 'customer__username', 'customer__email')
+    readonly_fields = ('order_number', 'created_at', 'updated_at', 'total_amount', 'print_action')
     ordering = ('-created_at',)
     inlines = [OrderItemInline, DeliveryAssignmentInline]
 
@@ -149,14 +181,15 @@ class DeliveryOrder(Order):
 
 
 @admin.register(DeliveryOrder)
-class DeliveryOrderAdmin(admin.ModelAdmin):
+class DeliveryOrderAdmin(PrintOrderMixin, admin.ModelAdmin):
     list_display = (
         'order_number', 'customer', 'short_address', 'status',
-        'delivery_boy_name', 'is_paid', 'created_at'
+        'delivery_boy_name', 'is_paid', 'created_at', 'print_action'
     )
     list_filter = ('status', OrderAdmin.assignment_status, 'is_paid', 'created_at')
     inlines = [DeliveryAssignmentInline]
-    search_fields = ('order_number', 'customer__username', 'customer__email')
+    search_fields = ('id', 'order_number', 'customer__username', 'customer__email')
+    readonly_fields = ('print_action',)
     ordering = ('-created_at',)
 
     def short_address(self, obj):

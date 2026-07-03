@@ -81,7 +81,8 @@ class DeliveryDashboardView(View):
         if action == 'run_assignment':
             from orders.views import _get_delivery_slot
             current_slot = _get_delivery_slot()
-            result = AssignmentService.run_assignment(current_slot)
+            slot_label = current_slot.display_label if current_slot else None
+            result = AssignmentService.run_assignment(slot_label)
             if result.get('status') == 'error':
                 messages.error(request, result.get('message'))
             else:

@@ -240,6 +240,7 @@ export default function Navbar({ item, hideCategories = false, sectionTabs = nul
                             onKeyDown={handleSearch}
                             onFocus={() => suggestions.length > 0 && setShowSuggestions(true)}
                             className="w-full pl-10 pr-4 py-2.5 bg-[#F8F8F8] border border-gray-200 rounded-lg text-[14px] font-medium text-gray-800 placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-[#216140] transition-all shadow-inner"
+                            suppressHydrationWarning
                         />
 
                         {/* Suggestions Dropdown */}
