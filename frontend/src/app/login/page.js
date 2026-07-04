@@ -20,6 +20,7 @@ export default function AuthPage() {
   const [phoneNumber, setPhoneNumber] = useState('');
   const [otpCode, setOtpCode] = useState('');
   const [name, setName] = useState('');
+  const [reqId, setReqId] = useState('');
 
   useEffect(() => {
     if (isAuthenticated()) {
@@ -43,7 +44,8 @@ export default function AuthPage() {
     
     setLoading(true);
     try {
-      await AUTH_API.sendOtp(phoneNumber);
+      const result = await AUTH_API.sendOtp(phoneNumber);
+      setReqId(result.reqId); // Save reqId for verification
       toast.success('OTP sent successfully!');
       setStep('otp');
     } catch (err) {
@@ -62,7 +64,7 @@ export default function AuthPage() {
 
     setLoading(true);
     try {
-      const data = await AUTH_API.verifyOtp(phoneNumber, otpCode);
+      const data = await AUTH_API.verifyOtp(phoneNumber, otpCode, reqId);
       setUser(data.user);
       if (getAccessToken() && mergeCart) await mergeCart(getAccessToken());
       

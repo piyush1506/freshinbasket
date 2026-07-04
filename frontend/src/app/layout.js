@@ -23,6 +23,9 @@ export const metadata = {
     "organic vegetables",
     "fresh fruits",
     "farm delivery",
+    "online vegetables shop",
+    "online fruits shop",
+    
     "organic grocery",
     "Freshinbasket",
     "fresh in basket",
@@ -40,7 +43,9 @@ export const metadata = {
     siteName: "Freshinbasket",
   },
   icons: {
-    icon: "/logo/logo.jpg",
+    icon: "/favicon.ico",
+     shortcut: "/favicon.ico",
+     apple:"/apple-touch-icon.png",
   },
 };
 

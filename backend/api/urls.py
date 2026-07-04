@@ -7,8 +7,8 @@ from .views import (
     OrderViewSet, DeliveryAssignmentViewSet,
     CartViewSet, LoginView, RegisterView, LogoutView, ContactView,
     upload_image, HomeApiView, StoreSettingsView, ReviewViewSet,
-    WishlistViewSet, SendOTPView, VerifyOTPView, DeliveryRegisterView,
-    DeliverySlotViewSet, SectionViewSet
+    WishlistViewSet, SendOTPView, VerifyOTPView, RetryOTPView, OTPLogsView,
+    DeliveryRegisterView, DeliverySlotViewSet, SectionViewSet
 )
 from orders.views import CreateRazorpayOrderView, VerifyPaymentView, CreateCODOrderView
 from notifications.views import RegisterFCMTokenView
@@ -53,6 +53,8 @@ urlpatterns = [
     # Mobile OTP Auth
     path('auth/send-otp/', SendOTPView.as_view(), name='send_otp'),
     path('auth/verify-otp/', VerifyOTPView.as_view(), name='verify_otp'),
+    path('auth/retry-otp/', RetryOTPView.as_view(), name='retry_otp'),
+    path('auth/otp-logs/', OTPLogsView.as_view(), name='otp_logs'),
 
     # Payment
     path('payment/create-order/', CreateRazorpayOrderView.as_view(), name='create_razorpay_order'),

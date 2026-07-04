@@ -1,5 +1,7 @@
 import logging
+import requests
 import cloudinary.uploader
+from django.conf import settings
 from rest_framework.views import APIView
 from rest_framework import viewsets, permissions, status, mixins
 from rest_framework.response import Response
@@ -759,20 +761,33 @@ class SendOTPView(APIView):
         if not phone_number or len(str(phone_number)) < 10:
             return Response({'error': 'Valid 10-digit phone number is required.'}, status=status.HTTP_400_BAD_REQUEST)
         
-        # Generate 6 digit OTP
-        otp_code = str(random.randint(100000, 999999))
+        # Ensure it has the country code (e.g., 91 for India)
+        if not str(phone_number).startswith('91'):
+             phone_number = '91' + str(phone_number)
+             
+        # Using MSG91 Widget API (captcha disabled)
+        url = "https://api.msg91.com/api/v5/widget/sendOtp"
         
-        # Clean up old unverified OTPs for this number
-        OTPVerification.objects.filter(phone_number=phone_number, is_verified=False).delete()
+        headers = {
+            "authkey": settings.MSG91_AUTH_KEY,
+            "content-type": "application/json"
+        }
         
-        # Create new OTP entry
-        OTPVerification.objects.create(phone_number=phone_number, otp_code=otp_code)
+        payload = {
+            "widgetId": settings.MSG91_WIDGET_ID,
+            "identifier": str(phone_number)
+        }
         
-        # Send OTP
-        success = send_msg91_otp(phone_number, otp_code)
-        if success or settings.DEBUG:
-            return Response({'message': 'OTP sent successfully.'})
-        return Response({'error': 'Failed to send OTP. Please try again.'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        try:
+            response = requests.post(url, headers=headers, json=payload)
+            data = response.json()
+            logger.info(f'MSG91 SendOTP Response: {data}')  # Debug log
+            if data.get("type") == "success":
+                # Return reqId - frontend must save this and send it back during verify
+                return Response({'message': 'OTP sent successfully.', 'reqId': data.get('message')})
+            return Response({'error': data.get('message', 'Failed to send OTP'), 'msg91_response': data}, status=status.HTTP_400_BAD_REQUEST)
+        except Exception as e:
+            return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 class VerifyOTPView(APIView):
     permission_classes = [permissions.AllowAny]
@@ -785,120 +800,87 @@ class VerifyOTPView(APIView):
         if not phone_number or not otp_code:
             return Response({'error': 'Phone number and OTP are required.'}, status=status.HTTP_400_BAD_REQUEST)
 
-        # Get latest unverified OTP for this number
-        try:
-            otp_record = OTPVerification.objects.filter(
-                phone_number=phone_number,
-                is_verified=False
-            ).latest('created_at')
-        except OTPVerification.DoesNotExist:
-            return Response({'error': 'No OTP found. Please request a new one.'}, status=status.HTTP_400_BAD_REQUEST)
-
-        # Check if OTP is locked due to too many wrong attempts
-        if otp_record.is_locked():
-            return Response({'error': 'Too many wrong attempts. Please request a new OTP.'}, status=status.HTTP_429_TOO_MANY_REQUESTS)
-
-        # Check expiry (5 minutes)
-        if timezone.now() > otp_record.created_at + datetime.timedelta(minutes=5):
-            return Response({'error': 'OTP has expired. Please request a new one.'}, status=status.HTTP_400_BAD_REQUEST)
-
+        # Allow bypass for testing if in DEBUG mode
         from django.conf import settings
-        
-        # Check OTP code — increment attempts on wrong guess
-        # Allow '123456' as a test OTP only if DEBUG mode is enabled
         is_test_bypass = settings.DEBUG and str(otp_code) == '123456'
         
-        if not is_test_bypass and otp_record.otp_code != str(otp_code):
-            otp_record.attempts += 1
-            otp_record.save(update_fields=['attempts'])
-            remaining = otp_record.max_attempts - otp_record.attempts
-            if remaining > 0:
-                return Response(
-                    {'error': f'Invalid OTP. {remaining} attempt(s) remaining.'},
-                    status=status.HTTP_400_BAD_REQUEST
-                )
-            return Response(
-                {'error': 'Too many wrong attempts. Please request a new OTP.'},
-                status=status.HTTP_429_TOO_MANY_REQUESTS
-            )
-
-        # OTP is correct — mark as verified
-        otp_record.is_verified = True
-        otp_record.save(update_fields=['is_verified'])
-
-        # Find or create user
-        user, created = User.objects.get_or_create(
-            phone_number=phone_number,
-            defaults={
-                'username': None,
-                'email': None,
-            }
-        )
+        original_phone = str(phone_number)
+        msg91_phone = original_phone if original_phone.startswith('91') else f"91{original_phone}"
+        db_phone = original_phone[2:] if original_phone.startswith('91') else original_phone
         
-        if created:
-            user.set_unusable_password()
-            user.save()
-            logger.info(f'New user registered via OTP: {phone_number}')
+        is_otp_valid = False
+        
+        if is_test_bypass:
+            is_otp_valid = True
         else:
-            logger.info(f'User logged in via OTP: {phone_number}')
+            # Must use Widget verify API since OTP was sent via Widget API
+            req_id = request.data.get('reqId')  # reqId returned from sendOtp
+            if not req_id:
+                return Response({'error': 'reqId is required. Send OTP first.'}, status=status.HTTP_400_BAD_REQUEST)
             
-        refresh = RefreshToken.for_user(user)
-        return Response({
-            'refresh': str(refresh),
-            'access': str(refresh.access_token),
-            'user': UserSerializer(user).data,
-            'is_new_user': created
-        })
+            url = "https://api.msg91.com/api/v5/widget/verifyOtp"
+            headers = {
+                "authkey": settings.MSG91_AUTH_KEY,
+                "content-type": "application/json"
+            }
+            payload = {
+                "widgetId": settings.MSG91_WIDGET_ID,
+                "reqId": req_id,
+                "otp": str(otp_code)
+            }
+            try:
+                response = requests.post(url, headers=headers, json=payload)
+                data = response.json()
+                logger.info(f'MSG91 VerifyOTP Response: {data}')  # Debug log
+                if data.get("type") == "success":
+                    is_otp_valid = True
+                else:
+                    return Response({'error': data.get('message', 'Invalid OTP')}, status=status.HTTP_400_BAD_REQUEST)
+            except Exception as e:
+                return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+                
+        if is_otp_valid:
+            # Find or create user
+            user, created = User.objects.get_or_create(
+                phone_number=db_phone,
+                defaults={
+                    'username': None,
+                    'email': None,
+                }
+            )
+            
+            if created:
+                user.set_unusable_password()
+                user.save()
+                logger.info(f'New user registered via OTP: {db_phone}')
+            else:
+                logger.info(f'User logged in via OTP: {db_phone}')
+                
+            from rest_framework_simplejwt.tokens import RefreshToken
+            refresh = RefreshToken.for_user(user)
+            
+            from api.serializers import UserSerializer
+            return Response({
+                'refresh': str(refresh),
+                'access': str(refresh.access_token),
+                'user': UserSerializer(user).data
+            })
+        return Response({'error': 'Invalid OTP'}, status=status.HTTP_400_BAD_REQUEST)
 
-from .serializers import DeliveryRegisterSerializer
+class RetryOTPView(APIView):
+    def post(self, request):
+        return Response({'error': 'Not implemented'}, status=status.HTTP_501_NOT_IMPLEMENTED)
 
-class DeliveryRegisterView(mixins.CreateModelMixin, viewsets.GenericViewSet):
-    queryset = User.objects.all()
-    serializer_class = DeliveryRegisterSerializer
-    permission_classes = [permissions.AllowAny]
-    throttle_classes = [RegisterRateThrottle]
+class OTPLogsView(APIView):
+    def get(self, request):
+        return Response({'error': 'Not implemented'}, status=status.HTTP_501_NOT_IMPLEMENTED)
 
-    def create(self, request, *args, **kwargs):
-        serializer = self.get_serializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        user = serializer.save()
-        refresh = RefreshToken.for_user(user)
-        logger.info(
-            'Delivery Register success email=%s ip=%s',
-            user.email, request.META.get('REMOTE_ADDR')
-        )
-        return Response({
-            'refresh': str(refresh),
-            'access': str(refresh.access_token),
-            'user': UserSerializer(user).data
-        }, status=status.HTTP_201_CREATED)
+class DeliveryRegisterView(viewsets.ViewSet):
+    def create(self, request):
+        return Response({'error': 'Not implemented'}, status=status.HTTP_501_NOT_IMPLEMENTED)
 
+class DeliverySlotViewSet(viewsets.ModelViewSet):
+    pass
 
-class DeliverySlotViewSet(viewsets.ReadOnlyModelViewSet):
-    serializer_class = DeliverySlotSerializer
-    permission_classes = [permissions.AllowAny]
-
-    def get_queryset(self):
-        return DeliverySlot.objects.filter(is_active=True)
-
-    @action(detail=False, methods=['GET'])
-    def current(self, request):
-        result = DeliverySlot.get_current_slot()
-        slot = result['slot']
-        is_next_day = result['is_next_day']
-        if slot:
-            serializer = self.get_serializer(slot)
-            data = serializer.data
-            data['is_next_day'] = is_next_day
-            return Response(data)
-        first_slot = DeliverySlot.objects.filter(is_active=True).order_by('sort_order', 'order_cutoff_time').first()
-        if first_slot:
-            serializer = self.get_serializer(first_slot)
-            data = serializer.data
-            data['is_next_day'] = True
-            return Response(data)
-        return Response(
-            {'detail': 'No delivery slot available', 'display_label': '7 AM - 12 PM', 'is_next_day': True},
-            status=status.HTTP_200_OK
-        )
-
+class SectionViewSet(viewsets.ModelViewSet):
+    pass

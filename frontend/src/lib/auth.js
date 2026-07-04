@@ -199,13 +199,13 @@ export const AUTH_API = {
     return result;
   },
 
-  async verifyOtp(phone_number, otp_code) {
+  async verifyOtp(phone_number, otp_code, reqId) {
     const res = await fetch(
       `${process.env.NEXT_PUBLIC_API_URL}/api/v1/auth/verify-otp/`,
       {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ phone_number, otp_code }),
+        body: JSON.stringify({ phone_number, otp_code, reqId }),
       }
     );
     const result = await res.json();

@@ -22,6 +22,9 @@ CSRF_TRUSTED_ORIGINS = os.getenv('DJANGO_CSRF_TRUSTED_ORIGINS', 'http://localhos
 RAZORPAY_KEY_ID = os.getenv('RAZORPAY_KEY_ID', '')
 RAZORPAY_KEY_SECRET = os.getenv('RAZORPAY_KEY_SECRET', '')
 
+MSG91_AUTH_KEY = os.getenv('MSG91_AUTH_KEY', '')
+MSG91_WIDGET_ID = os.getenv('MSG91_WIDGET_ID', '')
+
 # =============================================================================
 # SECURITY MIDDLEWARE SETTINGS
 # =============================================================================
