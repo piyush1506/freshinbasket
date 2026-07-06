@@ -1,20 +1,10 @@
 "use client";
-import { useState, useEffect } from "react";
 import Link from "next/link";
 import VegetableCard from "./VegetableCard";
-import { Swiper, SwiperSlide } from 'swiper/react';
-import 'swiper/css';
-import 'swiper/css/pagination';
-import { Autoplay } from "swiper/modules";
 import { ArrowRight } from "lucide-react";
 
 export default function Vegetables({ initialSections = [] }) {
   const sections = initialSections;
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
 
   if (sections.length === 0) return null;
 
@@ -42,35 +32,11 @@ export default function Vegetables({ initialSections = [] }) {
               </Link>
             </div>
 
-            {!mounted ? (
-              /* SSR fallback: show products in a regular grid until Swiper hydrates */
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 sm:gap-6">
-                {s.products.slice(0, 5).map((item) => (
-                  <VegetableCard key={item.id} item={item} isHome={true} />
-                ))}
-              </div>
-            ) : (
-              <Swiper
-                key={s.slug}
-                slidesPerView={2}
-                spaceBetween={16}
-                autoplay={{ delay: 2500, disableOnInteraction: false, pauseOnMouseEnter: true }}
-                modules={[Autoplay]}
-                breakpoints={{
-                  640: { slidesPerView: 3, spaceBetween: 24 },
-                  768: { slidesPerView: 4, spaceBetween: 24 },
-                  1024: { slidesPerView: 5, spaceBetween: 24 },
-                  1280: { slidesPerView: 6, spaceBetween: 24 },
-                }}
-                className="pb-4"
-              >
-                {s.products.map((item) => (
-                  <SwiperSlide key={item.id}>
-                    <VegetableCard item={item} isHome={true} />
-                  </SwiperSlide>
-                ))}
-              </Swiper>
-            )}
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 sm:gap-6">
+              {s.products.map((item) => (
+                <VegetableCard key={item.id} item={item} isHome={true} />
+              ))}
+            </div>
           </div>
         </section>
       ))}
