@@ -242,7 +242,7 @@ class SubProductAdmin(admin.ModelAdmin):
 
 @admin.register(StoreSettings)
 class StoreSettingsAdmin(admin.ModelAdmin):
-    list_display = ('__str__', 'free_delivery_threshold', 'delivery_charge', 'max_delivery_radius')
+    list_display = ('__str__', 'free_delivery_threshold', 'delivery_charge', 'max_delivery_radius', 'free_delivery_first_order')
     
     def has_add_permission(self, request):
         # Prevent adding more than one instance

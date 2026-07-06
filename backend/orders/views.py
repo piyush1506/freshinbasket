@@ -86,7 +86,12 @@ class CreateRazorpayOrderView(APIView):
         settings_obj = StoreSettings.get_settings()
         
         delivery_charge = 0
-        if subtotal_amount <= settings_obj.free_delivery_threshold:
+        is_first_order = False
+        if settings_obj.free_delivery_first_order:
+            from orders.models import Order
+            is_first_order = not Order.objects.filter(customer=request.user).exclude(status=Order.Status.CANCELLED).exists()
+
+        if not is_first_order and subtotal_amount <= settings_obj.free_delivery_threshold:
             delivery_charge = settings_obj.delivery_charge
             
         total_amount = subtotal_amount + tax_amount + delivery_charge
@@ -163,7 +168,12 @@ class VerifyPaymentView(APIView):
             settings_obj = StoreSettings.get_settings()
             
             delivery_charge = 0
-            if subtotal <= settings_obj.free_delivery_threshold:
+            is_first_order = False
+            if settings_obj.free_delivery_first_order:
+                from orders.models import Order
+                is_first_order = not Order.objects.filter(customer=request.user).exclude(status=Order.Status.CANCELLED).exists()
+
+            if not is_first_order and subtotal <= settings_obj.free_delivery_threshold:
                 delivery_charge = settings_obj.delivery_charge
                 
             total = subtotal + tax_amount + delivery_charge
@@ -264,7 +274,12 @@ class CreateCODOrderView(APIView):
         settings_obj = StoreSettings.get_settings()
 
         delivery_charge = 0
-        if subtotal <= settings_obj.free_delivery_threshold:
+        is_first_order = False
+        if settings_obj.free_delivery_first_order:
+            from orders.models import Order
+            is_first_order = not Order.objects.filter(customer=request.user).exclude(status=Order.Status.CANCELLED).exists()
+
+        if not is_first_order and subtotal <= settings_obj.free_delivery_threshold:
             delivery_charge = settings_obj.delivery_charge
 
         total = subtotal + tax_amount + delivery_charge

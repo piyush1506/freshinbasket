@@ -249,6 +249,10 @@ class StoreSettings(models.Model):
         max_length=20, default="#ffffff",
         help_text="Text color of the banner (e.g., #ffffff or white)"
     )
+    free_delivery_first_order = models.BooleanField(
+        default=True,
+        help_text="Enable free delivery for the user's first order."
+    )
 
     class Meta:
         verbose_name = 'Store Setting'

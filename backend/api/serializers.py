@@ -502,9 +502,17 @@ class CartSerializer(serializers.ModelSerializer):
         )
 
     def get_delivery_charge(self, obj):
-        subtotal = self.get_subtotal(obj)
         from store.models import StoreSettings
         settings_obj = StoreSettings.get_settings()
+
+        if settings_obj.free_delivery_first_order:
+            from orders.models import Order
+            # Check if this user has any prior non-cancelled orders
+            has_prior_orders = Order.objects.filter(customer=obj.user).exclude(status=Order.Status.CANCELLED).exists()
+            if not has_prior_orders:
+                return 0
+
+        subtotal = self.get_subtotal(obj)
         if subtotal > 0 and subtotal <= settings_obj.free_delivery_threshold:
             return settings_obj.delivery_charge
         return 0
@@ -524,7 +532,8 @@ class StoreSettingsSerializer(serializers.ModelSerializer):
         fields = (
             'free_delivery_threshold', 'delivery_charge', 'max_delivery_radius',
             'is_announcement_active', 'announcement_message',
-            'announcement_bg_color', 'announcement_text_color'
+            'announcement_bg_color', 'announcement_text_color',
+            'free_delivery_first_order'
         )
 
 
