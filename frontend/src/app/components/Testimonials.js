@@ -66,7 +66,7 @@ export default function Testimonials() {
   ];
 
   return (
-    <section id="testimonials" className="py-20 px-4 sm:px-8 md:px-16 max-w-7xl mx-auto">
+    <section id="testimonials" className="py-20 px-4 sm:px-8 md:px-16 max-w-7xl mx-auto" aria-label="Customer testimonials">
       <div className="text-center mb-12">
         <span className="bg-green-50 text-[#216140] text-xs font-bold px-3 py-1.5 rounded-full uppercase tracking-wider">
           Reviews
@@ -74,7 +74,7 @@ export default function Testimonials() {
         <h2 className="text-3xl md:text-4xl font-extrabold text-gray-900 mt-3 mb-4 tracking-tight">
           Loved by 10,000+ Happy Kitchens
         </h2>
-        <p className="text-gray-500 text-sm md:text-base max-w-2xl mx-auto leading-relaxed">
+        <p className="text-gray-600 text-sm md:text-base max-w-2xl mx-auto leading-relaxed">
           See what our regular customers in Bhilwara say about our farm-fresh quality, packaging, and timely delivery.
         </p>
       </div>
@@ -93,40 +93,41 @@ export default function Testimonials() {
                     {item.initials}
                   </div>
                   <div>
-                    <h4 className="font-bold text-gray-900 text-sm leading-tight">
+                    <h3 className="font-bold text-gray-900 text-sm leading-tight">
                       {item.name}
-                    </h4>
-                    <span className="text-[10px] text-gray-400">
+                    </h3>
+                    <span className="text-xs text-gray-500">
                       {item.location}
                     </span>
                   </div>
                 </div>
-                <span className="text-[10px] text-gray-400 font-medium">
+                <span className="text-xs text-gray-500 font-medium">
                   {item.time}
                 </span>
               </div>
 
               {/* Rating stars */}
-              <div className="flex gap-0.5 mb-3">
+              <div className="flex gap-0.5 mb-3" role="img" aria-label={`${item.rating} out of 5 stars`}>
                 {[...Array(item.rating)].map((_, index) => (
                   <Star
                     key={index}
                     size={14}
                     className="fill-amber-400 text-amber-400"
+                    aria-hidden="true"
                   />
                 ))}
               </div>
 
               {/* Review Text */}
               <p className="text-xs sm:text-sm text-gray-600 leading-relaxed font-medium">
-                "{item.comment}"
+                &ldquo;{item.comment}&rdquo;
               </p>
             </div>
 
             {/* Verification Footer (Zepto/Blinkit verified shopper style) */}
             <div className="mt-4 pt-3 border-t border-t-gray-100 flex items-center gap-1.5 text-[#216140]">
-              <CheckCircle2 size={13} className="fill-current text-white" />
-              <span className="text-[10px] font-bold uppercase tracking-wider">
+              <CheckCircle2 size={13} className="fill-current text-white" aria-hidden="true" />
+              <span className="text-xs font-bold uppercase tracking-wider">
                 Verified Purchase
               </span>
             </div>

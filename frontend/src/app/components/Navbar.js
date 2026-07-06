@@ -215,7 +215,7 @@ export default function Navbar({ item, hideCategories = false, sectionTabs = nul
     return (
         <div className="flex flex-col">
             {/* Top Tier: Logo, Location, Search, Profile, Cart */}
-            <header className="sticky top-0 z-50 bg-white border-b border-gray-100 flex items-center justify-between px-4 md:px-10 py-3 max-w-[1400px] w-full mx-auto gap-4 md:gap-8">
+            <header className="sticky top-0 z-50 bg-white border-b border-gray-100 flex items-center justify-between px-4 md:px-10 py-3 max-w-[1400px] w-full mx-auto gap-4 md:gap-8" aria-label="Main navigation">
                 
                 {/* Logo Section */}
                 <div className="flex items-center shrink-0">
@@ -230,7 +230,7 @@ export default function Navbar({ item, hideCategories = false, sectionTabs = nul
                 {/* Search Bar */}
                 <div className="flex-1 max-w-2xl" ref={searchRef}>
                     <div className="relative">
-                        <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 w-4 h-4" />
+                        <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 w-4 h-4" aria-hidden="true" />
                         <input
                             type="text"
                             placeholder="Search for vegetables, fruits..."
@@ -277,7 +277,7 @@ export default function Navbar({ item, hideCategories = false, sectionTabs = nul
 
                     {/* Profile */}
                     {user ? (
-                        <div className="hidden md:flex relative group cursor-pointer flex-col items-center gap-1 hover:text-[#216140] transition-colors">
+                        <div className="hidden md:flex relative group cursor-pointer flex-col items-center gap-1 hover:text-[#216140] transition-colors" role="button" tabIndex={0} aria-haspopup="true" aria-label="User profile menu">
                             <div className="w-6 h-6 rounded-full bg-[#216140] text-white flex items-center justify-center font-bold text-[11px] shadow-sm">
                                 {displayInitial}
                             </div>
@@ -325,8 +325,8 @@ export default function Navbar({ item, hideCategories = false, sectionTabs = nul
 
                     {/* Mobile Hamburger Button */}
                     <div className="flex lg:hidden items-center relative -mr-2 z-[60]">
-                        <button onClick={() => setIsOpen(!isOpen)} className="p-1.5 focus:outline-none" aria-label="Toggle Menu">
-                            <Hamburger toggled={isOpen} toggle={setIsOpen} color={isOpen ? "#000000" : "#216140"} size={24} rounded />
+                        <button onClick={() => setIsOpen(!isOpen)} className="p-2 focus:outline-none min-w-[44px] min-h-[44px] flex items-center justify-center" aria-label={isOpen ? "Close navigation menu" : "Open navigation menu"} aria-expanded={isOpen}>
+                            <Hamburger toggled={isOpen} toggle={setIsOpen} color={isOpen ? "#000000" : "#216140"} size={24} rounded label="Toggle navigation menu" />
                         </button>
                     </div>
 
@@ -339,7 +339,7 @@ export default function Navbar({ item, hideCategories = false, sectionTabs = nul
                             />
 
                             {/* Mobile Menu Side Drawer */}
-                            <div className={`fixed top-0 bottom-0 right-0 w-[85%] max-w-[340px] bg-white z-[1000] lg:hidden shadow-2xl flex flex-col transition-transform duration-300 ease-in-out transform ${isOpen ? 'translate-x-0' : 'translate-x-full'}`}>
+                            <nav className={`fixed top-0 bottom-0 right-0 w-[85%] max-w-[340px] bg-white z-[1000] lg:hidden shadow-2xl flex flex-col transition-transform duration-300 ease-in-out transform ${isOpen ? 'translate-x-0' : 'translate-x-full'}`} aria-label="Mobile navigation" role="navigation">
                                 
                                 {/* Drawer Header */}
                                 <div className="pt-16 pb-6 px-6 bg-gradient-to-br from-green-50 to-white border-b border-gray-100">
@@ -416,7 +416,7 @@ export default function Navbar({ item, hideCategories = false, sectionTabs = nul
                                         </Link>
                                     )}
                                 </div>
-                            </div>
+                            </nav>
                         </>,
                         document.body
                     )}
@@ -428,7 +428,7 @@ export default function Navbar({ item, hideCategories = false, sectionTabs = nul
 
             {/* Bottom Tier: Dynamic Category Scroll */}
             {!hideCategories && (
-                <div className="sticky top-[64px] md:top-[72px] z-40 bg-white border-t border-b border-gray-100 shadow-sm">
+                <nav className="sticky top-[64px] md:top-[72px] z-40 bg-white border-t border-b border-gray-100 shadow-sm" aria-label="Product categories">
                     <div className="max-w-[1400px] mx-auto overflow-x-auto no-scrollbar">
                         <div className="flex items-center px-4 md:px-10 py-3 gap-6 min-w-max">
                             <Link href="/" className="flex items-center gap-2 group">
@@ -452,7 +452,7 @@ export default function Navbar({ item, hideCategories = false, sectionTabs = nul
                             ))}
                         </div>
                     </div>
-                </div>
+                </nav>
             )}
             
         </div>

@@ -1,6 +1,7 @@
 "use client";
 import { useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { ArrowRight } from "lucide-react";
 import { Swiper, SwiperSlide } from 'swiper/react';
 import { Autoplay, EffectFade, Pagination } from "swiper/modules";
@@ -60,7 +61,7 @@ function AnimatedContent({ slide }) {
             href={slide.link}
             className="bg-[#B4F044] hover:bg-[#a1d63d] text-green-900 font-bold px-8 py-4 rounded-full flex items-center transition-all transform hover:scale-105 text-sm md:text-base shadow-xl"
           >
-            {slide.button_text || "Shop Now"} <ArrowRight className="w-5 h-5 ml-2" />
+            {slide.button_text || "Shop Now"} <ArrowRight className="w-5 h-5 ml-2" aria-hidden="true" />
           </Link>
         )}
         {slide.link_two && (
@@ -81,62 +82,40 @@ export default function Hero({ slides: initialSlides }) {
   const [activeIndex, setActiveIndex] = useState(0);
 
   return (
-    <>
-      <style>{`
-        @keyframes heroFadeUp {
-          from { opacity: 0; transform: translateY(28px); }
-          to   { opacity: 1; transform: translateY(0); }
-        }
-        @keyframes heroFadeIn {
-          from { opacity: 0; transform: translateY(14px); }
-          to   { opacity: 1; transform: translateY(0); }
-        }
-        .animate-hero-tag {
-          animation: heroFadeIn 0.6s cubic-bezier(0.22,1,0.36,1) both;
-          animation-delay: 0.1s;
-        }
-        .animate-hero-title {
-          animation: heroFadeUp 0.75s cubic-bezier(0.22,1,0.36,1) both;
-          animation-delay: 0.28s;
-        }
-        .animate-hero-subtitle {
-          animation: heroFadeUp 0.75s cubic-bezier(0.22,1,0.36,1) both;
-          animation-delay: 0.48s;
-        }
-        .animate-hero-buttons {
-          animation: heroFadeUp 0.75s cubic-bezier(0.22,1,0.36,1) both;
-          animation-delay: 0.66s;
-        }
-      `}</style>
+    <div id="home" className="bg-white shadow-sm relative">
+      <Swiper
+        modules={[Autoplay, EffectFade, Pagination]}
+        effect="fade"
+        loop={true}
+        autoplay={{ delay: 5000, disableOnInteraction: false }}
+        pagination={{ clickable: true, dynamicBullets: true }}
+        onSlideChange={(swiper) => setActiveIndex(swiper.realIndex)}
+        className="w-full h-[calc(100vh-72px)]"
+        a11y={{
+          prevSlideMessage: 'Previous slide',
+          nextSlideMessage: 'Next slide',
+          paginationBulletMessage: 'Go to slide {{index}}',
+        }}
+      >
+        {slides.map((slide, index) => (
+          <SwiperSlide key={slide.id}>
+            <section className="relative w-full h-full" aria-label={slide.title || "Hero banner"}>
+              <Image
+                src={slide.image_url}
+                alt={slide.title || "Hero slide"}
+                fill
+                style={{ objectFit: "cover" }}
+                sizes="100vw"
+                priority={index === 0}
+                quality={75}
+              />
 
-      <div id="home" className="bg-white shadow-sm relative">
-        <Swiper
-          modules={[Autoplay, EffectFade, Pagination]}
-          effect="fade"
-          loop={true}
-          autoplay={{ delay: 5000, disableOnInteraction: false }}
-          pagination={{ clickable: true, dynamicBullets: true }}
-          onSlideChange={(swiper) => setActiveIndex(swiper.realIndex)}
-          className="w-full h-[calc(100vh-72px)]"
-        >
-          {slides.map((slide, index) => (
-            <SwiperSlide key={slide.id}>
-              <section className="relative w-full h-full">
-                <img
-                  src={slide.image_url}
-                  alt={slide.title || "Hero slide"}
-                  className="w-full h-full object-cover"
-                  loading="eager"
-                  fetchPriority={index === 0 ? "high" : "auto"}
-                />
-
-                {/* Re-mount AnimatedContent on each slide change to re-trigger animations */}
-                <AnimatedContent key={`${slide.id}-${activeIndex}`} slide={slide} />
-              </section>
-            </SwiperSlide>
-          ))}
-        </Swiper>
-      </div>
-    </>
+              {/* Re-mount AnimatedContent on each slide change to re-trigger animations */}
+              <AnimatedContent key={`${slide.id}-${activeIndex}`} slide={slide} />
+            </section>
+          </SwiperSlide>
+        ))}
+      </Swiper>
+    </div>
   );
 }

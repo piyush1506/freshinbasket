@@ -27,7 +27,20 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 html{
-  scroll-behaviour:smooth;
+  scroll-behavior:smooth;
+}
+
+/* Visually hidden utility for screen readers */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
 }
 
 @keyframes scroll {
@@ -41,6 +54,7 @@ html{
 
 .animate-scroll {
   animation: scroll 20s linear infinite;
+  will-change: transform;
 }
 .animate-scroll:hover {
   animation-play-state: paused;
@@ -59,6 +73,7 @@ html{
 
 .animate-slide-up {
   animation: slide-up 0.3s ease-out;
+  will-change: transform, opacity;
 }
 
 .no-scrollbar::-webkit-scrollbar {
@@ -82,4 +97,35 @@ html{
 
 .animate-page-enter {
   animation: pageEnter 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  will-change: transform, opacity;
+}
+
+/* Hero slide animations (moved from inline <style> in hero.js for better performance) */
+@keyframes heroFadeUp {
+  from { opacity: 0; transform: translateY(28px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes heroFadeIn {
+  from { opacity: 0; transform: translateY(14px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.animate-hero-tag {
+  animation: heroFadeIn 0.6s cubic-bezier(0.22,1,0.36,1) both;
+  animation-delay: 0.1s;
+  will-change: transform, opacity;
+}
+.animate-hero-title {
+  animation: heroFadeUp 0.75s cubic-bezier(0.22,1,0.36,1) both;
+  animation-delay: 0.28s;
+  will-change: transform, opacity;
+}
+.animate-hero-subtitle {
+  animation: heroFadeUp 0.75s cubic-bezier(0.22,1,0.36,1) both;
+  animation-delay: 0.48s;
+  will-change: transform, opacity;
+}
+.animate-hero-buttons {
+  animation: heroFadeUp 0.75s cubic-bezier(0.22,1,0.36,1) both;
+  animation-delay: 0.66s;
+  will-change: transform, opacity;
 }

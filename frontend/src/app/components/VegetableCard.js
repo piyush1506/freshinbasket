@@ -122,11 +122,13 @@ export default function VegetableCard({ item, isHome = false }) {
         {user && (
           <button
             onClick={(e) => { e.preventDefault(); toggleWishlist(item.id); }}
-            className="absolute top-2 right-2 z-10 p-1.5 bg-white/90 backdrop-blur-sm rounded-full hover:bg-white transition-colors shadow-sm border border-gray-100"
+            className="absolute top-2 right-2 z-10 p-2 bg-white/90 backdrop-blur-sm rounded-full hover:bg-white transition-colors shadow-sm border border-gray-100 min-w-[36px] min-h-[36px] flex items-center justify-center"
+            aria-label={wishlistIds?.includes(Number(item.id)) ? `Remove ${item.name} from wishlist` : `Add ${item.name} to wishlist`}
           >
             <Heart
               size={14}
               className={wishlistIds?.includes(Number(item.id)) ? "fill-red-500 text-red-500" : "text-gray-500 hover:text-red-500"}
+              aria-hidden="true"
             />
           </button>
         )}
@@ -178,9 +180,9 @@ export default function VegetableCard({ item, isHome = false }) {
             )}
           </div>
         ) : (
-          <div className="text-xs sm:text-xs font-semibold text-gray-500 mb-3 flex items-center gap-0.5">
+          <div className="text-xs sm:text-xs font-semibold text-gray-600 mb-3 flex items-center gap-0.5">
             <span>{itemUnit}</span>
-            <span className="text-[8px] text-gray-500 ml-0.5">▼</span>
+            <span className="text-[10px] text-gray-600 ml-0.5" aria-hidden="true">▼</span>
           </div>
         )}
 
@@ -212,9 +214,10 @@ export default function VegetableCard({ item, isHome = false }) {
                   <button
                     onClick={handleDecrement}
                     disabled={loading}
-                    className="w-5 h-5 sm:w-6 sm:h-6 flex items-center justify-center text-white hover:bg-[#1a4d32] rounded-md transition-colors disabled:opacity-50"
+                    className="w-7 h-7 sm:w-6 sm:h-6 flex items-center justify-center text-white hover:bg-[#1a4d32] rounded-md transition-colors disabled:opacity-50"
+                    aria-label={`Decrease quantity of ${item.name}`}
                   >
-                    <Minus size={13} className="stroke-[3.5px]" />
+                    <Minus size={13} className="stroke-[3.5px]" aria-hidden="true" />
                   </button>
                   
                   <div className="flex items-center justify-center px-1">
@@ -224,9 +227,10 @@ export default function VegetableCard({ item, isHome = false }) {
                   <button
                     onClick={handleIncrement}
                     disabled={loading}
-                    className="w-5 h-5 sm:w-6 sm:h-6 flex items-center justify-center text-white hover:bg-[#1a4d32] rounded-md transition-colors disabled:opacity-50"
+                    className="w-7 h-7 sm:w-6 sm:h-6 flex items-center justify-center text-white hover:bg-[#1a4d32] rounded-md transition-colors disabled:opacity-50"
+                    aria-label={`Increase quantity of ${item.name}`}
                   >
-                    <Plus size={13} className="stroke-[3.5px]" />
+                    <Plus size={13} className="stroke-[3.5px]" aria-hidden="true" />
                   </button>
                 </div>
                 <span className="text-[11px] sm:text-xs font-bold text-gray-700 whitespace-nowrap">{displayUnit}</span>

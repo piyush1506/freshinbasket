@@ -23,7 +23,7 @@ export default function SectionTabs({ sections = [], activeIndex = 0, onTabChang
       
       {/* MOBILE ONLY VIEW: iOS-Style Centered Segmented Control */}
       <div className="flex md:hidden justify-center py-2 px-4 border-b border-gray-100/80">
-        <div className="relative flex items-center p-1 bg-gray-100/80 border border-gray-200/40 rounded-full shadow-inner gap-0.5">
+        <div className="relative flex items-center p-1 bg-gray-100/80 border border-gray-200/40 rounded-full shadow-inner gap-0.5" role="tablist" aria-label="Section navigation">
           {/* Animated sliding background pill */}
           <div
             className="absolute bg-[#2470f1] rounded-full transition-all duration-300 ease-out shadow-sm shadow-[#2470f1]/25 z-0"
@@ -32,6 +32,7 @@ export default function SectionTabs({ sections = [], activeIndex = 0, onTabChang
               width: activeStyle.width || 0,
               height: activeStyle.height || 0,
             }}
+            aria-hidden="true"
           />
 
           {sections.map((section, index) => {
@@ -41,6 +42,10 @@ export default function SectionTabs({ sections = [], activeIndex = 0, onTabChang
                 key={section.id || index}
                 ref={(el) => (tabRefs.current[index] = el)}
                 onClick={() => onTabChange(index)}
+                role="tab"
+                aria-selected={isActive}
+                aria-controls={`section-panel-${section.id || index}`}
+                id={`section-tab-${section.id || index}`}
                 className={`relative flex items-center justify-center gap-2 px-6 py-2.5 rounded-full text-xs font-extrabold tracking-wide transition-all duration-300 cursor-pointer select-none z-10 focus:outline-none min-w-[140px]
                   ${
                     isActive
@@ -50,7 +55,7 @@ export default function SectionTabs({ sections = [], activeIndex = 0, onTabChang
                 `}
               >
                 {section.icon && (
-                  <span className={`text-base transition-transform duration-300 ${isActive ? 'scale-110' : 'opacity-85'}`}>
+                  <span className={`text-base transition-transform duration-300 ${isActive ? 'scale-110' : 'opacity-85'}`} aria-hidden="true">
                     {section.icon}
                   </span>
                 )}
@@ -65,6 +70,7 @@ export default function SectionTabs({ sections = [], activeIndex = 0, onTabChang
                         : "bg-gray-200 text-gray-500"
                     }
                   `}
+                  aria-label={`${section.categories?.length || 0} categories`}
                 >
                   {section.categories?.length || 0}
                 </span>
@@ -76,13 +82,17 @@ export default function SectionTabs({ sections = [], activeIndex = 0, onTabChang
 
       {/* DESKTOP ONLY VIEW: Minimalist, spacious left-aligned border tabs */}
       <div className="hidden md:block max-w-[1400px] mx-auto px-10 pt-4">
-        <div className="flex items-center gap-10 border-b border-gray-100">
+        <div className="flex items-center gap-10 border-b border-gray-100" role="tablist" aria-label="Section navigation">
           {sections.map((section, index) => {
             const isActive = activeIndex === index;
             return (
               <button
                 key={section.id || index}
                 onClick={() => onTabChange(index)}
+                role="tab"
+                aria-selected={isActive}
+                aria-controls={`section-panel-${section.id || index}`}
+                id={`section-tab-desktop-${section.id || index}`}
                 className={`relative pb-3 text-sm font-black tracking-wider transition-all duration-200 cursor-pointer select-none focus:outline-none flex items-center gap-2
                   ${
                     isActive
@@ -92,7 +102,7 @@ export default function SectionTabs({ sections = [], activeIndex = 0, onTabChang
                 `}
               >
                 {section.icon && (
-                  <span className={`text-lg transition-transform duration-200 ${isActive ? 'scale-110' : 'opacity-80'}`}>
+                  <span className={`text-lg transition-transform duration-200 ${isActive ? 'scale-110' : 'opacity-80'}`} aria-hidden="true">
                     {section.icon}
                   </span>
                 )}
@@ -107,13 +117,14 @@ export default function SectionTabs({ sections = [], activeIndex = 0, onTabChang
                         : "bg-gray-100 text-gray-450"
                     }
                   `}
+                  aria-label={`${section.categories?.length || 0} categories`}
                 >
                   {section.categories?.length || 0}
                 </span>
 
                 {/* Active Indicator Underline */}
                 {isActive && (
-                  <div className="absolute bottom-0 left-0 right-0 h-[3px] bg-[#2470f1] rounded-t-full animate-fade-in" />
+                  <div className="absolute bottom-0 left-0 right-0 h-[3px] bg-[#2470f1] rounded-t-full animate-fade-in" aria-hidden="true" />
                 )}
               </button>
             );

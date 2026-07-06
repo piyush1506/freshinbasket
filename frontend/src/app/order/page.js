@@ -125,11 +125,11 @@ export default function OrdersPage() {
     };
 
     const handleReviewSubmitted = (review) => {
-      setOrders((prevOrders) =>
-        prevOrders.map((o) =>
-          o.id === selectedOrderForReview?.id ? { ...o, review } : o
-        )
-      );
+        setOrders((prevOrders) =>
+            prevOrders.map((o) =>
+                o.id === selectedOrderForReview?.id ? { ...o, review } : o
+            )
+        );
     };
 
     const handleReorder = async (order) => {
@@ -152,7 +152,7 @@ export default function OrdersPage() {
 
     const handleCancelOrder = async (orderId) => {
         if (!window.confirm("Are you sure you want to cancel this order?")) return;
-        
+
         try {
             const token = getAccessToken();
             const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/orders/${orderId}/cancel/`, {
@@ -161,16 +161,16 @@ export default function OrdersPage() {
                     'Authorization': `Bearer ${token}`
                 }
             });
-            
+
             if (res.ok) {
                 const data = await res.json();
                 toast.success("Order cancelled successfully");
-                setOrders(prevOrders => prevOrders.map(order => 
+                setOrders(prevOrders => prevOrders.map(order =>
                     order.id === orderId ? { ...order, status: data.status || "CANCELLED" } : order
                 ));
             } else {
                 let errData;
-                try { errData = await res.json(); } catch(e){}
+                try { errData = await res.json(); } catch (e) { }
                 toast.error(errData?.error || "Failed to cancel order.");
             }
         } catch (error) {
@@ -347,16 +347,16 @@ export default function OrdersPage() {
 
                                                         <div className="flex flex-wrap gap-2">
                                                             {order.status === "DELIVERED" && !order.review && (
-                                                              <button
-                                                                onClick={() => {
-                                                                  setSelectedOrderForReview(order);
-                                                                  setIsReviewModalOpen(true);
-                                                                }}
-                                                                className="flex items-center gap-1.5 px-4 py-2 bg-amber-50 text-amber-700 text-sm font-medium rounded-xl hover:bg-amber-100 transition-colors whitespace-nowrap border border-amber-200"
-                                                              >
-                                                                <Star size={14} />
-                                                                Rate
-                                                              </button>
+                                                                <button
+                                                                    onClick={() => {
+                                                                        setSelectedOrderForReview(order);
+                                                                        setIsReviewModalOpen(true);
+                                                                    }}
+                                                                    className="flex items-center gap-1.5 px-4 py-2 bg-amber-50 text-amber-700 text-sm font-medium rounded-xl hover:bg-amber-100 transition-colors whitespace-nowrap border border-amber-200"
+                                                                >
+                                                                    <Star size={14} />
+                                                                    Rate
+                                                                </button>
                                                             )}
                                                             <button
                                                                 onClick={() => handleReorder(order)}
@@ -384,9 +384,9 @@ export default function OrdersPage() {
                                 })
                             })()
                         )}
+                    </div>
                 </div>
             </div>
-        </div>
 
             <ChangeAddressModal
                 isOpen={isAddressModalOpen}
