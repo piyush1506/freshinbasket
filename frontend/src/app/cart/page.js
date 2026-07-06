@@ -91,6 +91,18 @@ export default function CartPage() {
     fetchSuggested();
   }, [cartItems, showAddressForm]);
 
+  const reverseGeocode = async (latitude, longitude) => {
+    try {
+      const res = await fetch(
+        `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&addressdetails=1`
+      );
+      const data = await res.json();
+      if (data?.display_name) {
+        setDeliveryAddress(data.display_name);
+      }
+    } catch { }
+  };
+
   const initMap = (L) => {
     if (mapInstance.current) {
       mapInstance.current.invalidateSize();
@@ -147,18 +159,6 @@ export default function CartPage() {
       }
     };
   }, [showAddressForm]);
-
-  const reverseGeocode = async (latitude, longitude) => {
-    try {
-      const res = await fetch(
-        `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&addressdetails=1`
-      );
-      const data = await res.json();
-      if (data?.display_name) {
-        setDeliveryAddress(data.display_name);
-      }
-    } catch { }
-  };
   const waitforMap = () => new Promise((resolve) => {
     if (mapInstance.current && markerRef.current) return resolve()
     const interval = setInterval(() => {
@@ -330,6 +330,12 @@ export default function CartPage() {
 
   const handleCheckout = async () => {
     if (isProcessing) return;
+
+    if (!deliveryAddress || !deliveryAddress.trim()) {
+      toast.error("Please add a delivery address");
+      return;
+    }
+
     if (!isDeliverable) return;
 
     const fullAddress = `${deliveryAddress}${pincode ? `, Pincode: ${pincode}` : ""}`;

@@ -771,12 +771,7 @@ class SendOTPView(APIView):
             return Response({'error': 'Valid 10-digit phone number is required.'}, status=status.HTTP_400_BAD_REQUEST)
         
         msg91_phone = '91' + national_phone
-
-        # Allow bypass for testing if in DEBUG mode
-        if settings.DEBUG:
-            logger.info(f"DEBUG MODE: Mock OTP sent successfully to {msg91_phone} (DB phone: {national_phone}).")
-            return Response({'message': 'OTP sent successfully.', 'reqId': 'mock-req-id-123456'})
-             
+        
         # Using MSG91 Widget API (captcha disabled)
         url = "https://api.msg91.com/api/v5/widget/sendOtp"
         
@@ -824,40 +819,34 @@ class VerifyOTPView(APIView):
         db_phone = national_phone
         msg91_phone = '91' + national_phone
 
-        # Allow bypass for testing if in DEBUG mode
+        # Must use Widget verify API since OTP was sent via Widget API
+        req_id = request.data.get('reqId')  # reqId returned from sendOtp
+        if not req_id:
+            return Response({'error': 'reqId is required. Send OTP first.'}, status=status.HTTP_400_BAD_REQUEST)
+        
         from django.conf import settings
-        is_test_bypass = settings.DEBUG and str(otp_code) == '123456'
+        url = "https://api.msg91.com/api/v5/widget/verifyOtp"
+        headers = {
+            "authkey": settings.MSG91_AUTH_KEY,
+            "content-type": "application/json"
+        }
+        payload = {
+            "widgetId": settings.MSG91_WIDGET_ID,
+            "reqId": req_id,
+            "otp": str(otp_code)
+        }
         
         is_otp_valid = False
-        
-        if is_test_bypass:
-            is_otp_valid = True
-        else:
-            # Must use Widget verify API since OTP was sent via Widget API
-            req_id = request.data.get('reqId')  # reqId returned from sendOtp
-            if not req_id:
-                return Response({'error': 'reqId is required. Send OTP first.'}, status=status.HTTP_400_BAD_REQUEST)
-            
-            url = "https://api.msg91.com/api/v5/widget/verifyOtp"
-            headers = {
-                "authkey": settings.MSG91_AUTH_KEY,
-                "content-type": "application/json"
-            }
-            payload = {
-                "widgetId": settings.MSG91_WIDGET_ID,
-                "reqId": req_id,
-                "otp": str(otp_code)
-            }
-            try:
-                response = requests.post(url, headers=headers, json=payload)
-                data = response.json()
-                logger.info(f'MSG91 VerifyOTP Response: {data}')  # Debug log
-                if data.get("type") == "success":
-                    is_otp_valid = True
-                else:
-                    return Response({'error': data.get('message', 'Invalid OTP')}, status=status.HTTP_400_BAD_REQUEST)
-            except Exception as e:
-                return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        try:
+            response = requests.post(url, headers=headers, json=payload)
+            data = response.json()
+            logger.info(f'MSG91 VerifyOTP Response: {data}')  # Debug log
+            if data.get("type") == "success":
+                is_otp_valid = True
+            else:
+                return Response({'error': data.get('message', 'Invalid OTP')}, status=status.HTTP_400_BAD_REQUEST)
+        except Exception as e:
+            return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
                 
         if is_otp_valid:
             # Find or create user
