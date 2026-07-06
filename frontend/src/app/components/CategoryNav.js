@@ -26,6 +26,7 @@ export default function CategoryNav({ initialCategories = [], sectionName = "" }
                   src={cat.image_url}
                   alt={cat.name}
                   fill
+                  sizes="(max-width: 640px) 33vw, (max-width: 1024px) 25vw, 16vw"
                   className="object-cover group-hover:scale-105 transition-transform duration-300"
                 />
               ) : (

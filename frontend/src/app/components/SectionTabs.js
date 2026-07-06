@@ -44,7 +44,6 @@ export default function SectionTabs({ sections = [], activeIndex = 0, onTabChang
                 onClick={() => onTabChange(index)}
                 role="tab"
                 aria-selected={isActive}
-                aria-controls={`section-panel-${section.id || index}`}
                 id={`section-tab-${section.id || index}`}
                 className={`relative flex items-center justify-center gap-2 px-6 py-2.5 rounded-full text-xs font-extrabold tracking-wide transition-all duration-300 cursor-pointer select-none z-10 focus:outline-none min-w-[140px]
                   ${
@@ -91,7 +90,6 @@ export default function SectionTabs({ sections = [], activeIndex = 0, onTabChang
                 onClick={() => onTabChange(index)}
                 role="tab"
                 aria-selected={isActive}
-                aria-controls={`section-panel-${section.id || index}`}
                 id={`section-tab-desktop-${section.id || index}`}
                 className={`relative pb-3 text-sm font-black tracking-wider transition-all duration-200 cursor-pointer select-none focus:outline-none flex items-center gap-2
                   ${
