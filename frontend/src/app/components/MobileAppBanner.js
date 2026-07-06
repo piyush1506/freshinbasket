@@ -24,7 +24,7 @@ export default function MobileAppBanner() {
   if (!isVisible) return null;
 
   return (
-    <div className="md:hidden fixed bottom-20 sm:bottom-24 left-4 right-4 bg-white rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.12)] border border-gray-100 p-3 z-[9999] flex items-center justify-between pb-safe" role="banner" aria-label="Download app banner">
+    <div className="md:hidden fixed bottom-20 sm:bottom-24 left-4 right-4 bg-white rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.12)] border border-gray-100 p-3 z-[9999] flex items-center justify-between pb-safe" role="region" aria-label="Download app banner">
       <div className="flex items-center gap-3">
         <div className="w-10 h-10 bg-[#216140] rounded-xl flex items-center justify-center shrink-0 shadow-sm">
           <span className="text-white text-xl font-black">F</span>
