@@ -552,33 +552,66 @@ class DeliveryRegisterSerializer(serializers.ModelSerializer):
         model = User
         fields = ('phone_number', 'username', 'email')
         extra_kwargs = {
-            'phone_number': {'required': True},
+            'phone_number': {
+                'required': True,
+                'validators': []  # Remove default UniqueValidator to handle upgrade logic in validate()
+            },
             'username': {'required': True},
             'email': {'required': False, 'allow_blank': True, 'allow_null': True},
         }
 
-    def validate_email(self, value):
-        if not value:
-            return value
-        value = value.strip().lower()
-        if User.objects.filter(email=value).exists():
-            raise serializers.ValidationError('A user with this email already exists.')
-        return value
+    def validate(self, attrs):
+        phone_number = attrs.get('phone_number')
+        email = attrs.get('email')
 
-    def validate_phone_number(self, value):
-        if User.objects.filter(phone_number=value).exists():
-            raise serializers.ValidationError('A user with this phone number already exists.')
-        return value
+        # Normalize/clean phone number
+        raw_phone = str(phone_number).replace('+', '').replace(' ', '').strip()
+        if len(raw_phone) == 12 and raw_phone.startswith('91'):
+            clean_phone = raw_phone[2:]
+        elif len(raw_phone) == 10:
+            clean_phone = raw_phone
+        else:
+            raise serializers.ValidationError({'phone_number': 'Valid 10-digit phone number is required.'})
+
+        attrs['phone_number'] = clean_phone
+
+        # Check user by phone number
+        user_by_phone = User.objects.filter(phone_number=clean_phone).first()
+        if user_by_phone and user_by_phone.role == User.Role.DELIVERY:
+            raise serializers.ValidationError({'phone_number': 'A delivery agent with this phone number already exists.'})
+
+        # Check email
+        if email:
+            email = email.strip().lower()
+            attrs['email'] = email
+            user_by_email = User.objects.filter(email=email).first()
+            if user_by_email:
+                if user_by_email.phone_number != clean_phone:
+                    raise serializers.ValidationError({'email': 'A user with this email already exists.'})
+                if user_by_email.role == User.Role.DELIVERY:
+                    raise serializers.ValidationError({'email': 'A delivery agent with this email already exists.'})
+
+        return attrs
 
     def create(self, validated_data):
-        user = User(
-            username=validated_data['username'],
-            email=validated_data.get('email'),
-            phone_number=validated_data['phone_number'],
-            role=User.Role.DELIVERY,
-        )
-        user.set_unusable_password()
-        user.save()
+        phone_number = validated_data['phone_number']
+        user = User.objects.filter(phone_number=phone_number).first()
+        if user:
+            user.username = validated_data['username']
+            if validated_data.get('email'):
+                user.email = validated_data.get('email')
+            user.role = User.Role.DELIVERY
+            user.save()
+        else:
+            user = User(
+                username=validated_data['username'],
+                email=validated_data.get('email'),
+                phone_number=phone_number,
+                role=User.Role.DELIVERY,
+            )
+            user.set_unusable_password()
+            user.save()
+        
         from users.models import DeliveryProfile
         DeliveryProfile.objects.get_or_create(user=user, defaults={'is_active': True})
         return user

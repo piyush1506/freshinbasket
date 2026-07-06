@@ -758,12 +758,24 @@ class SendOTPView(APIView):
 
     def post(self, request):
         phone_number = request.data.get('phone_number')
-        if not phone_number or len(str(phone_number)) < 10:
+        if not phone_number:
+            return Response({'error': 'Phone number is required.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Normalize/clean phone number
+        raw_phone = str(phone_number).replace('+', '').replace(' ', '').strip()
+        if len(raw_phone) == 12 and raw_phone.startswith('91'):
+            national_phone = raw_phone[2:]
+        elif len(raw_phone) == 10:
+            national_phone = raw_phone
+        else:
             return Response({'error': 'Valid 10-digit phone number is required.'}, status=status.HTTP_400_BAD_REQUEST)
         
-        # Ensure it has the country code (e.g., 91 for India)
-        if not str(phone_number).startswith('91'):
-             phone_number = '91' + str(phone_number)
+        msg91_phone = '91' + national_phone
+
+        # Allow bypass for testing if in DEBUG mode
+        if settings.DEBUG:
+            logger.info(f"DEBUG MODE: Mock OTP sent successfully to {msg91_phone} (DB phone: {national_phone}).")
+            return Response({'message': 'OTP sent successfully.', 'reqId': 'mock-req-id-123456'})
              
         # Using MSG91 Widget API (captcha disabled)
         url = "https://api.msg91.com/api/v5/widget/sendOtp"
@@ -775,7 +787,7 @@ class SendOTPView(APIView):
         
         payload = {
             "widgetId": settings.MSG91_WIDGET_ID,
-            "identifier": str(phone_number)
+            "identifier": str(msg91_phone)
         }
         
         try:
@@ -800,13 +812,21 @@ class VerifyOTPView(APIView):
         if not phone_number or not otp_code:
             return Response({'error': 'Phone number and OTP are required.'}, status=status.HTTP_400_BAD_REQUEST)
 
+        # Normalize/clean phone number
+        raw_phone = str(phone_number).replace('+', '').replace(' ', '').strip()
+        if len(raw_phone) == 12 and raw_phone.startswith('91'):
+            national_phone = raw_phone[2:]
+        elif len(raw_phone) == 10:
+            national_phone = raw_phone
+        else:
+            return Response({'error': 'Valid 10-digit phone number is required.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        db_phone = national_phone
+        msg91_phone = '91' + national_phone
+
         # Allow bypass for testing if in DEBUG mode
         from django.conf import settings
         is_test_bypass = settings.DEBUG and str(otp_code) == '123456'
-        
-        original_phone = str(phone_number)
-        msg91_phone = original_phone if original_phone.startswith('91') else f"91{original_phone}"
-        db_phone = original_phone[2:] if original_phone.startswith('91') else original_phone
         
         is_otp_valid = False
         
@@ -863,7 +883,8 @@ class VerifyOTPView(APIView):
             return Response({
                 'refresh': str(refresh),
                 'access': str(refresh.access_token),
-                'user': UserSerializer(user).data
+                'user': UserSerializer(user).data,
+                'is_new_user': created
             })
         return Response({'error': 'Invalid OTP'}, status=status.HTTP_400_BAD_REQUEST)
 
@@ -876,8 +897,23 @@ class OTPLogsView(APIView):
         return Response({'error': 'Not implemented'}, status=status.HTTP_501_NOT_IMPLEMENTED)
 
 class DeliveryRegisterView(viewsets.ViewSet):
+    permission_classes = [permissions.AllowAny]
+
     def create(self, request):
-        return Response({'error': 'Not implemented'}, status=status.HTTP_501_NOT_IMPLEMENTED)
+        from .serializers import DeliveryRegisterSerializer
+        serializer = DeliveryRegisterSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        user = serializer.save()
+        refresh = RefreshToken.for_user(user)
+        logger.info(
+            'Delivery Register success phone=%s ip=%s',
+            user.phone_number, request.META.get('REMOTE_ADDR')
+        )
+        return Response({
+            'refresh': str(refresh),
+            'access': str(refresh.access_token),
+            'user': UserSerializer(user).data
+        }, status=status.HTTP_201_CREATED)
 
 class DeliverySlotViewSet(viewsets.ModelViewSet):
     pass

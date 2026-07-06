@@ -53,7 +53,9 @@ export default function Navbar({ item, hideCategories = false, sectionTabs = nul
     const [suggestions, setSuggestions] = useState([]);
     const [showSuggestions, setShowSuggestions] = useState(false);
     const [categories, setCategories] = useState([]);
+    const [isProfileDropdownOpen, setIsProfileDropdownOpen] = useState(false);
     const searchRef = useRef(null);
+    const profileRef = useRef(null);
     const suggestionCacheRef = useRef(new Map());
     const allSuggestionsRef = useRef([]);
 
@@ -206,6 +208,9 @@ export default function Navbar({ item, hideCategories = false, sectionTabs = nul
         if (searchRef.current && !searchRef.current.contains(e.target)) {
             setShowSuggestions(false);
         }
+        if (profileRef.current && !profileRef.current.contains(e.target)) {
+            setIsProfileDropdownOpen(false);
+        }
     }, []);
     useEffect(() => {
         document.addEventListener("mousedown", handleClickOutside);
@@ -277,28 +282,36 @@ export default function Navbar({ item, hideCategories = false, sectionTabs = nul
 
                     {/* Profile */}
                     {user ? (
-                        <div className="hidden md:flex relative group cursor-pointer flex-col items-center gap-1 hover:text-[#216140] transition-colors" role="button" tabIndex={0} aria-haspopup="true" aria-label="User profile menu">
+                        <div 
+                            ref={profileRef}
+                            onClick={() => setIsProfileDropdownOpen(prev => !prev)}
+                            className="hidden md:flex relative group cursor-pointer flex-col items-center gap-1 hover:text-[#216140] transition-colors" 
+                            role="button" 
+                            tabIndex={0} 
+                            aria-haspopup="true" 
+                            aria-label="User profile menu"
+                        >
                             <div className="w-6 h-6 rounded-full bg-[#216140] text-white flex items-center justify-center font-bold text-[11px] shadow-sm">
                                 {displayInitial}
                             </div>
                             <span className="text-[12px] font-semibold text-gray-700 hidden md:block">Profile</span>
 
                             {/* Dropdown Menu */}
-                            <div className="absolute right-[-20px] top-full pt-4 w-48 z-50 hidden group-hover:block">
-                                <div className="bg-white rounded-xl shadow-xl py-2 border border-gray-100 transition-all duration-200">
-                                    <Link href="/profile" className="block px-4 py-2.5 text-[14px] font-semibold text-gray-700 hover:bg-gray-50 hover:text-[#216140]">My Profile</Link>
-                                    <Link href="/wishlist" className="block px-4 py-2.5 text-[14px] font-semibold text-gray-700 hover:bg-gray-50 hover:text-[#216140]">Wishlist</Link>
-                                    <Link href="/order" className="block px-4 py-2.5 text-[14px] font-semibold text-gray-700 hover:bg-gray-50 hover:text-[#216140]">Order History</Link>
+                            <div className={`absolute right-[-20px] top-full pt-4 w-48 z-50 ${isProfileDropdownOpen ? 'block' : 'hidden group-hover:block'}`}>
+                                <div className="bg-white rounded-xl shadow-xl py-2 border border-gray-100 transition-all duration-200" onClick={(e) => e.stopPropagation()}>
+                                    <Link href="/profile" onClick={() => setIsProfileDropdownOpen(false)} className="block px-4 py-2.5 text-[14px] font-semibold text-gray-700 hover:bg-gray-50 hover:text-[#216140]">My Profile</Link>
+                                    <Link href="/wishlist" onClick={() => setIsProfileDropdownOpen(false)} className="block px-4 py-2.5 text-[14px] font-semibold text-gray-700 hover:bg-gray-50 hover:text-[#216140]">Wishlist</Link>
+                                    <Link href="/order" onClick={() => setIsProfileDropdownOpen(false)} className="block px-4 py-2.5 text-[14px] font-semibold text-gray-700 hover:bg-gray-50 hover:text-[#216140]">Order History</Link>
                                     {user.role === "ADMIN" && (
                                         <>
                                             <hr className="my-1 border-gray-100" />
-                                            <Link href="/admin/slides" className="block px-4 py-2.5 text-[14px] font-semibold text-green-700 hover:bg-green-50">Hero Slides</Link>
-                                            <Link href="/admin/products" className="block px-4 py-2.5 text-[14px] font-semibold text-green-700 hover:bg-green-50">Product Images</Link>
+                                            <Link href="/admin/slides" onClick={() => setIsProfileDropdownOpen(false)} className="block px-4 py-2.5 text-[14px] font-semibold text-green-700 hover:bg-green-50">Hero Slides</Link>
+                                            <Link href="/admin/products" onClick={() => setIsProfileDropdownOpen(false)} className="block px-4 py-2.5 text-[14px] font-semibold text-green-700 hover:bg-green-50">Product Images</Link>
                                         </>
                                     )}
                                     <hr className="my-1 border-gray-100" />
                                     <button
-                                        onClick={async () => { await AUTH_API.logout(); setUser(null); router.push('/login'); }}
+                                        onClick={async (e) => { e.stopPropagation(); setIsProfileDropdownOpen(false); await AUTH_API.logout(); setUser(null); router.push('/login'); }}
                                         className="w-full text-left px-4 py-2 text-[14px] font-semibold text-red-600 hover:bg-red-50 transition-colors">
                                         Logout
                                     </button>
@@ -324,7 +337,7 @@ export default function Navbar({ item, hideCategories = false, sectionTabs = nul
                     </Link>
 
                     {/* Mobile Hamburger Button */}
-                    <div className="flex lg:hidden items-center relative -mr-2 z-[60]">
+                    <div className={`${isProfileDropdownOpen ? 'hidden' : 'flex lg:hidden'} items-center relative -mr-2 z-[60]`}>
                         <button onClick={() => setIsOpen(!isOpen)} className="p-2 focus:outline-none min-w-[44px] min-h-[44px] flex items-center justify-center" aria-label={isOpen ? "Close navigation menu" : "Open navigation menu"} aria-expanded={isOpen}>
                             <Hamburger toggled={isOpen} toggle={setIsOpen} color={isOpen ? "#000000" : "#216140"} size={24} rounded label="Toggle navigation menu" />
                         </button>
