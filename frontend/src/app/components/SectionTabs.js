@@ -6,14 +6,17 @@ export default function SectionTabs({ sections = [], activeIndex = 0, onTabChang
   const tabRefs = useRef([]);
 
   useEffect(() => {
-    const activeTab = tabRefs.current[activeIndex];
-    if (activeTab) {
-      setActiveStyle({
-        left: activeTab.offsetLeft,
-        width: activeTab.offsetWidth,
-        height: activeTab.offsetHeight,
-      });
-    }
+    const id = requestAnimationFrame(() => {
+      const activeTab = tabRefs.current[activeIndex];
+      if (activeTab) {
+        setActiveStyle({
+          left: activeTab.offsetLeft,
+          width: activeTab.offsetWidth,
+          height: activeTab.offsetHeight,
+        });
+      }
+    });
+    return () => cancelAnimationFrame(id);
   }, [activeIndex, sections]);
 
   if (!sections || sections.length === 0) return null;

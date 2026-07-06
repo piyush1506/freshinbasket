@@ -108,7 +108,7 @@ export default function Hero({ slides: initialSlides }) {
                 sizes="100vw"
                 priority={index === 0}
                 fetchPriority={index === 0 ? "high" : "auto"}
-                quality={75}
+                quality={50}
               />
 
               {/* Re-mount AnimatedContent on each slide change to re-trigger animations */}
