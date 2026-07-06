@@ -337,7 +337,7 @@ export default function Navbar({ item, hideCategories = false, sectionTabs = nul
                     </Link>
 
                     {/* Mobile Hamburger Button */}
-                    <div className={`${isProfileDropdownOpen ? 'hidden' : 'flex lg:hidden'} items-center relative -mr-2 z-[60]`}>
+                    <div className={`${isProfileDropdownOpen ? 'hidden' : 'flex md:hidden'} items-center relative -mr-2 z-[60]`}>
                         <button onClick={() => setIsOpen(!isOpen)} className="p-2 focus:outline-none min-w-[44px] min-h-[44px] flex items-center justify-center" aria-label={isOpen ? "Close navigation menu" : "Open navigation menu"} aria-expanded={isOpen}>
                             <Hamburger toggled={isOpen} toggle={setIsOpen} color={isOpen ? "#000000" : "#216140"} size={24} rounded label="Toggle navigation menu" />
                         </button>
@@ -347,12 +347,12 @@ export default function Navbar({ item, hideCategories = false, sectionTabs = nul
                         <>
                             {/* Mobile Menu Backdrop */}
                             <div 
-                                className={`fixed inset-0 bg-black/50 backdrop-blur-sm z-[999] lg:hidden transition-opacity duration-300 ${isOpen ? 'opacity-100 visible' : 'opacity-0 invisible pointer-events-none'}`}
+                                className={`fixed inset-0 bg-black/50 backdrop-blur-sm z-[999] md:hidden transition-opacity duration-300 ${isOpen ? 'opacity-100 visible' : 'opacity-0 invisible pointer-events-none'}`}
                                 onClick={() => setIsOpen(false)}
                             />
 
                             {/* Mobile Menu Side Drawer */}
-                            <nav className={`fixed top-0 bottom-0 right-0 w-[85%] max-w-[340px] bg-white z-[1000] lg:hidden shadow-2xl flex flex-col transition-transform duration-300 ease-in-out transform ${isOpen ? 'translate-x-0' : 'translate-x-full'}`} aria-label="Mobile navigation" role="navigation">
+                            <nav className={`fixed top-0 bottom-0 right-0 w-[85%] max-w-[340px] bg-white z-[1000] md:hidden shadow-2xl flex flex-col transition-transform duration-300 ease-in-out transform ${isOpen ? 'translate-x-0' : 'translate-x-full'}`} aria-label="Mobile navigation" role="navigation">
                                 
                                 {/* Drawer Header */}
                                 <div className="pt-16 pb-6 px-6 bg-gradient-to-br from-green-50 to-white border-b border-gray-100">
