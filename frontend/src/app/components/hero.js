@@ -14,7 +14,7 @@ const FALLBACK_SLIDES = [
     id: 1,
     title: "Fresh Organic\nVegetables Every Day",
     subtitle: "Get farm-fresh vegetables delivered directly to your doorstep within 24 hours of harvest.",
-    image_url: "https://images.unsplash.com/photo-1542838132-92c53300491e?q=80&w=2574&auto=format&fit=crop",
+    image_url: "https://images.unsplash.com/photo-1542838132-92c53300491e?w=1200&q=60&auto=format&fit=crop",
     tag: "Organic",
     link: "/category/vegetables",
     button_text: "Shop Now",

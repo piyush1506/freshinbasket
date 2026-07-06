@@ -37,6 +37,7 @@ export default function SectionTabs({ sections = [], activeIndex = 0, onTabChang
 
           {sections.map((section, index) => {
             const isActive = activeIndex === index;
+            const categoryCount = section.categories?.length || 0;
             return (
               <button
                 key={section.id || index}
@@ -45,6 +46,7 @@ export default function SectionTabs({ sections = [], activeIndex = 0, onTabChang
                 role="tab"
                 aria-selected={isActive}
                 id={`section-tab-${section.id || index}`}
+                aria-label={`${section.name}, ${categoryCount} categories`}
                 className={`relative flex items-center justify-center gap-2 px-6 py-2.5 rounded-full text-xs font-extrabold tracking-wide transition-all duration-300 cursor-pointer select-none z-10 focus:outline-none min-w-[140px]
                   ${
                     isActive
@@ -58,9 +60,9 @@ export default function SectionTabs({ sections = [], activeIndex = 0, onTabChang
                     {section.icon}
                   </span>
                 )}
-                <span className="whitespace-nowrap font-black">{section.name}</span>
+                <span className="whitespace-nowrap font-black" aria-hidden="true">{section.name}</span>
                 
-                {/* Count badge */}
+                {/* Count badge — aria-hidden since label is on parent button */}
                 <span
                   className={`ml-1.5 text-[9px] font-black px-2 py-0.5 rounded-full transition-all duration-300
                     ${
@@ -69,9 +71,9 @@ export default function SectionTabs({ sections = [], activeIndex = 0, onTabChang
                         : "bg-gray-200 text-gray-500"
                     }
                   `}
-                  aria-label={`${section.categories?.length || 0} categories`}
+                  aria-hidden="true"
                 >
-                  {section.categories?.length || 0}
+                  {categoryCount}
                 </span>
               </button>
             );
@@ -84,6 +86,7 @@ export default function SectionTabs({ sections = [], activeIndex = 0, onTabChang
         <div className="flex items-center gap-10 border-b border-gray-100" role="tablist" aria-label="Section navigation">
           {sections.map((section, index) => {
             const isActive = activeIndex === index;
+            const categoryCount = section.categories?.length || 0;
             return (
               <button
                 key={section.id || index}
@@ -91,6 +94,7 @@ export default function SectionTabs({ sections = [], activeIndex = 0, onTabChang
                 role="tab"
                 aria-selected={isActive}
                 id={`section-tab-desktop-${section.id || index}`}
+                aria-label={`${section.name}, ${categoryCount} categories`}
                 className={`relative pb-3 text-sm font-black tracking-wider transition-all duration-200 cursor-pointer select-none focus:outline-none flex items-center gap-2
                   ${
                     isActive
@@ -104,9 +108,9 @@ export default function SectionTabs({ sections = [], activeIndex = 0, onTabChang
                     {section.icon}
                   </span>
                 )}
-                <span className="whitespace-nowrap font-black uppercase text-[13px]">{section.name}</span>
+                <span className="whitespace-nowrap font-black uppercase text-[13px]" aria-hidden="true">{section.name}</span>
                 
-                {/* Count badge */}
+                {/* Count badge — aria-hidden since label is on parent button */}
                 <span
                   className={`ml-1 text-[10px] font-bold px-1.5 py-0.5 rounded-md transition-all duration-200
                     ${
@@ -115,9 +119,9 @@ export default function SectionTabs({ sections = [], activeIndex = 0, onTabChang
                         : "bg-gray-100 text-gray-450"
                     }
                   `}
-                  aria-label={`${section.categories?.length || 0} categories`}
+                  aria-hidden="true"
                 >
-                  {section.categories?.length || 0}
+                  {categoryCount}
                 </span>
 
                 {/* Active Indicator Underline */}

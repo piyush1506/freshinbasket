@@ -265,7 +265,7 @@ export default function Navbar({ item, hideCategories = false, sectionTabs = nul
                 <div className="flex items-center gap-6 shrink-0">
                     
                     {/* Wishlist */}
-                    <Link href='/wishlist' className="hidden md:flex flex-col items-center gap-1 hover:text-[#216140] transition-colors relative group">
+                    <Link href='/wishlist' aria-label="Go to wishlist" className="hidden md:flex flex-col items-center gap-1 hover:text-[#216140] transition-colors relative group">
                         <Bookmark className="w-6 h-6 text-gray-700 group-hover:text-[#216140]" strokeWidth={1.5} />
                         <span className="text-[12px] font-semibold text-gray-700 hidden md:block">Wishlist</span>
                         {wishlistIds?.length > 0 && (
@@ -313,7 +313,7 @@ export default function Navbar({ item, hideCategories = false, sectionTabs = nul
                     )}
 
                     {/* Cart */}
-                    <Link href='/cart' className="flex flex-col items-center gap-1 hover:text-[#216140] transition-colors relative group">
+                    <Link href='/cart' aria-label="Go to shopping cart" className="flex flex-col items-center gap-1 hover:text-[#216140] transition-colors relative group">
                         <ShoppingCart className="w-6 h-6 text-gray-700 group-hover:text-[#216140]" strokeWidth={1.5} />
                         <span className="text-[12px] font-semibold text-gray-700 hidden md:block">Cart</span>
                         {cartCount > 0 && (
