@@ -26,16 +26,16 @@ const FALLBACK_SLIDES = [
 // Each text element animates in with a staggered delay
 function AnimatedContent({ slide }) {
   return (
-    <div className="absolute inset-0 flex flex-col justify-center px-8 md:px-16 max-w-3xl">
+    <div className="absolute inset-0 flex flex-col justify-center px-4 sm:px-8 md:px-16 max-w-3xl">
       {slide.tag && (
         <span
-          className="bg-[#B4F044] text-green-900 text-xs font-bold px-3 py-1 rounded-full w-max mb-4 uppercase tracking-wider animate-hero-tag"
+          className="bg-[#B4F044] text-green-900 text-[10px] sm:text-xs font-bold px-2 py-1 sm:px-3 sm:py-1 rounded-full w-max mb-2 sm:mb-4 uppercase tracking-wider animate-hero-tag"
         >
           {slide.tag}
         </span>
       )}
       <h1
-        className="text-4xl md:text-6xl font-extrabold z-10 leading-tight mb-4 drop-shadow-lg whitespace-pre-line animate-hero-title"
+        className="text-2xl sm:text-4xl md:text-6xl font-extrabold z-10 leading-tight mb-2 sm:mb-4 drop-shadow-lg whitespace-pre-line animate-hero-title"
         style={
           slide.text_color
             ? { color: slide.text_color }
@@ -50,24 +50,24 @@ function AnimatedContent({ slide }) {
         {slide.title}
       </h1>
       <p
-        className="text-sm md:text-lg mb-8 max-w-lg drop-shadow-md font-medium animate-hero-subtitle"
+        className="text-xs sm:text-sm md:text-lg mb-4 sm:mb-8 max-w-lg drop-shadow-md font-medium animate-hero-subtitle line-clamp-2 sm:line-clamp-none"
         style={slide.text_color ? { color: slide.text_color } : { color: "#d4f5b0" }}
       >
         {slide.subtitle}
       </p>
-      <div className="flex space-x-4 animate-hero-buttons">
+      <div className="flex space-x-2 sm:space-x-4 animate-hero-buttons">
         {slide.link && (
           <Link
             href={slide.link}
-            className="bg-[#B4F044] hover:bg-[#a1d63d] text-green-900 font-bold px-8 py-4 rounded-full flex items-center transition-all transform hover:scale-105 text-sm md:text-base shadow-xl"
+            className="bg-[#B4F044] hover:bg-[#a1d63d] text-green-900 font-bold px-4 py-2 sm:px-8 sm:py-4 rounded-full flex items-center transition-all transform hover:scale-105 text-xs sm:text-sm md:text-base shadow-xl"
           >
-            {slide.button_text || "Shop Now"} <ArrowRight className="w-5 h-5 ml-2" aria-hidden="true" />
+            {slide.button_text || "Shop Now"} <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5 ml-1 sm:ml-2" aria-hidden="true" />
           </Link>
         )}
         {slide.link_two && (
           <Link
             href={slide.link_two}
-            className="bg-white/20 hover:bg-white/30 backdrop-blur-md text-white font-bold px-8 py-4 rounded-full transition-all text-sm md:text-base border border-white/40 shadow-xl"
+            className="bg-white/20 hover:bg-white/30 backdrop-blur-md text-white font-bold px-4 py-2 sm:px-8 sm:py-4 rounded-full transition-all text-xs sm:text-sm md:text-base border border-white/40 shadow-xl"
           >
             {slide.button_text_two || "View Offers"}
           </Link>
@@ -90,7 +90,7 @@ export default function Hero({ slides: initialSlides }) {
         autoplay={{ delay: 5000, disableOnInteraction: false }}
         pagination={{ clickable: true, dynamicBullets: true }}
         onSlideChange={(swiper) => setActiveIndex(swiper.realIndex)}
-        className="w-full h-[calc(100vh-72px)]"
+        className="w-full h-[220px] sm:h-[400px] md:h-[calc(100vh-72px)]"
         a11y={{
           prevSlideMessage: 'Previous slide',
           nextSlideMessage: 'Next slide',
