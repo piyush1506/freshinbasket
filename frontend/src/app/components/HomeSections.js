@@ -41,7 +41,7 @@ export default function HomeSections({ sections = [], children }) {
 
       {/* Product carousels for the active section with top margin */}
       <div className="mt-4">
-        <Vegetables initialSections={activeCategories} />
+        <Vegetables initialSections={activeCategories} sectionName={activeSection?.name} />
       </div>
     </>
   );
