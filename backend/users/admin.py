@@ -1,6 +1,6 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
-from .models import User, DeliveryProfile
+from .models import User, DeliveryProfile, DeliveryBoy
 
 @admin.register(User)
 class CustomUserAdmin(UserAdmin):
@@ -17,3 +17,8 @@ class DeliveryProfileInline(admin.StackedInline):
     can_delete = False
 
 CustomUserAdmin.inlines = [DeliveryProfileInline]
+
+@admin.register(DeliveryBoy)
+class DeliveryBoyAdmin(CustomUserAdmin):
+    def get_queryset(self, request):
+        return super().get_queryset(request).filter(role=User.Role.DELIVERY)

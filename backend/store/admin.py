@@ -185,9 +185,6 @@ class SlideAdminForm(forms.ModelForm):
                 image, folder='freshinbasket/slides',
                 resource_type='image',
                 allowed_formats=['jpg', 'png', 'webp', 'gif'],
-                quality='auto',
-                fetch_format='auto',
-                flags='progressive',
             )
             instance.image_url = upload_result['secure_url']
         if commit:
@@ -242,7 +239,8 @@ class SubProductAdmin(admin.ModelAdmin):
 
 @admin.register(StoreSettings)
 class StoreSettingsAdmin(admin.ModelAdmin):
-    list_display = ('__str__', 'free_delivery_threshold', 'delivery_charge', 'max_delivery_radius', 'free_delivery_first_order')
+    list_display = ('__str__', 'free_delivery_threshold', 'delivery_charge', 'max_delivery_radius', 'free_delivery_first_order', 'is_free_dhaniya_active', 'free_dhaniya_threshold_kg')
+    list_editable = ('is_free_dhaniya_active', 'free_dhaniya_threshold_kg')
     
     def has_add_permission(self, request):
         # Prevent adding more than one instance

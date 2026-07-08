@@ -7,6 +7,7 @@ import toast from 'react-hot-toast';
 
 export default function VegetableCard({ item }) {
   const [loading, setLoading] = useState(false);
+  const [imgError, setImgError] = useState(false);
   const { addToCart, removeFromCart, cartItems, wishlistIds, toggleWishlist, user } = useCart();
 
   // Read actual qty from cart (source of truth)
@@ -96,12 +97,14 @@ export default function VegetableCard({ item }) {
       <div className="relative aspect-square w-full bg-gray-50/50 rounded-xl border border-gray-100 flex items-center justify-center p-2 mb-2 sm:mb-2.5 overflow-hidden">
         <Link href={`/product/${item.id}`} className="block relative w-full h-full">
           <Image
-            src={item.image_url || item.image || "/placeholder.svg"}
+            src={imgError ? "/placeholder.svg" : (item.image_url || item.image || "/placeholder.svg")}
             alt={item.name}
             fill
             style={{ objectFit: "cover" }}
             sizes="(max-width:768px) 50vw, (max-width: 1200px) 33vw, 20vw"
             className="group-hover:scale-105 transition-transform duration-300"
+            unoptimized
+            onError={() => setImgError(true)}
           />
         </Link>
 

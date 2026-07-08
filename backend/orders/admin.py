@@ -1,7 +1,7 @@
 from django.contrib import admin
 from django.utils.html import format_html
 from django.db.models import Q
-from .models import Order, OrderItem, Cart, CartItem, DeliveryAssignment, Review, DeliveryCluster, DeliverySlot
+from .models import Order, OrderItem, Cart, CartItem, DeliveryAssignment, Review, DeliveryCluster, DeliverySlot, OrderProduct
 
 
 class OrderItemInline(admin.TabularInline):
@@ -131,6 +131,17 @@ class OrderItemAdmin(admin.ModelAdmin):
     def weight(self, obj):
         return f"{obj.quantity} kg"
     weight.short_description = "Weight"
+
+@admin.register(OrderProduct)
+class OrderProductAdmin(PrintOrderMixin, admin.ModelAdmin):
+    change_list_template = "admin/orders/orderproduct/change_list.html"
+    list_display = ('order_number', 'customer', 'status', 'payment_method')
+    list_filter = ('payment_method', 'status')
+    search_fields = ('order_number', 'customer__username', 'delivery_address')
+    list_per_page = 20
+
+    def get_queryset(self, request):
+        return super().get_queryset(request).select_related('customer').prefetch_related('items')
 
 class CartItemsInline(admin.TabularInline):
     model = CartItem

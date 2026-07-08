@@ -7,7 +7,7 @@ os.environ.setdefault('DJANGO_SETTINGS_MODULE','freshinbasket_core.settings')
 django.setup()
 
 
-from store.models import Category,Product
+from store.models import Category, Product, Section
 from users.models import User
 
 def seed_data():
@@ -17,24 +17,40 @@ def seed_data():
         admin_user.save()
         print(f"updated user {admin_user.username} to ADMIN role")
 
+    # Create a default Section to contain the categories
+    section, created = Section.objects.get_or_create(
+        slug='fresh-groceries',
+        defaults={
+            'name': 'Fresh Groceries',
+            'description': 'Daily essentials and fresh greens',
+            'icon': '🥬',
+            'is_active': True
+        }
+    )
+    if created:
+        print(f"created section: {section.name}")
+    else:
+        print(f"section already exists: {section.name}")
+
     categories = [
         {'name':'Fruits','slug':'fruits','description':'fresh and organic fruits'},
         {'name':'Vegetables','slug':'vegetables','description':'fresh and organic vegetables'},
         {'name':'Root Vegetables','slug':'root-vegetables','description':'hearty root vegetables'},
         {'name':'Fresh Vegetables','slug':'fresh-vegetables','description':'daily fresh vegetables'},
         {'name':'Seasonal Vegetables','slug':'seasonal-vegetables','description':'in-season vegetables'},
-
     ]
 
     for cat_data in categories:
         category,created = Category.objects.get_or_create(
             slug=cat_data['slug'],
-            defaults={'name':cat_data['name'],'description':cat_data['description']}
+            defaults={'name':cat_data['name'],'description':cat_data['description'], 'section': section}
         )
-        if created:
-            print(f"created category:{category.name}")
+        if not created:
+            category.section = section
+            category.save()
+            print(f"linked category: {category.name} to section: {section.name}")
         else:
-            print(f"category already exixts: {category.name}")
+            print(f"created category:{category.name}")
 
     fruits_cat = Category.objects.get(slug='fruits')
     veggies_cat = Category.objects.get(slug='vegetables')

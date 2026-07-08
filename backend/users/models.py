@@ -51,6 +51,14 @@ class User(AbstractUser):
 
     objects = UserManager()
 
+    def save(self, *args, **kwargs):
+        if self.role in [self.Role.ADMIN, self.Role.DELIVERY]:
+            self.is_staff = True
+        elif self.role == self.Role.CUSTOMER:
+            if not self.is_superuser:
+                self.is_staff = False
+        super().save(*args, **kwargs)
+
     def __str__(self):
         return f"{self.username} ({self.role})"
 
@@ -86,3 +94,9 @@ class DeliveryProfile(models.Model):
 
     def __str__(self):
         return f"Profile for {self.user.username or self.user.phone_number}"
+
+class DeliveryBoy(User):
+    class Meta:
+        proxy = True
+        verbose_name = 'Delivery Boy'
+        verbose_name_plural = 'Delivery Boys'

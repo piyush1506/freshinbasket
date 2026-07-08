@@ -343,12 +343,12 @@ JAZZMIN_SETTINGS = {
     "site_header": "Freshinbasket",
     "site_brand": "Freshinbasket",
     "custom_links": {
-        "orders": [{
+        "delivery_management": [{
             "name": "Delivery Map Dashboard", 
             "url": "admin_delivery_dashboard", 
             "icon": "fas fa-map-marked-alt",
         }],
-        "notifications": [{
+        "store_management": [{
             "name": "Send Notification",
             "url": "admin_send_notification",
             "icon": "fas fa-bell",

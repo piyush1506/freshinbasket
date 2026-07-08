@@ -76,6 +76,8 @@ class Order(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
+    cancellation_reason = models.TextField(blank=True, null=True)
+
     subtotal = models.DecimalField(
         max_digits=12,
         decimal_places=2,
@@ -158,8 +160,13 @@ class OrderItem(models.Model):
     def save(self, *args, **kwargs):
         self.total_price = self.unit_price * self.quantity
         super().save(*args, **kwargs)
-        
-      
+
+class OrderProduct(Order):
+    class Meta:
+        proxy = True
+        verbose_name = "Order Product"
+        verbose_name_plural = "Order Products"
+
 
 # =========================
 # DELIVERY CLUSTER

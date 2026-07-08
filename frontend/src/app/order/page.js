@@ -6,6 +6,7 @@ import Navbar from "../components/Navbar";
 import ChangeAddressModal from "../components/ChangeAddressModal";
 import OrderDetailModal from "../components/OrderDetailModal";
 import ReviewModal from "../components/ReviewModal";
+import CancelOrderModal from "../components/CancelOrderModal";
 import { getAccessToken } from "@/lib/auth";
 import { ArrowLeft, Truck, CheckCircle2, RotateCcw, Star, ChevronDown, SlidersHorizontal, MapPin, XCircle } from "lucide-react";
 import { useCart } from "../context/CartContext";
@@ -51,6 +52,8 @@ export default function OrdersPage() {
     const [selectedOrderForDetail, setSelectedOrderForDetail] = useState(null);
     const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
     const [selectedOrderForReview, setSelectedOrderForReview] = useState(null);
+    const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
+    const [selectedOrderForCancel, setSelectedOrderForCancel] = useState(null);
     const { user, addToCart } = useCart();
     const router = useRouter();
 
@@ -150,16 +153,17 @@ export default function OrdersPage() {
         }
     };
 
-    const handleCancelOrder = async (orderId) => {
-        if (!window.confirm("Are you sure you want to cancel this order?")) return;
-
+    const handleCancelOrder = async (orderId, reason) => {
+        setIsCancelModalOpen(false);
         try {
             const token = getAccessToken();
             const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/orders/${orderId}/cancel/`, {
                 method: 'POST',
                 headers: {
+                    'Content-Type': 'application/json',
                     'Authorization': `Bearer ${token}`
-                }
+                },
+                body: JSON.stringify({ reason })
             });
 
             if (res.ok) {
@@ -414,7 +418,11 @@ export default function OrdersPage() {
                 }}
                 onCancelClick={(orderId) => {
                     setIsDetailModalOpen(false);
-                    handleCancelOrder(orderId);
+                    const orderToCancel = orders.find(o => o.id === orderId);
+                    if (orderToCancel) {
+                        setSelectedOrderForCancel(orderToCancel);
+                        setIsCancelModalOpen(true);
+                    }
                 }}
             />
 
@@ -426,6 +434,16 @@ export default function OrdersPage() {
                 }}
                 order={selectedOrderForReview}
                 onReviewSubmitted={handleReviewSubmitted}
+            />
+
+            <CancelOrderModal
+                isOpen={isCancelModalOpen}
+                onClose={() => {
+                    setIsCancelModalOpen(false);
+                    setSelectedOrderForCancel(null);
+                }}
+                order={selectedOrderForCancel}
+                onSubmit={handleCancelOrder}
             />
         </>
     );

@@ -6,7 +6,7 @@ export default function HowItWorks() {
       icon: <Smartphone size={40} className="text-purple-600" />,
       bg: "bg-purple-100",
       title: "Open the app",
-      description: "Choose from over 7000 products across groceries, fresh fruits & veggies, meat, pet care, beauty items & more"
+      description: "Choose from a wide variety of fresh fruits, veggies & more"
     },
     {
       icon: <ShoppingCart size={40} className="text-pink-500" />,
@@ -18,7 +18,7 @@ export default function HowItWorks() {
       icon: <Leaf size={40} className="text-green-500" />,
       bg: "bg-green-100",
       title: "Get Fresh fruits and vegetables",
-      description: "Experience lighting-fast speed & get all your items delivered in minutes"
+      description: "Experience convenient service & get all your fresh items delivered to your doorstep"
     }
   ];
 

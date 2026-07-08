@@ -244,6 +244,49 @@ class UserViewSet(viewsets.ModelViewSet):
         if request.method == 'GET':
             return Response(UserSerializer(user).data)
 
+        new_phone = request.data.get('phone_number')
+        if new_phone:
+            # Clean and normalize new phone number
+            raw_phone = str(new_phone).replace('+', '').replace(' ', '').strip()
+            if len(raw_phone) == 12 and raw_phone.startswith('91'):
+                new_phone_clean = raw_phone[2:]
+            elif len(raw_phone) == 10:
+                new_phone_clean = raw_phone
+            else:
+                return Response({'phone_number': ['Valid 10-digit phone number is required.']}, status=status.HTTP_400_BAD_REQUEST)
+            
+            # Only verify if it's different
+            if new_phone_clean != user.phone_number:
+                # Check uniqueness
+                if User.objects.filter(phone_number=new_phone_clean).exclude(pk=user.pk).exists():
+                    return Response({'phone_number': ['This phone number is already in use by another account.']}, status=status.HTTP_400_BAD_REQUEST)
+
+                otp_code = request.data.get('otp_code')
+                req_id = request.data.get('reqId')
+                
+                if not otp_code or not req_id:
+                    return Response({'phone_number': ['otp_code and reqId are required to update your phone number.']}, status=status.HTTP_400_BAD_REQUEST)
+                
+                # Verify OTP using MSG91 Widget API
+                url = "https://api.msg91.com/api/v5/widget/verifyOtp"
+                headers = {
+                    "authkey": settings.MSG91_AUTH_KEY,
+                    "content-type": "application/json"
+                }
+                payload = {
+                    "widgetId": settings.MSG91_WIDGET_ID,
+                    "reqId": req_id,
+                    "otp": str(otp_code)
+                }
+                
+                try:
+                    response = requests.post(url, headers=headers, json=payload)
+                    data = response.json()
+                    if data.get("type") != "success":
+                        return Response({'phone_number': [data.get('message', 'Invalid OTP')]}, status=status.HTTP_400_BAD_REQUEST)
+                except Exception as e:
+                    return Response({'phone_number': [f'Failed to verify OTP: {str(e)}']}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
         serializer = UserUpdateSerializer(
             user,
             data=request.data,
@@ -530,7 +573,7 @@ class OrderViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         user = self.request.user
-        qs = Order.objects.select_related('customer').prefetch_related('items__product').select_related('review')
+        qs = Order.objects.select_related('customer').prefetch_related('items__product').select_related('review').order_by('-created_at')
         if user.role == User.Role.ADMIN:
             return qs.all()
         elif user.role == User.Role.DELIVERY:
@@ -576,8 +619,17 @@ class OrderViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_400_BAD_REQUEST
             )
             
+        reason = request.data.get('reason')
+        if reason:
+            order.cancellation_reason = reason
+
         order.status = Order.Status.CANCELLED
-        order.save(update_fields=['status'])
+        
+        update_fields = ['status']
+        if reason:
+            update_fields.append('cancellation_reason')
+            
+        order.save(update_fields=update_fields)
         
         return Response({'message': 'Order cancelled successfully', 'status': order.status})
 

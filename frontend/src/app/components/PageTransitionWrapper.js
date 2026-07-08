@@ -5,7 +5,7 @@ export default function PageTransitionWrapper({ children }) {
   const pathname = usePathname();
 
   return (
-    <div key={pathname} className="flex-grow flex flex-col animate-page-enter">
+    <div className="flex-grow flex flex-col animate-page-enter">
       {children}
     </div>
   );

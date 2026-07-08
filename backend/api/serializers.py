@@ -108,7 +108,7 @@ class RegisterSerializer(serializers.ModelSerializer):
         return user
 
 
-def get_transformed_cloudinary_url(url, width=None):
+def get_transformed_cloudinary_url(url, width=None, quality=None):
     if not url:
         return None
     
@@ -116,6 +116,12 @@ def get_transformed_cloudinary_url(url, width=None):
     if 'cloudinary.com' in url and '/upload/' in url:
         parts = url.split('/upload/', 1)
         if len(parts) == 2:
+            if quality == 'original':
+                if width:
+                    transformation = f"c_scale,w_{width},q_100"
+                    return f"{parts[0]}/upload/{transformation}/{parts[1]}"
+                return url
+            
             # q_auto,f_auto: Automatic quality and format
             # e_sharpen:60: Increases clarity of edges (essential for upscaling)
             # e_improve: AI-based color and contrast enhancement
@@ -219,7 +225,7 @@ class ProductSerializer(serializers.ModelSerializer):
         else:
             url = obj.image_url
         
-        return get_transformed_cloudinary_url(url, width=1200)
+        return get_transformed_cloudinary_url(url, quality='original')
 
     def get_category_names(self, obj):
         return [c.name for c in obj.categories.all()]
@@ -232,9 +238,6 @@ class ProductSerializer(serializers.ModelSerializer):
                 image, folder='freshinbasket/products',
                 resource_type='image',
                 allowed_formats=['jpg', 'png', 'webp', 'gif'],
-                quality='auto',  # Automatic quality optimization
-                fetch_format='auto',  # Automatic format selection
-                flags='progressive',  # Progressive JPEG for better perceived loading
             )
             validated_data['image_url'] = upload_result['secure_url']
         product = super().create(validated_data)
@@ -250,9 +253,6 @@ class ProductSerializer(serializers.ModelSerializer):
                 image, folder='freshinbasket/products',
                 resource_type='image',
                 allowed_formats=['jpg', 'png', 'webp', 'gif'],
-                quality='auto',  # Automatic quality optimization
-                fetch_format='auto',  # Automatic format selection
-                flags='progressive',  # Progressive JPEG for better perceived loading
             )
             validated_data['image_url'] = upload_result['secure_url']
         product = super().update(instance, validated_data)
@@ -372,9 +372,11 @@ class CartItemSerializer(serializers.ModelSerializer):
     order_step = serializers.DecimalField(source='product.order_step', max_digits=8, decimal_places=3, read_only=True)
     min_order_qty = serializers.DecimalField(source='product.min_order_qty', max_digits=8, decimal_places=3, read_only=True)
 
+    stock = serializers.ReadOnlyField(source='product.stock')
+
     class Meta:
         model = CartItem
-        fields = ('id', 'product', 'name', 'price', 'image', 'quantity', 'unit', 'mrp', 'discount_percentage', 'total_price', 'tax_percentage', 'order_step', 'min_order_qty')
+        fields = ('id', 'product', 'name', 'price', 'image', 'quantity', 'unit', 'mrp', 'discount_percentage', 'total_price', 'tax_percentage', 'order_step', 'min_order_qty', 'stock')
 
     def get_image(self, obj):
         if obj.product.image_url and hasattr(obj.product.image_url, 'url'):
@@ -449,7 +451,7 @@ class SlideSerializer(serializers.ModelSerializer):
         read_only_fields = ('created_at',)
 
     def get_image_url(self, obj):
-        return get_transformed_cloudinary_url(obj.image_url)
+        return get_transformed_cloudinary_url(obj.image_url, quality='original')
 
     def create(self, validated_data):
         image = validated_data.pop('image', None)
@@ -458,9 +460,6 @@ class SlideSerializer(serializers.ModelSerializer):
                 image, folder='freshinbasket/slides',
                 resource_type='image',
                 allowed_formats=['jpg', 'png', 'webp', 'gif'],
-                quality='auto',
-                fetch_format='auto',
-                flags='progressive',
             )
             validated_data['image_url'] = upload_result['secure_url']
         return super().create(validated_data)
@@ -472,9 +471,6 @@ class SlideSerializer(serializers.ModelSerializer):
                 image, folder='freshinbasket/slides',
                 resource_type='image',
                 allowed_formats=['jpg', 'png', 'webp', 'gif'],
-                quality='auto',
-                fetch_format='auto',
-                flags='progressive',
             )
             validated_data['image_url'] = upload_result['secure_url']
         return super().update(instance, validated_data)
@@ -488,9 +484,12 @@ class CartSerializer(serializers.ModelSerializer):
     grand_total = serializers.SerializerMethodField()
     free_delivery_threshold = serializers.SerializerMethodField()
 
+    is_free_dhaniya_eligible = serializers.SerializerMethodField()
+    total_weight_kg = serializers.SerializerMethodField()
+
     class Meta:
         model = Cart
-        fields = ('id', 'created_at', 'items', 'subtotal', 'delivery_charge', 'tax_amount', 'grand_total', 'free_delivery_threshold')
+        fields = ('id', 'created_at', 'items', 'subtotal', 'delivery_charge', 'tax_amount', 'grand_total', 'free_delivery_threshold', 'is_free_dhaniya_eligible', 'total_weight_kg')
 
     def get_subtotal(self, obj):
         return sum(item.quantity * item.product.price for item in obj.items.all())
@@ -525,6 +524,29 @@ class CartSerializer(serializers.ModelSerializer):
         settings_obj = StoreSettings.get_settings()
         return settings_obj.free_delivery_threshold
 
+    def get_total_weight_kg(self, obj):
+        from decimal import Decimal
+        total = Decimal('0.0')
+        for item in obj.items.all():
+            unit_name = item.product.unit.name.lower() if item.product.unit else 'kg'
+            if unit_name == 'kg':
+                total += item.quantity
+            elif unit_name == '500g':
+                total += item.quantity * Decimal('0.5')
+            elif unit_name == '250g':
+                total += item.quantity * Decimal('0.25')
+            elif unit_name == '100g':
+                total += item.quantity * Decimal('0.1')
+        return total
+
+    def get_is_free_dhaniya_eligible(self, obj):
+        from store.models import StoreSettings
+        settings_obj = StoreSettings.get_settings()
+        if not settings_obj.is_free_dhaniya_active:
+            return False
+        total_weight = self.get_total_weight_kg(obj)
+        return total_weight >= settings_obj.free_dhaniya_threshold_kg
+
 class StoreSettingsSerializer(serializers.ModelSerializer):
     class Meta:
         from store.models import StoreSettings
@@ -533,7 +555,7 @@ class StoreSettingsSerializer(serializers.ModelSerializer):
             'free_delivery_threshold', 'delivery_charge', 'max_delivery_radius',
             'is_announcement_active', 'announcement_message',
             'announcement_bg_color', 'announcement_text_color',
-            'free_delivery_first_order'
+            'free_delivery_first_order', 'is_free_dhaniya_active', 'free_dhaniya_threshold_kg'
         )
 
 

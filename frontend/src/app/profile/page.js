@@ -17,6 +17,9 @@ export default function ProfilePage() {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [isMounted, setIsMounted] = useState(false);
+  const [otpSent, setOtpSent] = useState(false);
+  const [otpCode, setOtpCode] = useState('');
+  const [reqId, setReqId] = useState('');
 
   const router = useRouter();
   const { user, setUser } = useCart();
@@ -51,21 +54,47 @@ export default function ProfilePage() {
     setLoading(true);
     setError('');
     setSuccess('');
+
+    // Check if the phone number has changed and we need to send OTP first
+    const isPhoneChanged = formData.phone_number !== (user?.phone_number || '');
+
+    if (isPhoneChanged && !otpSent) {
+      try {
+        const data = await AUTH_API.sendOtp(formData.phone_number);
+        setReqId(data.reqId);
+        setOtpSent(true);
+        setSuccess('OTP sent to your new phone number!');
+      } catch (err) {
+        setError(err.message || 'Failed to send OTP. Please try again.');
+      } finally {
+        setLoading(false);
+      }
+      return;
+    }
+
     try {
       const token = getAccessToken();
+      const payload = {
+        ...formData,
+      };
+      if (otpSent) {
+        payload.otp_code = otpCode;
+        payload.reqId = reqId;
+      }
+
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/users/me/`, {
         method: 'PATCH',
         headers: {
           Authorization: `Bearer ${token}`,
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(formData),
+        body: JSON.stringify(payload),
       });
 
       const data = await res.json();
 
       if (!res.ok) {
-        setError(data?.email?.[0] || data?.username?.[0] || 'Update failed');
+        setError(data?.phone_number?.[0] || data?.email?.[0] || data?.username?.[0] || 'Update failed');
         return;
       }
 
@@ -73,6 +102,9 @@ export default function ProfilePage() {
       saveUser(data);
       setSuccess('Profile updated successfully!');
       setIsEditing(false);
+      setOtpSent(false);
+      setOtpCode('');
+      setReqId('');
 
     } catch (err) {
       setError('Something went wrong. Please try again.');
@@ -133,20 +165,6 @@ export default function ProfilePage() {
                   Member
                 </div>
               </div>
-              {/* <div className="pt-3 flex flex-col gap-1">
-                <button className="flex items-center justify-between w-full px-3 py-2.5 rounded-lg hover:bg-gray-50 text-sm text-gray-700">
-                  <div className="flex items-center gap-2">
-                    <Settings size={16} className="text-gray-400" />Account Settings
-                  </div>
-                  <ChevronRight size={15} className="text-gray-400" />
-                </button>
-                <button className="flex items-center justify-between w-full px-3 py-2.5 rounded-lg hover:bg-gray-50 text-sm text-gray-700">
-                  <div className="flex items-center gap-2">
-                    <ShieldCheck size={16} className="text-gray-400" />Privacy &amp; Security
-                  </div>
-                  <ChevronRight size={15} className="text-gray-400" />
-                </button>
-              </div> */}
             </div>
           </div>
 
@@ -177,7 +195,7 @@ export default function ProfilePage() {
                     {isEditing ? (
                       <div className="flex gap-2">
                         <button
-                          onClick={() => { setIsEditing(false); setError(''); setSuccess(''); }}
+                          onClick={() => { setIsEditing(false); setError(''); setSuccess(''); setOtpSent(false); setOtpCode(''); }}
                           className="px-4 py-1.5 border border-gray-300 rounded-lg text-sm text-gray-600 hover:bg-gray-50"
                         >
                           Cancel
@@ -187,7 +205,7 @@ export default function ProfilePage() {
                           disabled={loading}
                           className="px-4 py-1.5 bg-green-800 text-white rounded-lg text-sm font-medium hover:bg-green-900 disabled:opacity-50"
                         >
-                          {loading ? 'Saving...' : 'Save'}
+                          {otpSent ? (loading ? 'Verifying...' : 'Verify & Save') : (loading ? 'Saving...' : 'Save')}
                         </button>
                       </div>
                     ) : (
@@ -224,12 +242,26 @@ export default function ProfilePage() {
                     <div>
                       <div className="text-[11px] text-gray-400 uppercase tracking-widest mb-1">Phone Number</div>
                       {isEditing ? (
-                        <input name="phone_number" value={formData.phone_number} onChange={handleChange} maxLength={10}
-                          className="w-full border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:border-green-700" />
+                        <input name="phone_number" value={formData.phone_number} onChange={handleChange} maxLength={10} disabled={otpSent}
+                          className="w-full border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:border-green-700 disabled:bg-gray-100" />
                       ) : (
                         <div className="text-sm font-semibold text-gray-800">{user?.phone_number || '—'}</div>
                       )}
                     </div>
+
+                    {otpSent && isEditing && (
+                      <div>
+                        <div className="text-[11px] text-gray-400 uppercase tracking-widest mb-1 font-semibold text-green-800">Enter OTP Code</div>
+                        <input
+                          type="text"
+                          value={otpCode}
+                          onChange={(e) => setOtpCode(e.target.value)}
+                          maxLength={6}
+                          placeholder="Enter 6-digit OTP"
+                          className="w-full border border-green-500 bg-green-50 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:border-green-700"
+                        />
+                      </div>
+                    )}
 
                     <div>
                       <div className="text-[11px] text-gray-400 uppercase tracking-widest mb-1">Delivery Address</div>

@@ -59,7 +59,7 @@ export default function Testimonials() {
       initials: "KJ",
       location: "Bhilwara",
       time: "3 weeks ago",
-      comment: "Great packaging and super fast delivery. The leafy greens were so fresh and without any chemicals. Best organic delivery in town.",
+      comment: "Great packaging and timely delivery. The leafy greens were so fresh and without any chemicals. Best organic delivery in town.",
       rating: 5,
       avatarBg: "from-green-400 to-teal-600"
     }

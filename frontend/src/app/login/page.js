@@ -21,6 +21,7 @@ export default function AuthPage() {
   const [otpCode, setOtpCode] = useState('');
   const [name, setName] = useState('');
   const [reqId, setReqId] = useState('');
+  const [timer, setTimer] = useState(30);
 
   useEffect(() => {
     if (isAuthenticated()) {
@@ -35,6 +36,18 @@ export default function AuthPage() {
     setReady(true);
   }, []);
 
+  useEffect(() => {
+    let interval = null;
+    if (step === 'otp' && timer > 0) {
+      interval = setInterval(() => {
+        setTimer((prev) => prev - 1);
+      }, 1000);
+    } else {
+      clearInterval(interval);
+    }
+    return () => clearInterval(interval);
+  }, [step, timer]);
+
   const handleSendOtp = async (e) => {
     e.preventDefault();
     setError("");
@@ -47,9 +60,26 @@ export default function AuthPage() {
       const result = await AUTH_API.sendOtp(phoneNumber);
       setReqId(result.reqId); // Save reqId for verification
       toast.success('OTP sent successfully!');
+      setTimer(30); // Reset the timer
       setStep('otp');
     } catch (err) {
       setError(err.message || "Failed to send OTP. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleResendOtp = async () => {
+    setError("");
+    setLoading(true);
+    try {
+      const result = await AUTH_API.sendOtp(phoneNumber);
+      setReqId(result.reqId);
+      setTimer(30);
+      setOtpCode("");
+      toast.success('OTP resent successfully!');
+    } catch (err) {
+      setError(err.message || "Failed to resend OTP. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -198,11 +228,20 @@ export default function AuthPage() {
                     <>Verify & Proceed <CheckCircle2 size={20} /></>
                   )}
                 </button>
-                
-                <div className="text-center pt-4">
+                <div className="flex justify-between items-center pt-4">
                   <button type="button" onClick={() => setStep('phone')} className="text-sm font-bold text-gray-500 hover:text-gray-800 underline">
                     Change Mobile Number
                   </button>
+                  
+                  {timer > 0 ? (
+                    <span className="text-sm text-gray-400 font-semibold">
+                      Resend OTP in {timer}s
+                    </span>
+                  ) : (
+                    <button type="button" onClick={handleResendOtp} disabled={loading} className="text-sm font-bold text-[#1B3624] hover:text-[#132619] hover:underline disabled:opacity-50">
+                      Resend OTP
+                    </button>
+                  )}
                 </div>
               </form>
             ) : (

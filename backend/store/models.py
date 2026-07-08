@@ -253,6 +253,14 @@ class StoreSettings(models.Model):
         default=True,
         help_text="Enable free delivery for the user's first order."
     )
+    is_free_dhaniya_active = models.BooleanField(
+        default=False,
+        help_text="Toggle free dhaniya offer on or off."
+    )
+    free_dhaniya_threshold_kg = models.DecimalField(
+        max_digits=5, decimal_places=2, default=5.00,
+        help_text="Minimum order weight in kg to get free dhaniya."
+    )
 
     class Meta:
         verbose_name = 'Store Setting'
@@ -262,6 +270,8 @@ class StoreSettings(models.Model):
         # Ensure there is only one instance
         self.pk = 1
         super().save(*args, **kwargs)
+        from django.core.cache import cache
+        cache.delete('store_settings')
 
     @classmethod
     def get_settings(cls):

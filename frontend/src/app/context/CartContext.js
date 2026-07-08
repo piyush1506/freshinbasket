@@ -55,8 +55,9 @@ export function CartProvider({ children }) {
 
   const formatCartItems = (cartData) => {
     if (!cartData || !cartData.items) return [];
-    return cartData.items.map((item) => ({
+    const formatted = cartData.items.map((item) => ({
       id: Number(item.product),
+      cartItemId: Number(item.id),
       name: item.name,
       price: Number(item.price),
       image_url: item.image,
@@ -65,8 +66,10 @@ export function CartProvider({ children }) {
       tax_percentage: parseFloat(item.tax_percentage) || 0,
       order_step: Number(item.order_step) || 1,
       min_order_qty: Number(item.min_order_qty) || 0,
+      stock: Number(item.stock) || 0,
       cartKey: getCartKey(Number(item.product), item.sub_product),
     }));
+    return formatted.sort((a, b) => a.cartItemId - b.cartItemId);
   };
 
   const fetchCart = async () => {
@@ -94,11 +97,13 @@ export function CartProvider({ children }) {
       if (res.ok) {
         const data = await res.json();
         const cartData = Array.isArray(data) ? data[0] : data;
-        setCartItems(formatCartItems(cartData));
+        const formatted = formatCartItems(cartData);
+        setCartItems(formatted);
         setBackendTotals(cartData);
+        return formatted;
       }
     } catch (e) {
-      console.error("Failed to fetch cart", e);
+      console.error("fetchCart error:", e);
     }
   };
 
@@ -352,13 +357,30 @@ export function CartProvider({ children }) {
       ? parseFloat(backendTotals.grand_total)
       : subtotal + taxAmount + deliveryCharge;
 
+  const isFreeDhaniyaEligible = backendTotals?.is_free_dhaniya_eligible !== undefined
+      ? backendTotals.is_free_dhaniya_eligible
+      : (() => {
+          if (!storeSettings?.is_free_dhaniya_active) return false;
+          const threshold = parseFloat(storeSettings.free_dhaniya_threshold_kg) || 0;
+          let totalKg = 0;
+          cartItems.forEach(item => {
+            const unit = item.unit ? item.unit.toLowerCase() : 'kg';
+            if (unit === 'kg') totalKg += item.quantity;
+            else if (unit === '500g') totalKg += item.quantity * 0.5;
+            else if (unit === '250g') totalKg += item.quantity * 0.25;
+            else if (unit === '100g') totalKg += item.quantity * 0.1;
+          });
+          return totalKg >= threshold;
+      })();
+
   return (
     <CartContext.Provider value={{
       cartItems, addToCart, removeFromCart, clearCart, cartCount,
       loadingItems, mergeCart, user, setUser, storeSettings,
       subtotal, deliveryCharge, grandTotal, freeDeliveryThreshold,
       taxAmount, hasTaxableItems,
-      wishlistIds, toggleWishlist, fetchWishlistIds
+      wishlistIds, toggleWishlist, fetchWishlistIds,
+      isFreeDhaniyaEligible, fetchCart
     }}>
       <Toaster position="top-right"
         toastOptions={{

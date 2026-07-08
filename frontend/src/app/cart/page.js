@@ -13,7 +13,7 @@ import "leaflet/dist/leaflet.css";
 
 export default function CartPage() {
   const router = useRouter()
-  const { cartItems, removeFromCart, addToCart, clearCart, user, subtotal, deliveryCharge, grandTotal, storeSettings, taxAmount, hasTaxableItems } = useCart();
+  const { cartItems, removeFromCart, addToCart, clearCart, user, subtotal, deliveryCharge, grandTotal, storeSettings, taxAmount, hasTaxableItems, isFreeDhaniyaEligible, fetchCart } = useCart();
   const [deliverySlot, setDeliverySlot] = useState({ display_label: "7 AM - 12 PM", is_next_day: false });
   const [slotLoading, setSlotLoading] = useState(true);
 
@@ -99,8 +99,13 @@ export default function CartPage() {
       const data = await res.json();
       if (data?.display_name) {
         setDeliveryAddress(data.display_name);
+        if (data.address?.postcode) {
+          setPincode(data.address.postcode);
+        }
       }
-    } catch { }
+    } catch (error) {
+      console.error("Geocoding error", error);
+    }
   };
 
   const initMap = (L) => {
@@ -219,9 +224,31 @@ export default function CartPage() {
     addToCart({ ...item, quantity: orderStep });
   };
 
-  const handleProceedToAddress = () => {
+  const handleProceedToAddress = async () => {
     const token = getAccessToken()
     if (!token) return router.push('/login')
+
+    const checkingToast = toast.loading("Checking product availability...");
+    let freshCartItems = cartItems;
+    try {
+      const freshCart = await fetchCart();
+      if (freshCart) {
+        freshCartItems = freshCart;
+      }
+    } catch (e) {
+      console.error("Failed to fetch fresh cart stock", e);
+    } finally {
+      toast.dismiss(checkingToast);
+    }
+
+    // Validate stock using the fresh cart items
+    for (const item of freshCartItems) {
+      if (item.stock !== undefined && item.quantity > item.stock) {
+        toast.error(`Only ${item.stock} units of "${item.name}" available`);
+        return;
+      }
+    }
+
     setShowAddressForm(true);
     setTimeout(() => {
       if (mapInstance.current) mapInstance.current.invalidateSize();
@@ -319,7 +346,7 @@ export default function CartPage() {
 
     const data = await res.json();
     if (!res.ok) {
-      router.push(`/order-fail?reason=${encodeURIComponent(data.error || "Failed to create COD order")}`);
+      toast.error(data.error || "Failed to create COD order");
       return;
     }
 
@@ -609,6 +636,30 @@ export default function CartPage() {
                       </div>
                     ))}
 
+                    {/* Free Dhaniya Item */}
+                    {isFreeDhaniyaEligible && storeSettings?.is_free_dhaniya_active && (
+                      <div className="bg-green-50 border border-green-200 rounded-xl p-4 flex gap-4 items-center shadow-sm relative overflow-hidden">
+                        <div className="absolute top-0 right-0 bg-green-600 text-white text-[10px] font-bold px-2 py-1 rounded-bl-lg uppercase tracking-wider">
+                          Complimentary
+                        </div>
+                        <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-xl bg-green-100 flex items-center justify-center shrink-0 border border-green-200">
+                          <span className="text-3xl">🌿</span>
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <h3 className="font-bold text-green-900 text-sm sm:text-base leading-tight truncate">
+                            Fresh Coriander (Dhaniya)
+                          </h3>
+                          <p className="text-xs text-green-700 mt-0.5">1 Bunch</p>
+                          <div className="flex items-center gap-3 mt-2 sm:hidden">
+                            <span className="ml-auto font-bold text-green-700 text-sm">FREE</span>
+                          </div>
+                        </div>
+                        <div className="hidden sm:flex items-center gap-4 shrink-0 text-right min-w-[60px]">
+                          <div className="font-bold text-green-700 text-base">FREE</div>
+                        </div>
+                      </div>
+                    )}
+
                     {/* Continue Shopping */}
                     <Link
                       href="/"
@@ -669,6 +720,19 @@ export default function CartPage() {
                           <span className="text-lg font-bold text-gray-900">Total</span>
                           <span className="text-2xl font-bold text-gray-900">₹{parseInt(grandTotal)}</span>
                         </div>
+                        
+                        {storeSettings?.is_free_dhaniya_active && !isFreeDhaniyaEligible && (
+                          <div className="bg-amber-50 text-amber-800 text-xs p-3 rounded-lg font-medium border border-amber-200 flex gap-2 items-start mt-4">
+                            <span className="text-lg">🌿</span>
+                            <span>Add more vegetables to reach {storeSettings.free_dhaniya_threshold_kg}kg and get free Dhaniya!</span>
+                          </div>
+                        )}
+                        {storeSettings?.is_free_dhaniya_active && isFreeDhaniyaEligible && (
+                          <div className="bg-green-50 text-green-800 text-xs p-3 rounded-lg font-medium border border-green-200 flex gap-2 items-start mt-4">
+                            <span className="text-lg">🌿</span>
+                            <span>Congrats! You've unlocked Free Dhaniya with this order!</span>
+                          </div>
+                        )}
                       </div>
 
                       {/* Checkout Button */}

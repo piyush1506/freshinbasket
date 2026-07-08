@@ -31,10 +31,15 @@ export default function OrderDetailModal({ isOpen, onClose, order, onReviewClick
             Order {order.order_number ? `#${order.order_number}` : `#${order.id}`}
           </h2>
           <div className="flex items-center gap-3">
-            {["PENDING", "CONFIRMED"].includes(order.status) && (
+            {["PENDING", "CONFIRMED", "OUT_FOR_DELIVERY"].includes(order.status) && (
               <button
-                onClick={() => onCancelClick?.(order.id)}
-                className="flex items-center gap-1.5 px-3 py-1.5 border border-red-200 bg-red-50 text-sm font-semibold text-red-600 rounded-lg hover:bg-red-100 transition-colors"
+                onClick={() => order.status !== "OUT_FOR_DELIVERY" && onCancelClick?.(order.id)}
+                disabled={order.status === "OUT_FOR_DELIVERY"}
+                className={`flex items-center gap-1.5 px-3 py-1.5 border text-sm font-semibold rounded-lg transition-colors ${
+                  order.status === "OUT_FOR_DELIVERY"
+                    ? "border-gray-200 bg-gray-50 text-gray-400 cursor-not-allowed"
+                    : "border-red-200 bg-red-50 text-red-600 hover:bg-red-100"
+                }`}
               >
                 Cancel
               </button>
