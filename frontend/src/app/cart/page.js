@@ -536,7 +536,7 @@ export default function CartPage() {
 
                 <div className="grid lg:grid-cols-3 gap-8">
                   {/* Cart Items Section */}
-                  <div className="lg:col-span-2 space-y-3">
+                  <div className="lg:col-span-2 space-y-3 min-w-0">
 
                     {cartItems.map((item) => (
                       <div
@@ -669,11 +669,13 @@ export default function CartPage() {
 
                     {/* Product Suggestions */}
                     {suggestedProducts.length > 0 && (
-                      <div className="mt-10">
+                      <div className="mt-10 w-full overflow-hidden">
                         <h3 className="text-xl font-bold text-gray-900 mb-4">You might also like</h3>
-                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 sm:gap-6">
+                        <div className="flex overflow-x-auto pb-4 gap-4 sm:grid sm:grid-cols-3 md:grid-cols-4 sm:gap-6">
                           {suggestedProducts.map(item => (
-                            <VegetableCard key={item.id} item={item} />
+                            <div key={item.id} className="w-[160px] sm:w-auto shrink-0 sm:shrink">
+                              <VegetableCard item={item} />
+                            </div>
                           ))}
                         </div>
                       </div>
