@@ -353,6 +353,16 @@ JAZZMIN_SETTINGS = {
             "url": "admin_send_notification",
             "icon": "fas fa-bell",
         }],
+    },
+    "hide_models": [
+        "django_celery_beat.CrontabSchedule",
+        "django_celery_beat.IntervalSchedule",
+        "django_celery_beat.SolarSchedule",
+        "django_celery_beat.ClockedSchedule",
+        "auth.Group",
+    ],
+    "icons": {
+        "django_celery_beat.PeriodicTask": "fas fa-clock",
     }
 }
 

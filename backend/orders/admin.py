@@ -46,6 +46,11 @@ class BulkAssignForm(forms.Form):
         label="Select Delivery Boy",
         required=True
     )
+    group_name = forms.CharField(
+        label="Group Name (Optional)",
+        required=False,
+        help_text="e.g. '26 July 2026 11:00 clock group'. Used for grouping in the app."
+    )
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -73,16 +78,36 @@ class PrintOrderMixin:
             form = BulkAssignForm(request.POST)
             if form.is_valid():
                 delivery_boy = form.cleaned_data['delivery_boy']
+                group_name = form.cleaned_data.get('group_name', '')
+                
+                # Determine slot from first order, or use a default
+                first_order = queryset.first()
+                slot = first_order.delivery_slot if first_order and first_order.delivery_slot else "Manual Group"
+
+                # Create manual DeliveryCluster
+                cluster = DeliveryCluster.objects.create(
+                    delivery_slot=slot,
+                    group_name=group_name if group_name else f"Manual Admin Group - {delivery_boy.username}",
+                    assigned_delivery_boy=delivery_boy,
+                    cluster_number=1,
+                )
+
                 count = 0
                 for order in queryset:
                     # Update or create assignment
                     DeliveryAssignment.objects.update_or_create(
                         order=order,
-                        defaults={'delivery_boy': delivery_boy, 'notes': 'Bulk assigned by Admin.'}
+                        defaults={
+                            'delivery_boy': delivery_boy, 
+                            'cluster': cluster,
+                            'notes': 'Manually assigned by Admin in bulk.'
+                        }
                     )
                     count += 1
-                self.message_user(request, f"Successfully assigned {count} orders to {delivery_boy.username}.", messages.SUCCESS)
-                return HttpResponseRedirect(request.get_full_path())
+                self.message_user(request, f"Successfully assigned {count} orders to {delivery_boy.username} as a group.", messages.SUCCESS)
+                from django.urls import reverse
+                changelist_url = reverse(f'admin:{self.model._meta.app_label}_{self.model._meta.model_name}_changelist')
+                return HttpResponseRedirect(changelist_url)
         else:
             form = BulkAssignForm(initial={'_selected_action': request.POST.getlist(admin.helpers.ACTION_CHECKBOX_NAME)})
 
@@ -174,14 +199,7 @@ class OrderAdmin(PrintOrderMixin, admin.ModelAdmin):
     assigned_to.short_description = 'Delivery Boy'
 
 
-@admin.register(OrderItem)
-class OrderItemAdmin(admin.ModelAdmin):
-    list_display = ('id', 'order', 'product_name', 'weight', 'unit_price', 'total_price')
-    search_fields = ('product_name', 'order__order_number')
 
-    def weight(self, obj):
-        return f"{obj.quantity} kg"
-    weight.short_description = "Weight"
 
 @admin.register(OrderProduct)
 class OrderProductAdmin(PrintOrderMixin, admin.ModelAdmin):
@@ -194,45 +212,7 @@ class OrderProductAdmin(PrintOrderMixin, admin.ModelAdmin):
     def get_queryset(self, request):
         return super().get_queryset(request).select_related('customer').prefetch_related('items')
 
-class CartItemsInline(admin.TabularInline):
-    model = CartItem
-    extra = 0
-    readonly_fields = ('product', 'weight')
-    can_delete = False
 
-    def weight(self, obj):
-        return f"{obj.quantity} kg"
-    weight.short_description = "Weight"
-
-@admin.register(Cart)
-class CartAdmin(admin.ModelAdmin):
-    list_display = ('user', 'item_count', 'created_at', 'updated_at')
-    search_fields = ('user__username',)
-    inlines = [CartItemsInline]
-
-    def item_count(self, obj):
-        return obj.items.count()
-    item_count.short_description = 'Items in cart'
-
-
-@admin.register(CartItem)
-class CartItemAdmin(admin.ModelAdmin):
-    list_display = ('cart_folder','product','weight')
-    search_fields = ('cart__user__username','product__name')
-    ordering = ('cart__user__username','product__name')
-
-    def weight(self, obj):
-        return f"{obj.quantity} kg"
-    weight.short_description = "Weight"
-
-    list_filter = ('cart',)
-   
-    def cart_folder(self, obj):
-        # Creates a clickable link that filters the page to only show items for this cart
-        url = f"?cart__id__exact={obj.cart.id}"
-        from django.utils.html import format_html
-        return format_html('<a href="{}" style="font-weight:bold; color:#447e9b;"> Items of {}</a>', url, obj.cart.user.username)
-    cart_folder.short_description = 'Cart (Click to Filter)'
 
 
 class DeliveryOrder(Order):
@@ -345,9 +325,83 @@ class DeliverySlotAdmin(admin.ModelAdmin):
 
 @admin.register(DeliveryAssignment)
 class DeliveryAssignmentAdmin(admin.ModelAdmin):
+    change_list_template = "admin/orders/deliveryassignment/change_list.html"
     list_display = ('id', 'order', 'delivery_boy', 'cluster', 'assigned_at', 'delivered_at', 'live_location_link')
     list_filter = ('assigned_at', 'delivered_at', 'delivery_boy')
     search_fields = ('order__order_number', 'delivery_boy__username')
+
+    def get_urls(self):
+        from django.urls import path
+        urls = super().get_urls()
+        custom_urls = [
+            path('manual-assign/', self.admin_site.admin_view(self.manual_assign_view), name='orders_deliveryassignment_manual_assign'),
+        ]
+        return custom_urls + urls
+
+    def manual_assign_view(self, request):
+        from django.shortcuts import render
+        from django.http import HttpResponseRedirect
+        from django.contrib import messages
+        from orders.models import Order, DeliveryCluster, DeliveryAssignment
+        from django.contrib.auth import get_user_model
+        
+        User = get_user_model()
+
+        if request.method == 'POST':
+            order_ids = request.POST.getlist('order_ids[]')
+            group_name = request.POST.get('group_name', '').strip()
+            delivery_boy_id = request.POST.get('delivery_boy_id')
+
+            if not order_ids:
+                self.message_user(request, "Please select at least one order.", level=messages.ERROR)
+            elif not delivery_boy_id:
+                self.message_user(request, "Please select a delivery boy.", level=messages.ERROR)
+            else:
+                delivery_boy = User.objects.filter(id=delivery_boy_id).first()
+                if delivery_boy:
+                    orders = Order.objects.filter(id__in=order_ids)
+                    if orders.exists():
+                        first_order = orders.first()
+                        slot = first_order.delivery_slot if first_order.delivery_slot else "Manual Group"
+
+                        cluster = DeliveryCluster.objects.create(
+                            delivery_slot=slot,
+                            group_name=group_name if group_name else f"Manual Assign - {delivery_boy.username}",
+                            assigned_delivery_boy=delivery_boy,
+                            cluster_number=1,
+                        )
+
+                        count = 0
+                        for order in orders:
+                            DeliveryAssignment.objects.update_or_create(
+                                order=order,
+                                defaults={
+                                    'delivery_boy': delivery_boy, 
+                                    'cluster': cluster,
+                                    'notes': 'Manually assigned via custom view.'
+                                }
+                            )
+                            count += 1
+                        
+                        self.message_user(request, f"Successfully assigned {count} orders to {delivery_boy.username} under group '{cluster.group_name}'.", messages.SUCCESS)
+                        return HttpResponseRedirect(request.path)
+                    else:
+                        self.message_user(request, "Selected orders could not be found.", level=messages.ERROR)
+
+        unassigned_orders = Order.objects.filter(delivery_assignment__isnull=True).exclude(status='CANCELLED').order_by('-created_at')
+        delivery_boys = User.objects.filter(role='DELIVERY').order_by('username')
+        recent_groups = DeliveryCluster.objects.prefetch_related('assignments__order').all().order_by('-id')[:6]
+        
+        context = dict(
+            self.admin_site.each_context(request),
+            title="Manual Assign Orders",
+            unassigned_orders=unassigned_orders,
+            delivery_boys=delivery_boys,
+            recent_groups=recent_groups,
+            opts=self.model._meta,
+        )
+
+        return render(request, "admin/orders/deliveryassignment/manual_assign.html", context)
 
     def live_location_link(self, obj):
         if obj.delivery_boy:

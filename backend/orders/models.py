@@ -46,6 +46,7 @@ class Order(models.Model):
         OUT_FOR_DELIVERY = 'OUT_FOR_DELIVERY', 'Out for Delivery'
         DELIVERED = 'DELIVERED', 'Delivered'
         CANCELLED = 'CANCELLED', 'Cancelled'
+        UNDELIVERED = 'UNDELIVERED', 'Undelivered'
 
     customer = models.ForeignKey(
         settings.AUTH_USER_MODEL,
@@ -77,6 +78,7 @@ class Order(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     cancellation_reason = models.TextField(blank=True, null=True)
+    undelivered_reason = models.TextField(blank=True, null=True)
 
     subtotal = models.DecimalField(
         max_digits=12,
@@ -174,9 +176,10 @@ class OrderProduct(Order):
 class DeliveryCluster(models.Model):
     assignment_date = models.DateField(auto_now_add=True)
     delivery_slot = models.CharField(max_length=100)
-    cluster_number = models.PositiveIntegerField()
-    center_latitude = models.DecimalField(max_digits=10, decimal_places=6)
-    center_longitude = models.DecimalField(max_digits=10, decimal_places=6)
+    group_name = models.CharField(max_length=255, blank=True, null=True)
+    cluster_number = models.PositiveIntegerField(default=1)
+    center_latitude = models.DecimalField(max_digits=10, decimal_places=6, null=True, blank=True)
+    center_longitude = models.DecimalField(max_digits=10, decimal_places=6, null=True, blank=True)
     assigned_delivery_boy = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         related_name='assigned_clusters',

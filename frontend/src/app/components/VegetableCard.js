@@ -5,8 +5,10 @@ import { Heart, Minus, Plus } from "lucide-react";
 import { useState } from "react";
 import toast from "react-hot-toast";
 import { useCart } from "../context/CartContext";
+import { useRouter } from "next/navigation";
 
 export default function VegetableCard({ item, isHome = false }) {
+  const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [imgError, setImgError] = useState(false);
   const { addToCart, removeFromCart, cartItems, wishlistIds, toggleWishlist, user } = useCart();
@@ -122,19 +124,27 @@ export default function VegetableCard({ item, isHome = false }) {
         </Link>
         
         {/* Wishlist Heart */}
-        {user && (
-          <button
-            onClick={(e) => { e.preventDefault(); toggleWishlist(item.id); }}
-            className="absolute top-2 right-2 z-10 p-2 bg-white/90 backdrop-blur-sm rounded-full hover:bg-white transition-colors shadow-sm border border-gray-100 min-w-[36px] min-h-[36px] flex items-center justify-center"
-            aria-label={wishlistIds?.includes(Number(item.id)) ? `Remove ${item.name} from wishlist` : `Add ${item.name} to wishlist`}
-          >
-            <Heart
-              size={14}
-              className={wishlistIds?.includes(Number(item.id)) ? "fill-red-500 text-red-500" : "text-gray-500 hover:text-red-500"}
-              aria-hidden="true"
-            />
-          </button>
-        )}
+        <button
+          onClick={(e) => { 
+            e.preventDefault(); 
+            if (!user) {
+              toast.error("Please login to add products to your wishlist!");
+              setTimeout(() => {
+                router.push("/login");
+              }, 1200);
+              return;
+            }
+            toggleWishlist(item.id); 
+          }}
+          className="absolute top-2 right-2 z-10 w-8 h-8 bg-white/90 backdrop-blur-sm rounded-full hover:bg-white transition-colors shadow-sm border border-gray-100 flex items-center justify-center"
+          aria-label={wishlistIds?.includes(Number(item.id)) ? `Remove ${item.name} from wishlist` : `Add ${item.name} to wishlist`}
+        >
+          <Heart
+            size={14}
+            className={wishlistIds?.includes(Number(item.id)) ? "fill-red-500 text-red-500" : "text-gray-500 hover:text-red-500"}
+            aria-hidden="true"
+          />
+        </button>
 
         {/* Discount Badge (Stacked layout matching screenshot) */}
         {Number(item.discount_percentage) > 0 && (
@@ -164,9 +174,16 @@ export default function VegetableCard({ item, isHome = false }) {
       <div className="flex flex-col flex-grow">
         {/* Product Title */}
         <Link href={`/product/${item.id}`} className="block mb-0.5">
-          <h3 className="text-xs sm:text-sm font-bold text-gray-800 line-clamp-2 h-8 sm:h-10 leading-snug hover:text-[#0c831f] transition-colors capitalize">
-            {item.name}
-          </h3>
+          <div className="flex items-start justify-between gap-2 h-8 sm:h-10">
+            <h3 className="text-xs sm:text-sm font-bold text-gray-800 line-clamp-2 leading-snug hover:text-[#0c831f] transition-colors capitalize flex-grow">
+              {item.name}
+            </h3>
+            {Number(item.discount_percentage) > 0 && (
+              <span className="shrink-0 bg-[#2470f1] text-white text-[9px] sm:text-[10px] font-extrabold px-2 py-1 rounded-md leading-none shadow-sm whitespace-nowrap self-start">
+                {parseInt(item.discount_percentage)}% OFF
+              </span>
+            )}
+          </div>
         </Link>
 
         {/* Unit / Weight or Price (when added on View All page) */}

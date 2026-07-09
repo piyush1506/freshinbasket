@@ -144,6 +144,7 @@ def send_status_notification(order) -> None:
             'OUT_FOR_DELIVERY': ("🚚 Out for Delivery!", f"Order {order.order_number} is on its way to you."),
             'DELIVERED': ("📦 Delivered!", f"Order {order.order_number} delivered. Enjoy your fresh groceries!"),
             'CANCELLED': ("❌ Order Cancelled", f"Order {order.order_number} has been cancelled."),
+            'UNDELIVERED': ("⚠️ Delivery Unsuccessful", f"Order {order.order_number} could not be delivered."),
         }
         msg = status_messages.get(order.status)
         if msg:

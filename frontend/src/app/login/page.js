@@ -24,6 +24,7 @@ export default function AuthPage() {
   const [timer, setTimer] = useState(30);
 
   useEffect(() => {
+    window.scrollTo(0, 0);
     if (isAuthenticated()) {
       const user = getUser();
       if (user && !user.username) {

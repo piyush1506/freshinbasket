@@ -5,7 +5,7 @@
 <div class="breadcrumbs">
 <a href="{% url 'admin:index' %}">{% translate 'Home' %}</a>
 &rsaquo; <a href="{% url 'admin:app_list' app_label=opts.app_label %}">{{ opts.app_config.verbose_name }}</a>
-&rsaquo; <a href="{% url 'admin:orders_order_changelist' %}">Orders</a>
+&rsaquo; <a href="{% url 'admin:orders_order_changelist' %}">{{ opts.verbose_name_plural|capfirst }}</a>
 &rsaquo; Bulk Assign
 </div>
 {% endblock %}
@@ -15,6 +15,9 @@
     <div>
         <p>Select a delivery boy to assign the following {{ orders|length }} orders to:</p>
         
+        <!-- Django admin requires 'action' to route the POST back to the correct action handler -->
+        <input type="hidden" name="action" value="assign_orders_bulk" />
+        
         {% for hidden in form.hidden_fields %}
             {{ hidden }}
         {% endfor %}
@@ -23,6 +26,15 @@
             {{ form.delivery_boy.errors }}
             <label style="font-weight: bold; margin-right: 10px;">{{ form.delivery_boy.label }}:</label>
             {{ form.delivery_boy }}
+        </div>
+        
+        <div style="margin-bottom: 20px; background: #f8f8f8; padding: 15px; border-radius: 4px; border: 1px solid #ddd;">
+            {{ form.group_name.errors }}
+            <label style="font-weight: bold; margin-right: 10px;">{{ form.group_name.label }}:</label>
+            {{ form.group_name }}
+            {% if form.group_name.help_text %}
+                <p class="help" style="color: #999; font-size: 12px; margin-top: 5px;">{{ form.group_name.help_text }}</p>
+            {% endif %}
         </div>
         
         <h3>Selected Orders:</h3>

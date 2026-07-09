@@ -81,7 +81,7 @@ export default function CartPage() {
         if (res.ok) {
           const data = await res.json();
           const cartItemIds = cartItems.map(item => item.id);
-          const suggestions = data.filter(p => !cartItemIds.includes(p.id)).slice(0, 4);
+          const suggestions = data.filter(p => !cartItemIds.includes(p.id)).slice(0, 100);
           setSuggestedProducts(suggestions);
         }
       } catch (e) {

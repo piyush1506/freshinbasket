@@ -67,10 +67,16 @@ class DeliveryDashboardView(APIView):
         active_assignment = DeliveryAssignment.objects.filter(
             delivery_boy=user,
             order__status='OUT_FOR_DELIVERY'
-        ).select_related('order', 'order__customer').first()
+        ).select_related('order', 'order__customer', 'cluster').first()
 
         active_delivery = None
         if active_assignment:
+            cluster = active_assignment.cluster
+            completed_in_cluster = 0
+            if cluster:
+                completed_in_cluster = DeliveryAssignment.objects.filter(
+                    cluster=cluster, delivered_at__isnull=False
+                ).count()
             order = active_assignment.order
             items = order.items.all()
             active_delivery = {
@@ -101,6 +107,8 @@ class DeliveryDashboardView(APIView):
                 ],
                 'notes': active_assignment.notes or '',
                 'assigned_at': active_assignment.assigned_at.isoformat(),
+                'group_name': cluster.group_name if cluster and cluster.group_name else (cluster.delivery_slot if cluster else order.delivery_slot),
+                'stop_number': completed_in_cluster + 1,
             }
 
         avg = Review.objects.filter(
@@ -187,7 +195,7 @@ class DeliveryUpdateStatusView(APIView):
         valid_transitions = {
             'PENDING': ['OUT_FOR_DELIVERY'],
             'CONFIRMED': ['OUT_FOR_DELIVERY'],
-            'OUT_FOR_DELIVERY': ['DELIVERED'],
+            'OUT_FOR_DELIVERY': ['DELIVERED', 'UNDELIVERED'],
         }
 
         try:
@@ -211,6 +219,8 @@ class DeliveryUpdateStatusView(APIView):
             )
 
         order.status = new_status
+        if new_status == 'UNDELIVERED':
+            order.undelivered_reason = request.data.get('reason', '')
         order.save()
 
         if new_status == 'DELIVERED':
@@ -342,3 +352,167 @@ class UpdateDeliveryLocationView(APIView):
         return Response({'status': 'ok'})
 
 
+
+
+class DeliveryGroupsView(APIView):
+    """List delivery groups (clusters) assigned to the delivery boy."""
+    permission_classes = [permissions.IsAuthenticated, IsDeliveryUser]
+    throttle_classes = [UserRateThrottle]
+
+    def get(self, request):
+        user = request.user
+        
+        # Get all clusters assigned to this user that have active assignments
+        assignments = DeliveryAssignment.objects.filter(
+            delivery_boy=user
+        ).select_related('order', 'cluster', 'order__customer').order_by('-assigned_at')
+        
+        groups_dict = {}
+        for assignment in assignments:
+            cluster = assignment.cluster
+            if cluster:
+                group_id = f"C{cluster.id}"
+                slot = cluster.delivery_slot
+                date = cluster.assignment_date.isoformat()
+                group_name = cluster.group_name if cluster.group_name else slot
+            else:
+                # Fallback for old manual assignments without cluster
+                group_id = f"O{assignment.id}"
+                slot = assignment.order.delivery_slot
+                date = assignment.assigned_at.date().isoformat()
+                group_name = slot
+                
+            if group_id not in groups_dict:
+                groups_dict[group_id] = {
+                    'group_id': group_id,
+                    'delivery_slot': slot,
+                    'group_name': group_name,
+                    'date': date,
+                    'total_orders': 0,
+                    'delivered_count': 0,
+                    'undelivered_count': 0,
+                    'pending_count': 0,
+                    'cod_collected': 0.0,
+                    'orders': [],
+                    'is_active': False
+                }
+                
+            g = groups_dict[group_id]
+            g['total_orders'] += 1
+            
+            order = assignment.order
+            if order.status == 'DELIVERED':
+                g['delivered_count'] += 1
+                if order.payment_method == 'COD':
+                    g['cod_collected'] += float(order.total_amount)
+            elif order.status == 'UNDELIVERED':
+                g['undelivered_count'] += 1
+            else:
+                g['pending_count'] += 1
+                g['is_active'] = True
+                
+            items = order.items.all()
+            g['orders'].append({
+                'assignment_id': assignment.id,
+                'order_id': order.id,
+                'order_number': order.order_number,
+                'customer_name': order.customer.username,
+                'customer_phone': order.customer.phone_number or '',
+                'delivery_address': order.delivery_address,
+                'delivery_latitude': str(order.delivery_latitude) if order.delivery_latitude else None,
+                'delivery_longitude': str(order.delivery_longitude) if order.delivery_longitude else None,
+                'status': order.status,
+                'subtotal': str(order.subtotal),
+                'delivery_charge': str(order.delivery_charge),
+                'total_amount': str(order.total_amount),
+                'is_paid': order.is_paid,
+                'payment_method': order.payment_method,
+                'created_at': order.created_at.isoformat(),
+                'assigned_at': assignment.assigned_at.isoformat(),
+                'notes': assignment.notes or '',
+                'items': [
+                    {
+                        'id': item.id,
+                        'product_name': item.product_name,
+                        'quantity': item.quantity,
+                        'unit_name': item.unit_name or 'kg',
+                        'unit_price': str(item.unit_price),
+                        'total_price': str(item.total_price),
+                    } for item in items
+                ]
+            })
+
+        active_groups = [g for g in groups_dict.values() if g['is_active']]
+        past_groups = [g for g in groups_dict.values() if not g['is_active']]
+        
+        return Response({
+            'active_groups': active_groups,
+            'past_groups': past_groups
+        })
+
+
+class DeliveryStatsView(APIView):
+    """Order counts and COD totals for the delivery driver (no earnings)."""
+    permission_classes = [permissions.IsAuthenticated, IsDeliveryUser]
+    throttle_classes = [UserRateThrottle]
+
+    def get(self, request):
+        user = request.user
+        today = timezone.now().date()
+        week_start = today - timedelta(days=today.weekday())
+        month_start = today.replace(day=1)
+        
+        def get_stats_for_queryset(qs):
+            total = qs.count()
+            delivered = qs.filter(order__status='DELIVERED').count()
+            undelivered = qs.filter(order__status='UNDELIVERED').count()
+            pending = total - delivered - undelivered
+            
+            # Calculate COD only for DELIVERED
+            cod_collected = qs.filter(
+                order__status='DELIVERED', 
+                order__payment_method='COD'
+            ).aggregate(total=Sum('order__total_amount'))['total'] or 0.0
+            
+            return {
+                'total_orders': total,
+                'delivered': delivered,
+                'undelivered': undelivered,
+                'pending': pending,
+                'cod_collected': float(cod_collected)
+            }
+            
+        today_qs = DeliveryAssignment.objects.filter(delivery_boy=user, assigned_at__date=today)
+        week_qs = DeliveryAssignment.objects.filter(delivery_boy=user, assigned_at__date__gte=week_start)
+        month_qs = DeliveryAssignment.objects.filter(delivery_boy=user, assigned_at__date__gte=month_start)
+        
+        daily_breakdown = []
+        for i in range(29, -1, -1):
+            day = today - timedelta(days=i)
+            day_qs = DeliveryAssignment.objects.filter(delivery_boy=user, assigned_at__date=day)
+            stats = get_stats_for_queryset(day_qs)
+            stats['date'] = day.isoformat()
+            stats['day'] = day.strftime('%a')
+            daily_breakdown.append(stats)
+            
+        monthly_breakdown = []
+        for i in range(5, -1, -1):
+            m_date = (today.replace(day=1) - timedelta(days=i*30)).replace(day=1)
+            next_m = (m_date + timedelta(days=32)).replace(day=1)
+            m_qs = DeliveryAssignment.objects.filter(
+                delivery_boy=user, 
+                assigned_at__date__gte=m_date,
+                assigned_at__date__lt=next_m
+            )
+            stats = get_stats_for_queryset(m_qs)
+            stats['month'] = m_date.strftime('%Y-%m')
+            stats['label'] = m_date.strftime('%B %Y')
+            monthly_breakdown.append(stats)
+
+        return Response({
+            'today': get_stats_for_queryset(today_qs),
+            'this_week': get_stats_for_queryset(week_qs),
+            'this_month': get_stats_for_queryset(month_qs),
+            'daily_breakdown': daily_breakdown,
+            'monthly_breakdown': monthly_breakdown
+        })
