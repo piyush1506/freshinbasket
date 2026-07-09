@@ -6,6 +6,12 @@ const TOKEN_KEYS = {
 
 let memoryToken = null;
 
+// Mutex: only one refresh request at a time.
+// When ROTATE_REFRESH_TOKENS + BLACKLIST_AFTER_ROTATION are enabled,
+// concurrent refreshes cause the old token to be blacklisted before the
+// second request can use it, which triggers clearAuth() and logs the user out.
+let _refreshPromise = null;
+
 function isBrowser() {
   return typeof window !== 'undefined';
 }
@@ -67,46 +73,59 @@ export async function authFetch(url, options = {}) {
   if (res.status === 401 && token) {
     const newToken = await refreshAccessToken();
     if (newToken) {
-      options.headers.Authorization = `Bearer ${newToken}`;
+      options.headers = { ...options.headers, Authorization: `Bearer ${newToken}` };
       res = await fetch(url, options);
-    } else {
-      clearAuth();
-      if (isBrowser()) {
-        window.location.href = '/login';
-      }
     }
+    // Don't redirect here — let the caller decide what to do on auth failure.
+    // clearAuth() is already called inside refreshAccessToken() when it truly fails.
   }
 
   return res;
 }
 
+/**
+ * Refresh the access token using the stored refresh token.
+ * Uses a mutex so that concurrent calls share a single network request,
+ * preventing the "blacklisted after rotation" race condition.
+ */
 export async function refreshAccessToken() {
+  // If a refresh is already in flight, wait for it instead of firing another one.
+  if (_refreshPromise) {
+    return _refreshPromise;
+  }
+
   const refresh = isBrowser()
     ? (localStorage.getItem(TOKEN_KEYS.REFRESH) || localStorage.getItem('refresh'))
     : null;
 
   if (!refresh) return null;
 
-  try {
-    const res = await fetch(
-      `${process.env.NEXT_PUBLIC_API_URL}/api/v1/auth/refresh/`,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ refresh }),
+  _refreshPromise = (async () => {
+    try {
+      const res = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/api/v1/auth/refresh/`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ refresh }),
+        }
+      );
+      if (!res.ok) {
+        clearAuth();
+        return null;
       }
-    );
-    if (!res.ok) {
+      const data = await res.json();
+      setTokens(data.access, data.refresh || refresh);
+      return data.access;
+    } catch {
       clearAuth();
       return null;
+    } finally {
+      _refreshPromise = null;
     }
-    const data = await res.json();
-    setTokens(data.access, data.refresh || refresh);
-    return data.access;
-  } catch {
-    clearAuth();
-    return null;
-  }
+  })();
+
+  return _refreshPromise;
 }
 
 export const AUTH_API = {

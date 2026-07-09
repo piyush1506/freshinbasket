@@ -25,7 +25,12 @@ def _fire_and_forget_post_order(order_id):
                 args=[order_id], retry=False, expires=60
             )
         except Exception:
-            logger.info("Celery unavailable — order %s skipped realtime assign", order_id)
+            logger.info("Celery unavailable — running auto_assign_realtime_order synchronously in thread for order %s", order_id)
+            try:
+                from .tasks import auto_assign_realtime_order
+                auto_assign_realtime_order(order_id)
+            except Exception as inner_e:
+                logger.error("Synchronous realtime assign failed for order %s: %s", order_id, inner_e)
 
         # Send FCM directly (no Celery dependency)
         try:

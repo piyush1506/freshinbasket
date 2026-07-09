@@ -73,26 +73,14 @@ export function CartProvider({ children }) {
   };
 
   const fetchCart = async () => {
-    let token = typeof window !== "undefined" ? getAccessToken() : null;
-    if (!token) return;
+    if (typeof window === "undefined" || !getAccessToken()) return;
     try {
-      let res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/cart/`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const res = await authFetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/cart/`);
       if (res.status === 401) {
-        const { refreshAccessToken, clearAuth } = await import("@/lib/auth");
-        const newToken = await refreshAccessToken();
-        if (newToken) {
-          token = newToken;
-          res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/cart/`, {
-            headers: { Authorization: `Bearer ${newToken}` },
-          });
-        } else {
-          clearAuth();
-          setUser(null);
-          setCartItems([]);
-          return;
-        }
+        // Token refresh already attempted inside authFetch and failed
+        setUser(null);
+        setCartItems([]);
+        return;
       }
       if (res.ok) {
         const data = await res.json();
@@ -220,16 +208,12 @@ export function CartProvider({ children }) {
       return [...prev, { ...product, quantity: quantityDelta, id: Number(product.id), cartKey }];
     });
 
-    let token = typeof window !== "undefined" ? getAccessToken() : null;
-    if (token) {
+    if (typeof window !== "undefined" && getAccessToken()) {
       setLoadingItems((prev) => ({ ...prev, [cartKey]: true }));
       try {
-        let res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/cart/add_item/`, {
+        const res = await authFetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/cart/add_item/`, {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`
-          },
+          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             product_id: product.id,
             sub_product_id: product.subProductId || null,
@@ -238,26 +222,8 @@ export function CartProvider({ children }) {
         });
 
         if (res.status === 401) {
-          const { refreshAccessToken, clearAuth } = await import("@/lib/auth");
-          const newToken = await refreshAccessToken();
-          if (newToken) {
-            res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/cart/add_item/`, {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${newToken}`
-              },
-              body: JSON.stringify({
-                product_id: product.id,
-                sub_product_id: product.subProductId || null,
-                quantity: quantityDelta,
-              })
-            });
-          } else {
-            clearAuth();
-            setUser(null);
-            return;
-          }
+          setUser(null);
+          return;
         }
 
         if (res.ok) {
@@ -282,35 +248,17 @@ export function CartProvider({ children }) {
     const previousCart = cartItems;
     setCartItems((prev) => prev.filter((item) => item.cartKey !== cartKey));
 
-    let token = typeof window !== "undefined" ? getAccessToken() : null;
-    if (token) {
+    if (typeof window !== "undefined" && getAccessToken()) {
       try {
-        let res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/cart/remove_item/`, {
+        const res = await authFetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/cart/remove_item/`, {
           method: 'DELETE',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`
-          },
+          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ product_id: id, sub_product_id: subProductId || null })
         });
 
         if (res.status === 401) {
-          const { refreshAccessToken, clearAuth } = await import("@/lib/auth");
-          const newToken = await refreshAccessToken();
-          if (newToken) {
-            res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/cart/remove_item/`, {
-              method: 'DELETE',
-              headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${newToken}`
-              },
-              body: JSON.stringify({ product_id: id, sub_product_id: subProductId || null })
-            });
-          } else {
-            clearAuth();
-            setUser(null);
-            return;
-          }
+          setUser(null);
+          return;
         }
 
         if (res.ok) {

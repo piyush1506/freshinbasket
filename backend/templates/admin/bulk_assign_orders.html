@@ -1,0 +1,56 @@
+{% extends "admin/base_site.html" %}
+{% load i18n %}
+
+{% block breadcrumbs %}
+<div class="breadcrumbs">
+<a href="{% url 'admin:index' %}">{% translate 'Home' %}</a>
+&rsaquo; <a href="{% url 'admin:app_list' app_label=opts.app_label %}">{{ opts.app_config.verbose_name }}</a>
+&rsaquo; <a href="{% url 'admin:orders_order_changelist' %}">Orders</a>
+&rsaquo; Bulk Assign
+</div>
+{% endblock %}
+
+{% block content %}
+<form action="" method="post">{% csrf_token %}
+    <div>
+        <p>Select a delivery boy to assign the following {{ orders|length }} orders to:</p>
+        
+        {% for hidden in form.hidden_fields %}
+            {{ hidden }}
+        {% endfor %}
+        
+        <div style="margin-bottom: 20px; background: #f8f8f8; padding: 15px; border-radius: 4px; border: 1px solid #ddd;">
+            {{ form.delivery_boy.errors }}
+            <label style="font-weight: bold; margin-right: 10px;">{{ form.delivery_boy.label }}:</label>
+            {{ form.delivery_boy }}
+        </div>
+        
+        <h3>Selected Orders:</h3>
+        <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
+            <thead>
+                <tr style="background: #eee; border-bottom: 1px solid #ccc;">
+                    <th style="padding: 10px; text-align: left;">Order ID</th>
+                    <th style="padding: 10px; text-align: left;">Customer</th>
+                    <th style="padding: 10px; text-align: left;">Total Amount</th>
+                    <th style="padding: 10px; text-align: left;">Delivery Address</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for order in orders %}
+                    <tr style="border-bottom: 1px solid #eee;">
+                        <td style="padding: 10px;">#{{ order.order_number }}</td>
+                        <td style="padding: 10px;">{{ order.customer.username }}</td>
+                        <td style="padding: 10px;">₹{{ order.total_amount }}</td>
+                        <td style="padding: 10px;">{{ order.delivery_address }}</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        
+        <div style="margin-top: 20px;">
+            <input type="submit" name="apply" value="Confirm Assign" class="default" style="background: #79aec8; color: white; padding: 10px 20px; border: none; border-radius: 4px; font-weight: bold; cursor: pointer;" />
+            <a href="javascript:history.back()" class="button cancel-link" style="margin-left: 10px; background: #bbb; color: white; padding: 10px 20px; text-decoration: none; border-radius: 4px; font-weight: bold;">Cancel</a>
+        </div>
+    </div>
+</form>
+{% endblock %}

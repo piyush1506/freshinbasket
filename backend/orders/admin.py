@@ -37,14 +37,65 @@ class DeliveryAssignmentInline(admin.StackedInline):
         return super().formfield_for_foreignkey(db_field, request, **kwargs)
 
 
+from django import forms
+
+class BulkAssignForm(forms.Form):
+    _selected_action = forms.CharField(widget=forms.MultipleHiddenInput)
+    delivery_boy = forms.ModelChoiceField(
+        queryset=None,
+        label="Select Delivery Boy",
+        required=True
+    )
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        from django.contrib.auth import get_user_model
+        User = get_user_model()
+        self.fields['delivery_boy'].queryset = User.objects.filter(role='DELIVERY')
+
+
 class PrintOrderMixin:
-    actions = ['print_selected_orders']
+    actions = ['print_selected_orders', 'assign_orders_bulk']
 
     @admin.action(description='Print Selected Orders')
     def print_selected_orders(self, request, queryset):
         from django.shortcuts import render
         orders = queryset.prefetch_related('items')
         return render(request, 'admin/print_multiple_orders_card.html', {'orders': orders})
+
+    @admin.action(description='Assign selected orders to Delivery Boy')
+    def assign_orders_bulk(self, request, queryset):
+        from django.shortcuts import render
+        from django.http import HttpResponseRedirect
+        from django.contrib import messages
+
+        if 'apply' in request.POST:
+            form = BulkAssignForm(request.POST)
+            if form.is_valid():
+                delivery_boy = form.cleaned_data['delivery_boy']
+                count = 0
+                for order in queryset:
+                    # Update or create assignment
+                    DeliveryAssignment.objects.update_or_create(
+                        order=order,
+                        defaults={'delivery_boy': delivery_boy, 'notes': 'Bulk assigned by Admin.'}
+                    )
+                    count += 1
+                self.message_user(request, f"Successfully assigned {count} orders to {delivery_boy.username}.", messages.SUCCESS)
+                return HttpResponseRedirect(request.get_full_path())
+        else:
+            form = BulkAssignForm(initial={'_selected_action': request.POST.getlist(admin.helpers.ACTION_CHECKBOX_NAME)})
+
+        return render(
+            request,
+            'admin/bulk_assign_orders.html',
+            context={
+                'orders': queryset,
+                'form': form,
+                'opts': self.model._meta,
+                'title': 'Bulk Assign Orders'
+            }
+        )
 
     def get_urls(self):
         from django.urls import path
@@ -195,13 +246,27 @@ class DeliveryOrder(Order):
 class DeliveryOrderAdmin(PrintOrderMixin, admin.ModelAdmin):
     list_display = (
         'order_number', 'customer', 'short_address', 'status',
-        'delivery_boy_name', 'is_paid', 'created_at', 'print_action'
+        'delivery_boy_name', 'live_location_link', 'is_paid', 'created_at', 'print_action'
     )
     list_filter = ('status', OrderAdmin.assignment_status, 'is_paid', 'created_at')
     inlines = [DeliveryAssignmentInline]
     search_fields = ('id', 'order_number', 'customer__username', 'customer__email')
     readonly_fields = ('print_action',)
     ordering = ('-created_at',)
+
+    def live_location_link(self, obj):
+        try:
+            assignment = obj.delivery_assignment
+            if assignment and assignment.delivery_boy:
+                from orders.delivery.models import DeliveryLocation
+                loc = DeliveryLocation.objects.filter(delivery_boy=assignment.delivery_boy).first()
+                if loc:
+                    url = f"https://www.openstreetmap.org/?mlat={loc.latitude}&mlon={loc.longitude}#map=17/{loc.latitude}/{loc.longitude}"
+                    return format_html('<a href="{}" target="_blank" class="button" style="background:#5b80b2; color:white; padding:4px 8px; border-radius:4px; text-decoration:none; font-weight:bold;">📍 Map</a>', url)
+        except Exception:
+            pass
+        return "-"
+    live_location_link.short_description = 'Live Location'
 
     def short_address(self, obj):
         if not obj.delivery_address:
@@ -280,9 +345,19 @@ class DeliverySlotAdmin(admin.ModelAdmin):
 
 @admin.register(DeliveryAssignment)
 class DeliveryAssignmentAdmin(admin.ModelAdmin):
-    list_display = ('id', 'order', 'delivery_boy', 'cluster', 'assigned_at', 'delivered_at')
+    list_display = ('id', 'order', 'delivery_boy', 'cluster', 'assigned_at', 'delivered_at', 'live_location_link')
     list_filter = ('assigned_at', 'delivered_at', 'delivery_boy')
     search_fields = ('order__order_number', 'delivery_boy__username')
+
+    def live_location_link(self, obj):
+        if obj.delivery_boy:
+            from orders.delivery.models import DeliveryLocation
+            loc = DeliveryLocation.objects.filter(delivery_boy=obj.delivery_boy).first()
+            if loc:
+                url = f"https://www.openstreetmap.org/?mlat={loc.latitude}&mlon={loc.longitude}#map=17/{loc.latitude}/{loc.longitude}"
+                return format_html('<a href="{}" target="_blank" class="button" style="background:#5b80b2; color:white; padding:4px 8px; border-radius:4px; text-decoration:none; font-weight:bold;">📍 Map</a>', url)
+        return "-"
+    live_location_link.short_description = 'Live Location'
 
     def formfield_for_foreignkey(self, db_field, request, **kwargs):
         """Restrict delivery_boy dropdown to only DELIVERY role users."""

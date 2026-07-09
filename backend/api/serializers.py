@@ -280,18 +280,26 @@ class SearchProductSerializer(serializers.ModelSerializer):
         return 'kg'
 
     def get_image_url(self, obj):
-        if obj.image_url and hasattr(obj.image_url, 'url'):
-            return get_transformed_cloudinary_url(obj.image_url.url, width=200)
-        return None
+        if not obj.image_url:
+            return None
+        url = obj.image_url.url if hasattr(obj.image_url, 'url') else obj.image_url
+        return get_transformed_cloudinary_url(url, width=200)
 
 
 class OrderItemSerializer(serializers.ModelSerializer):
     product_name = serializers.ReadOnlyField(source='product.name')
+    product_image_url = serializers.SerializerMethodField()
     tax_percentage = serializers.DecimalField(source='product.tax_percentage', max_digits=5, decimal_places=2, read_only=True)
 
     class Meta:
         model = OrderItem
-        fields = ('id', 'product', 'product_name', 'quantity', 'unit_name', 'unit_price', 'total_price', 'tax_percentage')
+        fields = ('id', 'product', 'product_name', 'product_image_url', 'quantity', 'unit_name', 'unit_price', 'total_price', 'tax_percentage')
+
+    def get_product_image_url(self, obj):
+        if not obj.product or not obj.product.image_url:
+            return None
+        url = obj.product.image_url.url if hasattr(obj.product.image_url, 'url') else obj.product.image_url
+        return get_transformed_cloudinary_url(url, width=200)
 
 
 class ReviewSerializer(serializers.ModelSerializer):

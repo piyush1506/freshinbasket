@@ -66,7 +66,7 @@ class DeliveryDashboardView(APIView):
         # Active delivery
         active_assignment = DeliveryAssignment.objects.filter(
             delivery_boy=user,
-            order__status__in=['CONFIRMED', 'OUT_FOR_DELIVERY']
+            order__status='OUT_FOR_DELIVERY'
         ).select_related('order', 'order__customer').first()
 
         active_delivery = None
@@ -185,6 +185,7 @@ class DeliveryUpdateStatusView(APIView):
         new_status = request.data.get('status')
 
         valid_transitions = {
+            'PENDING': ['OUT_FOR_DELIVERY'],
             'CONFIRMED': ['OUT_FOR_DELIVERY'],
             'OUT_FOR_DELIVERY': ['DELIVERED'],
         }

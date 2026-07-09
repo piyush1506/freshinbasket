@@ -548,12 +548,10 @@ class ProductViewSet(viewsets.ModelViewSet):
                 ).order_by('search_rank', 'name')
             else:
                 qs = qs.order_by('name')
-            products = list(
-                qs
-                .values('id', 'name')[:limit]
-            )
-            cache.set(cache_key, products, timeout=300)
-            return Response(products)
+            products = list(qs[:limit])
+            data = SearchProductSerializer(products, many=True, context={'request': request}).data
+            cache.set(cache_key, data, timeout=300)
+            return Response(data)
 
         products = Product.objects.filter(name__icontains=q).annotate(
             search_rank=Case(

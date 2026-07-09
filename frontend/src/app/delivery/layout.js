@@ -51,11 +51,12 @@ export default function DeliveryLayout({ children }) {
         const meRes = await authFetch(
           `${process.env.NEXT_PUBLIC_API_URL}/api/v1/users/me/`
         );
-        if (!meRes.ok) {
+        if (meRes.status === 401) {
           clearAuth();
           router.push("/login");
           return;
         }
+        if (!meRes.ok) return;
         const me = await meRes.json();
         if (me.role !== "DELIVERY") {
           clearAuth();
