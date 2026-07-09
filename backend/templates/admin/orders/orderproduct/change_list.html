@@ -5,6 +5,28 @@
     {% if action_form and actions_on_top and cl.show_admin_actions %}{% admin_actions %}{% endif %}
     
     <style>
+        .btn-filter {
+            display: inline-block;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 700;
+            background: #f7fafc;
+            color: #4a5568;
+            text-decoration: none;
+            border: 1px solid #cbd5e0;
+            transition: all 0.2s;
+        }
+        .btn-filter:hover {
+            background: #edf2f7;
+            color: #2d3748;
+        }
+        .btn-filter.active {
+            background: #216140;
+            color: white;
+            border-color: #216140;
+        }
+        
         .order-product-grid {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
@@ -77,6 +99,21 @@
             line-height: 1.4;
         }
     </style>
+
+    <div style="background: #fff; padding: 15px; border-radius: 12px; margin-bottom: 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); border: 1px solid #e2e8f0; display: flex; gap: 15px; align-items: center; flex-wrap: wrap;">
+        <span style="font-weight: bold; color: #4a5568;">Filter by Date:</span>
+        <button type="button" onclick="applyDateFilter('today')" class="btn-filter {% if current_date_filter == 'today' %}active{% endif %}" style="cursor: pointer; border: 1px solid #cbd5e0; outline: none;">Today</button>
+        <button type="button" onclick="applyDateFilter('week')" class="btn-filter {% if current_date_filter == 'week' %}active{% endif %}" style="cursor: pointer; border: 1px solid #cbd5e0; outline: none;">This Week</button>
+        <button type="button" onclick="applyDateFilter('year')" class="btn-filter {% if current_date_filter == 'year' %}active{% endif %}" style="cursor: pointer; border: 1px solid #cbd5e0; outline: none;">This Year</button>
+        <button type="button" onclick="applyDateFilter('all')" class="btn-filter {% if current_date_filter == 'all' %}active{% endif %}" style="cursor: pointer; border: 1px solid #cbd5e0; outline: none;">All Time</button>
+        
+        <div style="display: flex; gap: 10px; align-items: center; margin: 0; margin-left: auto;">
+            <input type="date" id="custom-start-date" value="{{ start_date }}" style="padding: 6px 12px; border: 1px solid #cbd5e0; border-radius: 6px;">
+            <span style="color: #718096;">to</span>
+            <input type="date" id="custom-end-date" value="{{ end_date }}" style="padding: 6px 12px; border: 1px solid #cbd5e0; border-radius: 6px;">
+            <button type="button" onclick="applyCustomDate()" style="background: #216140; color: white; border: none; padding: 7px 15px; border-radius: 6px; font-weight: bold; cursor: pointer;">Apply Range</button>
+        </div>
+    </div>
 
     <div style="margin-bottom: 10px; padding: 10px 5px;">
         <label style="cursor: pointer; display: inline-flex; align-items: center; gap: 8px; font-weight: 600; color: #4a5568;">
@@ -160,5 +197,26 @@
                 });
             }
         });
+
+        function applyDateFilter(value) {
+            const url = new URL(window.location.href);
+            url.searchParams.set('order_date', value);
+            // Clear custom dates if switching to preset ranges
+            url.searchParams.delete('start_date');
+            url.searchParams.delete('end_date');
+            window.location.href = url.toString();
+        }
+        
+        function applyCustomDate() {
+            const start = document.getElementById('custom-start-date').value;
+            const end = document.getElementById('custom-end-date').value;
+            const url = new URL(window.location.href);
+            url.searchParams.set('order_date', 'custom');
+            if (start) url.searchParams.set('start_date', start);
+            else url.searchParams.delete('start_date');
+            if (end) url.searchParams.set('end_date', end);
+            else url.searchParams.delete('end_date');
+            window.location.href = url.toString();
+        }
     </script>
 {% endblock %}

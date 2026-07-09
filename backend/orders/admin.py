@@ -210,7 +210,66 @@ class OrderProductAdmin(PrintOrderMixin, admin.ModelAdmin):
     list_per_page = 20
 
     def get_queryset(self, request):
-        return super().get_queryset(request).select_related('customer').prefetch_related('items')
+        qs = super().get_queryset(request).select_related('customer').prefetch_related('items')
+        
+        # Retrieve date filter values attached to request
+        order_date = getattr(request, '_order_date', 'today')
+            
+        if order_date == 'all':
+            return qs
+
+        from django.utils import timezone
+        import datetime
+        now = timezone.localtime()
+        today = now.date()
+
+        if order_date == 'today':
+            qs = qs.filter(created_at__date=today)
+        elif order_date == 'week':
+            week_start = today - datetime.timedelta(days=today.weekday())
+            qs = qs.filter(created_at__date__gte=week_start)
+        elif order_date == 'year':
+            year_start = today.replace(month=1, day=1)
+            qs = qs.filter(created_at__date__gte=year_start)
+        elif order_date == 'custom':
+            start_date_str = getattr(request, '_start_date', '')
+            end_date_str = getattr(request, '_end_date', '')
+            if start_date_str:
+                try:
+                    start_date = datetime.datetime.strptime(start_date_str, '%Y-%m-%d').date()
+                    qs = qs.filter(created_at__date__gte=start_date)
+                except ValueError:
+                    pass
+            if end_date_str:
+                try:
+                    end_date = datetime.datetime.strptime(end_date_str, '%Y-%m-%d').date()
+                    qs = qs.filter(created_at__date__lte=end_date)
+                except ValueError:
+                    pass
+        return qs
+
+    def changelist_view(self, request, extra_context=None):
+        # Make request.GET mutable and remove custom filter parameters 
+        # so Django's ChangeList doesn't validate them against model fields
+        get_params = request.GET.copy()
+        
+        order_date = get_params.pop('order_date', ['today'])[0]
+        start_date = get_params.pop('start_date', [''])[0]
+        end_date = get_params.pop('end_date', [''])[0]
+        
+        # Re-assign the cleaned query parameters
+        request.GET = get_params
+        
+        # Attach values for get_queryset to access
+        request._order_date = order_date
+        request._start_date = start_date
+        request._end_date = end_date
+        
+        extra_context = extra_context or {}
+        extra_context['current_date_filter'] = order_date
+        extra_context['start_date'] = start_date
+        extra_context['end_date'] = end_date
+        return super().changelist_view(request, extra_context=extra_context)
 
 
 

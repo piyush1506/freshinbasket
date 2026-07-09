@@ -544,13 +544,11 @@ export default function CartPage() {
                         className="bg-white border border-gray-200 rounded-xl p-4 flex gap-4 items-center shadow-sm hover:shadow-md transition-shadow"
                       >
                         {/* Product Image */}
-                        {item.image_url && (
-                          <img
-                            src={item.image_url}
-                            alt={item.name}
-                            className="w-16 h-16 sm:w-20 sm:h-20 rounded-xl object-cover shrink-0 border border-gray-100"
-                          />
-                        )}
+                        <img
+                          src={item.image_url || "/placeholder.svg"}
+                          alt={item.name}
+                          className="w-16 h-16 sm:w-20 sm:h-20 rounded-xl object-cover shrink-0 border border-gray-100"
+                        />
 
                         {/* Product Info */}
                         <div className="flex-1 min-w-0">

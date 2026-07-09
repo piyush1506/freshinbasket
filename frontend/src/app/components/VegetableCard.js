@@ -122,11 +122,11 @@ export default function VegetableCard({ item, isHome = false }) {
             onError={() => setImgError(true)}
           />
         </Link>
-        
+
         {/* Wishlist Heart */}
         <button
-          onClick={(e) => { 
-            e.preventDefault(); 
+          onClick={(e) => {
+            e.preventDefault();
             if (!user) {
               toast.error("Please login to add products to your wishlist!");
               setTimeout(() => {
@@ -134,7 +134,7 @@ export default function VegetableCard({ item, isHome = false }) {
               }, 1200);
               return;
             }
-            toggleWishlist(item.id); 
+            toggleWishlist(item.id);
           }}
           className="absolute top-2 right-2 z-10 w-8 h-8 bg-white/90 backdrop-blur-sm rounded-full hover:bg-white transition-colors shadow-sm border border-gray-100 flex items-center justify-center"
           aria-label={wishlistIds?.includes(Number(item.id)) ? `Remove ${item.name} from wishlist` : `Add ${item.name} to wishlist`}
@@ -146,18 +146,12 @@ export default function VegetableCard({ item, isHome = false }) {
           />
         </button>
 
-        {/* Discount Badge (Stacked layout matching screenshot) */}
-        {Number(item.discount_percentage) > 0 && (
-          <div className="absolute top-0 left-0 bg-[#2470f1] text-white flex flex-col items-center justify-center rounded-br-lg rounded-tl-xl w-8 h-8 sm:w-9 sm:h-9 text-[8px] sm:text-[9px] font-extrabold uppercase leading-none shadow-sm">
-            <span>{item.discount_percentage}%</span>
-            <span className="mt-0.5">OFF</span>
-          </div>
-        )}
+
 
         {/* Dynamic Section Tag */}
         {item.section_product_label && (
           <div className="absolute bottom-2 left-2 z-10 bg-green-600 text-white flex items-center gap-1 px-2 py-0.5 rounded-md text-[9px] font-black uppercase shadow-sm tracking-wider">
-            
+
             <span>{item.section_product_label}</span>
           </div>
         )}
@@ -174,35 +168,42 @@ export default function VegetableCard({ item, isHome = false }) {
       <div className="flex flex-col flex-grow">
         {/* Product Title */}
         <Link href={`/product/${item.id}`} className="block mb-0.5">
-          <div className="flex items-start justify-between gap-2 h-8 sm:h-10">
-            <h3 className="text-xs sm:text-sm font-bold text-gray-800 line-clamp-2 leading-snug hover:text-[#0c831f] transition-colors capitalize flex-grow">
-              {item.name}
-            </h3>
-            {Number(item.discount_percentage) > 0 && (
-              <span className="shrink-0 bg-[#2470f1] text-white text-[9px] sm:text-[10px] font-extrabold px-2 py-1 rounded-md leading-none shadow-sm whitespace-nowrap self-start">
-                {parseInt(item.discount_percentage)}% OFF
-              </span>
-            )}
-          </div>
+          <h3 className="text-xs sm:text-sm font-bold text-gray-800 line-clamp-2 h-8 sm:h-10 leading-snug hover:text-[#0c831f] transition-colors capitalize">
+            {item.name}
+          </h3>
         </Link>
 
         {/* Unit / Weight or Price (when added on View All page) */}
         {/* Unit / Weight or Price (when added to cart) */}
         {cartQty > 0 ? (
-          <div className="mb-3 flex items-center gap-1.5">
-            <span className="text-sm sm:text-base font-black text-gray-900 leading-none">
-              ₹{parseInt(item.price)}
-            </span>
+          <div className="mb-3 flex items-center justify-between">
+            <div className="flex flex-col min-w-0">
+              <span className="text-sm sm:text-base font-black text-gray-900 leading-none">
+                ₹{parseInt(item.price)}
+              </span>
+              {Number(item.discount_percentage) > 0 && (
+                <span className="text-[11px] sm:text-xs text-green-800 line-through font-bold leading-none mt-1">
+                  ₹{parseInt(item.mrp || item.price)}
+                </span>
+              )}
+            </div>
             {Number(item.discount_percentage) > 0 && (
-              <span className="text-[11px] sm:text-xs text-green-800 line-through font-bold leading-none">
-                ₹{parseInt(item.mrp || item.price)}
+              <span className="shrink-0 bg-[#2470f1] text-white text-[10px] sm:text-[11px] font-extrabold px-2.5 py-1 rounded-md leading-none shadow-sm whitespace-nowrap">
+                {parseInt(item.discount_percentage)}% OFF
               </span>
             )}
           </div>
         ) : (
-          <div className="text-xs sm:text-xs font-semibold text-gray-600 mb-3 flex items-center gap-0.5">
-            <span>{itemUnit}</span>
-            <span className="text-[10px] text-gray-600 ml-0.5" aria-hidden="true">▼</span>
+          <div className="text-xs sm:text-xs font-semibold text-gray-600 mb-3 flex items-center justify-between">
+            <div className="flex items-center gap-0.5 select-none">
+              <span>{itemUnit}</span>
+              <span className="text-[10px] text-gray-600 ml-0.5" aria-hidden="true">▼</span>
+            </div>
+            {Number(item.discount_percentage) > 0 && (
+              <span className="shrink-0 bg-[#2470f1] text-white text-[10px] sm:text-[11px] font-extrabold px-2.5 py-1 rounded-md leading-none shadow-sm whitespace-nowrap">
+                {parseInt(item.discount_percentage)}% OFF
+              </span>
+            )}
           </div>
         )}
 
@@ -239,7 +240,7 @@ export default function VegetableCard({ item, isHome = false }) {
                   >
                     <Minus size={13} className="stroke-[3.5px]" aria-hidden="true" />
                   </button>
-                  
+
                   <div className="flex items-center justify-center px-1">
                     <span className="text-xs sm:text-[13px] font-extrabold text-white leading-none">{displayQty}</span>
                   </div>

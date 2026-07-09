@@ -80,11 +80,11 @@ export default function ProductDetailClient({ product, related }) {
 
         <div className="grid md:grid-cols-2 gap-8 lg:gap-12 mb-16">
           <div>
-            <div className="relative rounded-2xl overflow-hidden bg-white border border-gray-100 shadow-lg flex items-center justify-center" style={{ minHeight: '300px', maxHeight: '500px' }}>
+            <div className="relative rounded-2xl overflow-hidden bg-white flex items-center justify-center" style={{ minHeight: '250px', maxHeight: '400px' }}>
               <img
                 src={activeImg || "/placeholder.svg"}
                 alt={activeName}
-                className="object-contain w-full h-full max-h-[500px]"
+                className="object-contain w-full h-full max-h-[400px]"
                 loading="eager"
                 fetchPriority="high"
               />
@@ -97,7 +97,7 @@ export default function ProductDetailClient({ product, related }) {
                   <button
                     onClick={() => { setSelectedSub(null); setQty(1); }}
                     className={`flex flex-col items-center gap-1.5 p-2.5 rounded-xl border-2 transition-all shrink-0 min-w-[80px] ${
-                      !selectedSub ? "border-[#216140] bg-green-50" : "border-gray-200 hover:border-gray-300"
+                      !selectedSub ? "border-[#216140] bg-green-50" : "border-transparent hover:bg-gray-50"
                     }`}
                   >
                     <div className="w-12 h-12 rounded-lg overflow-hidden bg-gray-100">
@@ -115,7 +115,7 @@ export default function ProductDetailClient({ product, related }) {
                       key={sub.id}
                       onClick={() => { setSelectedSub(sub); setQty(1); }}
                       className={`flex flex-col items-center gap-1.5 p-2.5 rounded-xl border-2 transition-all shrink-0 min-w-[80px] ${
-                        selectedSub?.id === sub.id ? "border-[#216140] bg-green-50" : "border-gray-200 hover:border-gray-300"
+                        selectedSub?.id === sub.id ? "border-[#216140] bg-green-50" : "border-transparent hover:bg-gray-50"
                       } ${sub.stock <= 0 ? "opacity-50" : ""}`}
                     >
                       <div className="w-12 h-12 rounded-lg overflow-hidden bg-gray-100">
@@ -137,25 +137,25 @@ export default function ProductDetailClient({ product, related }) {
           <div className="flex flex-col justify-center">
             <div className="flex items-center gap-2 mb-2 flex-wrap">
               {product.category_names?.map((cat) => (
-                <Link key={cat} href={`/category/${cat.toLowerCase()}`} className="text-sm font-semibold text-green-600 hover:text-green-700 bg-green-50 px-3 py-1 rounded-full">
+                <Link key={cat} href={`/category/${cat.toLowerCase()}`} className="text-sm font-semibold text-[#216140] hover:text-[#1a4d32] bg-[#216140]/10 px-3 py-1 rounded-full">
                   {cat}
                 </Link>
               ))}
               {isOutOfStock ? (
                 <span className="text-xs font-semibold text-red-600 bg-red-50 px-3 py-1 rounded-full">Out of Stock</span>
               ) : (
-                <span className="text-xs font-semibold text-green-600 bg-green-50 px-3 py-1 rounded-full">In Stock</span>
+                <span className="text-xs font-semibold text-[#216140] bg-[#216140]/10 px-3 py-1 rounded-full">In Stock</span>
               )}
             </div>
 
             <h1 className="text-3xl sm:text-4xl font-extrabold text-gray-900 capitalize mb-2">{activeName}</h1>
             <p className="text-gray-500 text-sm mb-1 flex items-center gap-1.5">
-              <Leaf size={14} className="text-green-600" /> Fresh & Organic
+              <Leaf size={14} className="text-[#216140]" /> Fresh & Organic
             </p>
 
             <div className="my-4">
               <div className="flex items-center gap-3">
-                <span className="text-3xl sm:text-4xl font-extrabold text-green-700">
+                <span className="text-3xl sm:text-4xl font-extrabold text-[#216140]">
                   ₹{Number(activePrice).toFixed(2)}
                 </span>
                 {Number(activeMrp) > Number(activePrice) && (
@@ -188,7 +188,7 @@ export default function ProductDetailClient({ product, related }) {
                 <button
                   onClick={() => setQty(Math.max(0, qty - 1))}
                   disabled={qty <= 0}
-                  className="w-10 h-10 flex items-center justify-center text-gray-600 hover:text-green-700 hover:bg-gray-200 rounded-xl transition-colors disabled:opacity-40"
+                  className="w-10 h-10 flex items-center justify-center text-gray-600 hover:text-[#216140] hover:bg-gray-200 rounded-xl transition-colors disabled:opacity-40"
                 >
                   <Minus size={18} />
                 </button>
@@ -201,7 +201,7 @@ export default function ProductDetailClient({ product, related }) {
                 />
                 <button
                   onClick={() => setQty(qty + 1)}
-                  className="w-10 h-10 flex items-center justify-center text-gray-600 hover:text-green-700 hover:bg-gray-200 rounded-xl transition-colors"
+                  className="w-10 h-10 flex items-center justify-center text-gray-600 hover:text-[#216140] hover:bg-gray-200 rounded-xl transition-colors"
                 >
                   <Plus size={18} />
                 </button>
@@ -212,7 +212,7 @@ export default function ProductDetailClient({ product, related }) {
               <button
                 onClick={handleAddToCart}
                 disabled={isOutOfStock || adding}
-                className="flex-1 sm:flex-none bg-green-700 text-white px-8 py-3.5 rounded-xl text-base font-extrabold hover:bg-green-800 transition-colors flex items-center justify-center gap-2 disabled:bg-green-400 disabled:cursor-not-allowed shadow-lg shadow-green-700/20"
+                className="flex-1 sm:flex-none bg-[#216140] text-white px-8 py-3.5 rounded-xl text-base font-extrabold hover:bg-[#1a4d32] transition-colors flex items-center justify-center gap-2 disabled:bg-gray-300 disabled:cursor-not-allowed shadow-lg shadow-[#216140]/20"
               >
                 <ShoppingCart size={20} />
                 {adding ? "Updating..." : cartQty > 0 ? "Update Cart" : "Add to Cart"}
@@ -243,12 +243,12 @@ export default function ProductDetailClient({ product, related }) {
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-2xl font-bold text-gray-900">Related Products</h2>
               {firstCategory && (
-                <Link href={`/category/${firstCategory.toLowerCase()}`} className="text-sm font-semibold text-green-600 hover:text-green-700 flex items-center gap-1">
+                <Link href={`/category/${firstCategory.toLowerCase()}`} className="text-sm font-semibold text-[#216140] hover:text-[#1a4d32] flex items-center gap-1">
                   View All <span className="text-lg">→</span>
                 </Link>
               )}
             </div>
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 sm:gap-6">
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 sm:gap-6">
               {related.map((item) => (
                 <VegetableCard key={item.id} item={item} />
               ))}
