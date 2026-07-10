@@ -2,15 +2,52 @@ from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
 from .models import User, DeliveryProfile, DeliveryBoy
 
+class PlatformListFilter(admin.SimpleListFilter):
+    title = 'Platform'
+    parameter_name = 'platform'
+
+    def lookups(self, request, model_admin):
+        return (
+            ('web', 'Web Users'),
+            ('app', 'App Users'),
+            ('both', 'Both (App & Web)'),
+        )
+
+    def queryset(self, request, queryset):
+        if self.value() == 'app':
+            return queryset.filter(fcm_tokens__isnull=False).distinct()
+        if self.value() == 'web':
+            return queryset.filter(fcm_tokens__isnull=True)
+        if self.value() == 'both':
+            return queryset.filter(fcm_tokens__isnull=False).distinct()
+        return queryset
+
+
 @admin.register(User)
 class CustomUserAdmin(UserAdmin):
+    change_list_template = "admin/users/user/change_list.html"
     list_display = ('username', 'email', 'role', 'is_staff')
+    list_filter = ('role', 'is_staff', 'is_active', PlatformListFilter)
     fieldsets = UserAdmin.fieldsets + (
         ('Extra Fields', {'fields': ('role', 'phone_number', 'address')}),
     )
     add_fieldsets = UserAdmin.add_fieldsets + (
         ('Extra Fields', {'fields': ('role', 'phone_number', 'address')}),
     )
+
+    def changelist_view(self, request, extra_context=None):
+        from django.utils import timezone
+        from orders.models import Order
+        
+        today = timezone.localtime().date()
+        extra_context = extra_context or {}
+        
+        extra_context['today_new_customers'] = User.objects.filter(date_joined__date=today, role=User.Role.CUSTOMER).count()
+        extra_context['active_customers'] = Order.objects.filter(customer__role=User.Role.CUSTOMER).values('customer').distinct().count()
+        extra_context['ordered_today_customers'] = Order.objects.filter(created_at__date=today).values('customer').distinct().count()
+        extra_context['total_customers'] = User.objects.filter(role=User.Role.CUSTOMER).count()
+        
+        return super().changelist_view(request, extra_context=extra_context)
 
 class DeliveryProfileInline(admin.StackedInline):
     model = DeliveryProfile

@@ -74,6 +74,8 @@ class UnitAdmin(admin.ModelAdmin):
 
 @admin.register(Product)
 class ProductAdmin(admin.ModelAdmin):
+    change_list_template = "admin/store/product/change_list.html"
+    change_form_template = "admin/store/product/change_form.html"
     list_display = ('name', 'section', 'category_list', 'discount_display', 'unit', 'price', 'tax_percentage', 'stock', 'mrp', 'order_step', 'min_order_qty', 'stock_status', 'image_preview', 'created_at')
     list_editable = ('price', 'tax_percentage', 'mrp', 'stock', 'order_step', 'min_order_qty')
     list_filter = ('section', 'categories', 'created_at')
@@ -82,18 +84,30 @@ class ProductAdmin(admin.ModelAdmin):
     readonly_fields = ('created_at', 'updated_at', 'image_preview')
     filter_horizontal = ('categories',)
     fieldsets = (
-        (None, {
-            'fields': ('section', 'categories', 'name', 'slug', 'mrp', 'description', 'price', 'stock', 'tax_percentage', 'unit')
+        ('Basic Information', {
+            'fields': ('name', 'slug', 'description'),
+            'classes': ('grid-col-main',)
         }),
-        ('Order Quantity Settings', {
-            'fields': (('order_step', 'min_order_qty'),),
-            'description': 'order_step: how much +/- changes qty (e.g. 0.25 for 250g steps). min_order_qty: 0 = no minimum (first ADD adds one step).'
+        ('Pricing & Inventory', {
+            'fields': ('mrp', 'price', 'tax_percentage', 'stock', 'unit'),
+            'classes': ('grid-col-main',)
         }),
-        ('Image', {
-            'fields': ('image_url', 'image_preview')
+        ('Media', {
+            'fields': ('image_url', 'image_preview'),
+            'classes': ('grid-col-main',)
+        }),
+        ('Organization', {
+            'fields': ('section', 'categories'),
+            'classes': ('grid-col-side',)
+        }),
+        ('Order Settings', {
+            'fields': ('order_step', 'min_order_qty'),
+            'description': 'order_step: e.g. 0.25 for 250g steps. min_order_qty: 0 = no minimum.',
+            'classes': ('grid-col-side',)
         }),
         ('Timestamps', {
-            'fields': ('created_at', 'updated_at')
+            'fields': ('created_at', 'updated_at'),
+            'classes': ('grid-col-side',)
         }),
     )
 

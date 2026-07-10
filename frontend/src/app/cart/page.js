@@ -121,11 +121,11 @@ export default function CartPage() {
       iconUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png",
       shadowUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
     });
-    
+
     if (mapRef.current._leaflet_id) {
       mapRef.current._leaflet_id = null;
     }
-    
+
     const map = L.map(mapRef.current, { zoomControl: true }).setView([lat, lng], 13);
     L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
       attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
@@ -289,7 +289,7 @@ export default function CartPage() {
         contact: user?.phone_number || '9999999999'
       },
       modal: {
-        ondismiss: function() {
+        ondismiss: function () {
           toast.error("Payment cancelled");
           setIsProcessing(false);
         }
@@ -385,10 +385,10 @@ export default function CartPage() {
   const R = 6371;
   const dLat = (lat - BHILWARA_LAT) * Math.PI / 180;
   const dLng = (lng - BHILWARA_LNG) * Math.PI / 180;
-  const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
-            Math.cos(BHILWARA_LAT * Math.PI / 180) * Math.cos(lat * Math.PI / 180) *
-            Math.sin(dLng/2) * Math.sin(dLng/2);
-  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+  const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(BHILWARA_LAT * Math.PI / 180) * Math.cos(lat * Math.PI / 180) *
+    Math.sin(dLng / 2) * Math.sin(dLng / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
   const straightLineDistance = R * c;
   const distance = straightLineDistance * 1.3; // 1.3 multiplier for road driving distance estimation
   const maxDeliveryRadius = storeSettings?.max_delivery_radius ? parseFloat(storeSettings.max_delivery_radius) : 7;
@@ -434,7 +434,7 @@ export default function CartPage() {
                   />
                 </div>
                 <div>
-                                  </div>
+                </div>
                 <div className="text-sm text-gray-500 space-y-1">
                   <div>
                     <span className="font-semibold text-gray-700">Coordinates: </span>
@@ -620,7 +620,7 @@ export default function CartPage() {
                             className="text-gray-600 hover:text-red-500 transition-colors p-1"
                             title="Remove item"
                           >
-                            <Trash2 size={18}  />
+                            <Trash2 size={18} />
                           </button>
                         </div>
 
@@ -720,7 +720,7 @@ export default function CartPage() {
                           <span className="text-lg font-bold text-gray-900">Total</span>
                           <span className="text-2xl font-bold text-gray-900">₹{parseInt(grandTotal)}</span>
                         </div>
-                        
+
                         {storeSettings?.is_free_dhaniya_active && !isFreeDhaniyaEligible && (
                           <div className="bg-amber-50 text-amber-800 text-xs p-3 rounded-lg font-medium border border-amber-200 flex gap-2 items-start mt-4">
                             <span className="text-lg">🌿</span>

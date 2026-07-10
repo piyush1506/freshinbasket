@@ -23,14 +23,15 @@ class DeliveryDashboardView(View):
         # Prepare data for map
         map_clusters = []
         for cluster in clusters[:20]: # Show latest clusters
-            map_clusters.append({
-                'id': cluster.id,
-                'number': cluster.cluster_number,
-                'lat': float(cluster.center_latitude),
-                'lng': float(cluster.center_longitude),
-                'rider': cluster.assigned_delivery_boy.username if cluster.assigned_delivery_boy else 'Unassigned',
-                'order_count': cluster.assignments.count()
-            })
+            if cluster.center_latitude and cluster.center_longitude:
+                map_clusters.append({
+                    'id': cluster.id,
+                    'number': cluster.cluster_number,
+                    'lat': float(cluster.center_latitude),
+                    'lng': float(cluster.center_longitude),
+                    'rider': cluster.assigned_delivery_boy.username if cluster.assigned_delivery_boy else 'Unassigned',
+                    'order_count': cluster.assignments.count()
+                })
             
         unassigned_orders_qs = Order.objects.filter(
             paid_or_cod, status=Order.Status.CONFIRMED, delivery_assignment__isnull=True

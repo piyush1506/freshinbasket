@@ -64,6 +64,15 @@ def custom_get_app_list(request, app_label=None):
     for group in groups.values():
         group['models'].sort(key=lambda x: x['name'])
         
+    # Inject Manual Groups link into Store Management
+    groups['Store Management']['models'].append({
+        'name': 'Manual Groups',
+        'object_name': 'ManualGroup',
+        'admin_url': '/admin/orders/deliveryassignment/manual-assign/',
+        'add_url': None,
+        'view_only': True,
+    })
+        
     return [group for group in groups.values() if group['models']]
 
 admin.site.get_app_list = custom_get_app_list

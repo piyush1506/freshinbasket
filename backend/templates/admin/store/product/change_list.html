@@ -1,5 +1,158 @@
 {% extends "admin/change_list.html" %}
 
+{% block extrastyle %}
+    {{ block.super }}
+    <style>
+        /* Modern Premium CSS for Django Default Table */
+        :root {
+            --table-bg: #ffffff;
+            --table-hover: #f8fafc;
+            --table-border: #e2e8f0;
+            --table-header-bg: #f1f5f9;
+            --table-header-text: #475569;
+            --text-main: #1e293b;
+            --text-muted: #64748b;
+            --primary: #3b82f6;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+        }
+
+        #changelist {
+            background: var(--table-bg);
+            border-radius: 12px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+            border: 1px solid var(--table-border);
+            overflow: hidden;
+            margin-top: 15px;
+        }
+
+        #result_list {
+            width: 100%;
+            border-collapse: collapse;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        }
+
+        #result_list thead th {
+            background-color: var(--table-header-bg);
+            color: var(--table-header-text);
+            font-weight: 700;
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            padding: 10px 14px;
+            border-bottom: 2px solid var(--table-border);
+            text-align: left;
+        }
+
+        #result_list tbody tr {
+            border-bottom: 1px solid var(--table-border);
+            transition: background-color 0.2s ease;
+        }
+
+        #result_list tbody tr:hover {
+            background-color: var(--table-hover);
+        }
+
+        #result_list tbody td, #result_list tbody th {
+            padding: 10px 14px;
+            font-size: 0.95rem;
+            color: var(--text-main);
+            vertical-align: middle;
+        }
+
+        #result_list a {
+            color: var(--primary);
+            text-decoration: none;
+            font-weight: 600;
+        }
+        #result_list a:hover {
+            text-decoration: underline;
+        }
+
+        .action-checkbox input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            accent-color: var(--primary);
+            cursor: pointer;
+        }
+
+        /* Editable Select & Input Fields */
+        #result_list select, #result_list input[type="text"], #result_list input[type="number"] {
+            padding: 8px 12px;
+            border-radius: 8px;
+            border: 1px solid var(--table-border);
+            background-color: #f8fafc;
+            color: var(--text-main);
+            font-size: 0.9rem;
+            font-weight: 600;
+            outline: none;
+            box-shadow: inset 0 1px 2px rgba(0,0,0,0.02);
+            transition: all 0.2s;
+            max-width: 120px;
+        }
+        #result_list select {
+            cursor: pointer;
+            min-width: 100px;
+        }
+        #result_list select:hover, #result_list input[type="text"]:hover, #result_list input[type="number"]:hover {
+            border-color: #cbd5e1;
+            background-color: #fff;
+        }
+        #result_list select:focus, #result_list input:focus {
+            border-color: var(--primary);
+            background-color: #fff;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+        }
+        #result_list select:disabled {
+            background-color: #e2e8f0;
+            color: #94a3b8;
+            cursor: not-allowed;
+            border-color: #cbd5e1;
+            box-shadow: none;
+        }
+
+        #result_list .button {
+            background-color: #f1f5f9 !important;
+            color: #334155 !important;
+            border: 1px solid #cbd5e1 !important;
+            padding: 6px 14px !important;
+            border-radius: 6px !important;
+            font-weight: 600 !important;
+            transition: all 0.2s;
+        }
+        #result_list .button:hover {
+            background-color: var(--primary) !important;
+            color: white !important;
+            border-color: var(--primary) !important;
+        }
+
+        #result_list img[alt="True"] { filter: hue-rotate(80deg) saturate(2) brightness(1.1); }
+        #result_list img[alt="False"] { filter: hue-rotate(320deg) saturate(2) brightness(1.2); }
+
+        #changelist .actions {
+            padding: 16px 20px;
+            background-color: #fff;
+            border-bottom: 1px solid var(--table-border);
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        #changelist .actions label { font-weight: 600; color: var(--text-main); margin: 0; display: flex; align-items: center; gap: 8px; }
+        #changelist .actions select { padding: 8px 16px; border-radius: 8px; border: 1px solid var(--table-border); }
+        #changelist .actions button { padding: 8px 20px; border-radius: 8px; background: var(--primary); color: white; border: none; font-weight: 600; cursor: pointer; }
+        #changelist .actions button:hover { background: var(--primary-hover); }
+
+        .paginator {
+            padding: 16px 20px;
+            background: #fff;
+            border-top: 1px solid var(--table-border);
+            font-weight: 500;
+            color: var(--text-muted);
+        }
+    </style>
+{% endblock %}
+
 {% block object-tools %}
   {{ block.super }}
   

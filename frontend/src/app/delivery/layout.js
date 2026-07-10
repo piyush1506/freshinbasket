@@ -13,10 +13,16 @@ import {
   LogOut,
   Bell,
   ChevronRight,
+  ListOrdered,
+  Layers,
+  BarChart,
 } from "lucide-react";
 
 const sidebarLinks = [
-  { label: "Active Deliveries", href: "/delivery", icon: Truck },
+  { label: "Dashboard", href: "/delivery", icon: Truck },
+  { label: "Orders", href: "/delivery/orders", icon: ListOrdered },
+  { label: "Groups", href: "/delivery/groups", icon: Layers },
+  { label: "Stats", href: "/delivery/stats", icon: BarChart },
   { label: "Profile", href: "/delivery/profile", icon: UserCircle },
 ];
 

@@ -166,8 +166,8 @@ class OrderItem(models.Model):
 class OrderProduct(Order):
     class Meta:
         proxy = True
-        verbose_name = "Order Product"
-        verbose_name_plural = "Order Products"
+        verbose_name = "OrderDetail Card"
+        verbose_name_plural = "OrderDetail Cards"
 
 
 # =========================

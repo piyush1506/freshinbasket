@@ -482,14 +482,22 @@ class DeliveryStatsView(APIView):
                 'cod_collected': float(cod_collected)
             }
             
-        today_qs = DeliveryAssignment.objects.filter(delivery_boy=user, assigned_at__date=today)
+        today_qs = DeliveryAssignment.objects.filter(
+            delivery_boy=user
+        ).filter(
+            Q(assigned_at__date=today) | Q(delivered_at__date=today)
+        ).distinct()
         week_qs = DeliveryAssignment.objects.filter(delivery_boy=user, assigned_at__date__gte=week_start)
         month_qs = DeliveryAssignment.objects.filter(delivery_boy=user, assigned_at__date__gte=month_start)
         
         daily_breakdown = []
         for i in range(29, -1, -1):
             day = today - timedelta(days=i)
-            day_qs = DeliveryAssignment.objects.filter(delivery_boy=user, assigned_at__date=day)
+            day_qs = DeliveryAssignment.objects.filter(
+                delivery_boy=user
+            ).filter(
+                Q(assigned_at__date=day) | Q(delivered_at__date=day)
+            ).distinct()
             stats = get_stats_for_queryset(day_qs)
             stats['date'] = day.isoformat()
             stats['day'] = day.strftime('%a')

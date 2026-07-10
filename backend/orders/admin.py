@@ -73,6 +73,15 @@ class PrintOrderMixin:
         from django.shortcuts import render
         from django.http import HttpResponseRedirect
         from django.contrib import messages
+        from django.urls import reverse
+
+        valid_queryset = queryset.exclude(status__in=['DELIVERED', 'CANCELLED'])
+        ignored_count = queryset.count() - valid_queryset.count()
+        changelist_url = reverse(f'admin:{self.model._meta.app_label}_{self.model._meta.model_name}_changelist')
+
+        if valid_queryset.count() == 0:
+            self.message_user(request, "None of the selected orders can be assigned (they are already delivered or cancelled).", level=messages.ERROR)
+            return HttpResponseRedirect(changelist_url)
 
         if 'apply' in request.POST:
             form = BulkAssignForm(request.POST)
@@ -81,7 +90,7 @@ class PrintOrderMixin:
                 group_name = form.cleaned_data.get('group_name', '')
                 
                 # Determine slot from first order, or use a default
-                first_order = queryset.first()
+                first_order = valid_queryset.first()
                 slot = first_order.delivery_slot if first_order and first_order.delivery_slot else "Manual Group"
 
                 # Create manual DeliveryCluster
@@ -93,7 +102,7 @@ class PrintOrderMixin:
                 )
 
                 count = 0
-                for order in queryset:
+                for order in valid_queryset:
                     # Update or create assignment
                     DeliveryAssignment.objects.update_or_create(
                         order=order,
@@ -104,18 +113,22 @@ class PrintOrderMixin:
                         }
                     )
                     count += 1
-                self.message_user(request, f"Successfully assigned {count} orders to {delivery_boy.username} as a group.", messages.SUCCESS)
-                from django.urls import reverse
-                changelist_url = reverse(f'admin:{self.model._meta.app_label}_{self.model._meta.model_name}_changelist')
+                
+                msg = f"Successfully assigned {count} orders to {delivery_boy.username} as a group."
+                if ignored_count > 0:
+                    msg += f" ({ignored_count} orders were ignored because they are already delivered/cancelled)."
+                self.message_user(request, msg, messages.SUCCESS)
                 return HttpResponseRedirect(changelist_url)
         else:
+            if ignored_count > 0:
+                self.message_user(request, f"{ignored_count} selected orders will be ignored because they are already delivered or cancelled.", level=messages.WARNING)
             form = BulkAssignForm(initial={'_selected_action': request.POST.getlist(admin.helpers.ACTION_CHECKBOX_NAME)})
 
         return render(
             request,
             'admin/bulk_assign_orders.html',
             context={
-                'orders': queryset,
+                'orders': valid_queryset,
                 'form': form,
                 'opts': self.model._meta,
                 'title': 'Bulk Assign Orders'
@@ -147,6 +160,8 @@ class PrintOrderMixin:
 
 @admin.register(Order)
 class OrderAdmin(PrintOrderMixin, admin.ModelAdmin):
+    change_list_template = "admin/orders/order/change_list.html"
+    change_form_template = "admin/orders/order/change_form.html"
 
     class assignment_status(admin.SimpleListFilter):
         title = 'Assignment'
@@ -167,7 +182,7 @@ class OrderAdmin(PrintOrderMixin, admin.ModelAdmin):
 
     list_display = (
         'order_number', 'customer', 'status', 'total_amount',
-        'is_paid', 'payment_method', 'assigned_to', 'delivery_address_short', 'created_at', 'print_action'
+        'payment_method', 'assigned_to', 'delivery_address_short', 'created_at', 'print_action'
     )
     list_filter = ('status', 'is_paid', 'created_at', assignment_status)
     list_editable = ('status',)
@@ -178,6 +193,17 @@ class OrderAdmin(PrintOrderMixin, admin.ModelAdmin):
 
     def get_queryset(self, request):
         return super().get_queryset(request).select_related('delivery_assignment', 'delivery_assignment__delivery_boy')
+
+    def get_changelist_form(self, request, **kwargs):
+        form = super().get_changelist_form(request, **kwargs)
+        class CustomOrderForm(form):
+            def __init__(self, *args, **kwargs):
+                super().__init__(*args, **kwargs)
+                if self.instance and self.instance.pk:
+                    if self.instance.status in ['DELIVERED', 'CANCELLED']:
+                        if 'status' in self.fields:
+                            self.fields['status'].disabled = True
+        return CustomOrderForm
 
     def delivery_address_short(self, obj):
         if not obj.delivery_address:
@@ -339,10 +365,37 @@ class ReviewAdmin(admin.ModelAdmin):
     search_fields = ('user__username', 'user__email', 'order__order_number')
     ordering = ('-created_at',)
 
+class ClusterAssignmentInline(admin.TabularInline):
+    model = DeliveryAssignment
+    extra = 0
+    readonly_fields = ('order_link', 'delivery_boy', 'assigned_at', 'delivered_at')
+    fields = ('order_link', 'delivery_boy', 'assigned_at', 'delivered_at')
+    can_delete = False
+
+    def order_link(self, obj):
+        from django.urls import reverse
+        from django.utils.html import format_html
+        if obj.order:
+            url = reverse('admin:orders_order_change', args=[obj.order.pk])
+            return format_html('<a href="{}" style="font-weight:bold; color:#417690;">Order #{}</a>', url, obj.order.order_number)
+        return "-"
+    order_link.short_description = "Order"
+
+
 @admin.register(DeliveryCluster)
 class DeliveryClusterAdmin(admin.ModelAdmin):
-    list_display = ('cluster_number', 'delivery_slot', 'assignment_date', 'assigned_delivery_boy')
-    list_filter = ('delivery_slot', 'assignment_date')
+    list_display = ('id', 'group_name_display', 'assigned_delivery_boy', 'delivery_slot', 'orders_count', 'assignment_date')
+    list_filter = ('delivery_slot', 'assignment_date', 'assigned_delivery_boy')
+    search_fields = ('group_name', 'assigned_delivery_boy__username')
+    inlines = [ClusterAssignmentInline]
+
+    def group_name_display(self, obj):
+        return obj.group_name or f"Cluster #{obj.id}"
+    group_name_display.short_description = "Group Name"
+
+    def orders_count(self, obj):
+        return obj.assignments.count()
+    orders_count.short_description = "Orders Count"
 
 @admin.register(DeliverySlot)
 class DeliverySlotAdmin(admin.ModelAdmin):
@@ -394,8 +447,17 @@ class DeliveryAssignmentAdmin(admin.ModelAdmin):
         urls = super().get_urls()
         custom_urls = [
             path('manual-assign/', self.admin_site.admin_view(self.manual_assign_view), name='orders_deliveryassignment_manual_assign'),
+            path('print-cluster/<int:cluster_id>/', self.admin_site.admin_view(self.print_cluster_view), name='orders_deliveryassignment_print_cluster'),
         ]
         return custom_urls + urls
+
+    def print_cluster_view(self, request, cluster_id):
+        from django.shortcuts import get_object_or_404, render
+        from orders.models import DeliveryCluster
+        cluster = get_object_or_404(DeliveryCluster, pk=cluster_id)
+        # Prefetch items for printing
+        orders = [assignment.order for assignment in cluster.assignments.select_related('order').prefetch_related('order__items').all()]
+        return render(request, 'admin/print_multiple_orders_card.html', {'orders': orders})
 
     def manual_assign_view(self, request):
         from django.shortcuts import render
@@ -449,14 +511,14 @@ class DeliveryAssignmentAdmin(admin.ModelAdmin):
 
         unassigned_orders = Order.objects.filter(delivery_assignment__isnull=True).exclude(status='CANCELLED').order_by('-created_at')
         delivery_boys = User.objects.filter(role='DELIVERY').order_by('username')
-        recent_groups = DeliveryCluster.objects.prefetch_related('assignments__order').all().order_by('-id')[:6]
+        all_groups = DeliveryCluster.objects.prefetch_related('assignments__order').all().order_by('-id')
         
         context = dict(
             self.admin_site.each_context(request),
             title="Manual Assign Orders",
             unassigned_orders=unassigned_orders,
             delivery_boys=delivery_boys,
-            recent_groups=recent_groups,
+            all_groups=all_groups,
             opts=self.model._meta,
         )
 

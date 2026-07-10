@@ -1,0 +1,36 @@
+{% extends "admin/change_list.html" %}
+{% load i18n %}
+
+{% block content %}
+    <div style="margin-bottom: 20px; padding: 20px; background: #fff; border: 1px solid #ddd; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
+        <h2 style="margin-top: 0; padding-bottom: 10px; border-bottom: 1px solid #eee; color: #333; font-size: 16px;">Customers Overview Dashboard</h2>
+        
+        <div style="display: flex; gap: 20px; margin-top: 15px; flex-wrap: wrap;">
+            <!-- Today's New Customers -->
+            <div style="flex: 1; min-width: 180px; padding: 15px; background: #f8f9fa; border-radius: 6px; border-left: 4px solid #28a745; display: flex; flex-direction: column; justify-content: space-between;">
+                <span style="color: #666; font-size: 13px; font-weight: bold; text-transform: uppercase;">New Signups Today</span>
+                <strong style="color: #28a745; font-size: 24px; margin-top: 5px;">{{ today_new_customers }}</strong>
+            </div>
+
+            <!-- Active Customers (In System) -->
+            <div style="flex: 1; min-width: 180px; padding: 15px; background: #f8f9fa; border-radius: 6px; border-left: 4px solid #007bff; display: flex; flex-direction: column; justify-content: space-between;">
+                <span style="color: #666; font-size: 13px; font-weight: bold; text-transform: uppercase;">Active Customers</span>
+                <strong style="color: #007bff; font-size: 24px; margin-top: 5px;">{{ active_customers }}</strong>
+            </div>
+
+            <!-- Ordered Today -->
+            <div style="flex: 1; min-width: 180px; padding: 15px; background: #f8f9fa; border-radius: 6px; border-left: 4px solid #ffc107; display: flex; flex-direction: column; justify-content: space-between;">
+                <span style="color: #666; font-size: 13px; font-weight: bold; text-transform: uppercase;">Ordered Today</span>
+                <strong style="color: #d39e00; font-size: 24px; margin-top: 5px;">{{ ordered_today_customers }}</strong>
+            </div>
+
+            <!-- Total Customers -->
+            <div style="flex: 1; min-width: 180px; padding: 15px; background: #f8f9fa; border-radius: 6px; border-left: 4px solid #17a2b8; display: flex; flex-direction: column; justify-content: space-between;">
+                <span style="color: #666; font-size: 13px; font-weight: bold; text-transform: uppercase;">Total Customers</span>
+                <strong style="color: #17a2b8; font-size: 24px; margin-top: 5px;">{{ total_customers }}</strong>
+            </div>
+        </div>
+    </div>
+
+    {{ block.super }}
+{% endblock %}
