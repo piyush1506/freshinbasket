@@ -345,7 +345,7 @@ class OrderSerializer(serializers.ModelSerializer):
         )
 
     def get_review(self, obj):
-        if hasattr(obj, 'review') and obj.review is not None:
+        try:
             review = obj.review
             return {
                 'id': review.id,
@@ -353,7 +353,8 @@ class OrderSerializer(serializers.ModelSerializer):
                 'comment': review.comment,
                 'created_at': review.created_at.isoformat(),
             }
-        return None
+        except Exception:
+            return None
 
 
 class DeliveryAssignmentSerializer(serializers.ModelSerializer):
