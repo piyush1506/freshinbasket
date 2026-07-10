@@ -242,6 +242,7 @@ class VerifyPaymentView(APIView):
                 'message': 'Payment verified and order created successfully',
                 'order_id': order.id,
                 'order_number': order.order_number,
+                'delivery_slot': order.delivery_slot,
             })
         except Cart.DoesNotExist:
             return Response({'error': 'Cart not found'}, status=404)
@@ -355,7 +356,8 @@ class CreateCODOrderView(APIView):
                 'message': 'COD order created successfully',
                 'order_id': order.id,
                 'order_number': order.order_number,
-                'payment_method': 'COD'
+                'payment_method': 'COD',
+                'delivery_slot': order.delivery_slot,
             })
         except ValueError as e:
             return Response({'error': str(e)}, status=400)
