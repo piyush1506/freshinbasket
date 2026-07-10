@@ -572,10 +572,6 @@ class OrderViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         user = self.request.user
         qs = Order.objects.select_related('customer').prefetch_related('items__product').select_related('review').order_by('-created_at')
-        if user.role == User.Role.ADMIN:
-            return qs.all()
-        elif user.role == User.Role.DELIVERY:
-            return qs.filter(delivery_assignment__delivery_boy=user)
         return qs.filter(customer=user)
 
     def _reject_locked_address_change(self, request, order):

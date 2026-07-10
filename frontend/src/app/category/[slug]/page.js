@@ -84,8 +84,8 @@ export default function CategoryPage() {
 
       {/* Grid list */}
       {loading ? (
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4.5">
-          {Array.from({ length: 8 }).map((_, i) => (
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 sm:gap-6">
+          {Array.from({ length: 12 }).map((_, i) => (
             <ProductSkeleton key={i} />
           ))}
         </div>
@@ -95,7 +95,7 @@ export default function CategoryPage() {
           <p className="text-gray-400 text-sm font-semibold">No products found in this category.</p>
         </div>
       ) : (
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4.5">
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 sm:gap-6">
           {products.map((item) => (
             <VegetableCard key={item.id} item={item} />
           ))}

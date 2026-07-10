@@ -343,6 +343,11 @@ class OrderSerializer(serializers.ModelSerializer):
             'delivery_latitude', 'delivery_longitude', 'delivery_slot',
             'is_paid', 'payment_method', 'payment_id', 'items', 'review',
         )
+        read_only_fields = (
+            'id', 'order_number', 'customer', 'status',
+            'subtotal', 'delivery_charge', 'total_amount',
+            'created_at', 'is_paid', 'payment_method', 'payment_id'
+        )
 
     def get_review(self, obj):
         try:
@@ -428,6 +433,11 @@ class UserUpdateSerializer(serializers.ModelSerializer):
         user = self.context['request'].user
         if User.objects.filter(email=value).exclude(pk=user.pk).exists():
             raise serializers.ValidationError('This email is already in use')
+        return value
+
+    def validate_address(self, value):
+        if value and len(value) > 1000:
+            raise serializers.ValidationError('Address is too long (max 1000 characters).')
         return value
 
 
@@ -653,7 +663,7 @@ class DeliveryRegisterSerializer(serializers.ModelSerializer):
             user.save()
         
         from users.models import DeliveryProfile
-        DeliveryProfile.objects.get_or_create(user=user, defaults={'is_active': True})
+        DeliveryProfile.objects.get_or_create(user=user, defaults={'is_active': False})
         return user
 
 

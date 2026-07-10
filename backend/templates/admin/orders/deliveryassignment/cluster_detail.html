@@ -1,0 +1,109 @@
+{% extends "admin/base_site.html" %}
+{% load i18n %}
+
+{% block breadcrumbs %}
+<div class="breadcrumbs">
+<a href="{% url 'admin:index' %}">{% translate 'Home' %}</a>
+&rsaquo; <a href="{% url 'admin:app_list' app_label=opts.app_label %}">{{ opts.app_config.verbose_name }}</a>
+&rsaquo; <a href="{% url 'admin:orders_deliveryassignment_changelist' %}">{{ opts.verbose_name_plural|capfirst }}</a>
+&rsaquo; <a href="{% url 'admin:orders_deliveryassignment_manual_assign' %}">Manual Assign Orders</a>
+&rsaquo; {{ title }}
+</div>
+{% endblock %}
+
+{% block content %}
+<div id="content-main">
+    <div style="background: #fff; border: 1px solid #ddd; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); overflow: hidden;">
+        <!-- Header -->
+        <div style="padding: 20px; background: #f8f9fa; border-bottom: 1px solid #ddd; display: flex; justify-content: space-between; align-items: center;">
+            <div>
+                <h1 style="margin: 0; font-size: 24px; color: #333;">{{ cluster.group_name|default:"Unnamed Group" }}</h1>
+                <p style="margin: 5px 0 0 0; color: #666; font-size: 14px;">
+                    Assigned to: <strong style="color: #417690;">{{ cluster.assigned_delivery_boy.username|default:"Unassigned" }}</strong>
+                    &nbsp;|&nbsp; Date: <strong>{{ cluster.assignment_date }}</strong>
+                    &nbsp;|&nbsp; Slot: <strong>{{ cluster.delivery_slot }}</strong>
+                </p>
+            </div>
+            <div>
+                <a href="{% url 'admin:orders_deliveryassignment_print_cluster' cluster.id %}" target="_blank" style="background: #417690; color: white; padding: 10px 16px; border-radius: 4px; text-decoration: none; font-size: 14px; font-weight: bold;">
+                    🖨️ Print Group
+                </a>
+            </div>
+        </div>
+
+        <!-- Summary Stats -->
+        <div style="display: flex; gap: 20px; padding: 20px; background: #fff; border-bottom: 1px solid #ddd;">
+            <div style="flex: 1; padding: 15px; background: #e0f2fe; border-radius: 6px; text-align: center;">
+                <div style="font-size: 24px; font-weight: bold; color: #0369a1;">{{ total_orders }}</div>
+                <div style="font-size: 13px; color: #0ea5e9; text-transform: uppercase; letter-spacing: 0.5px;">Total Orders</div>
+            </div>
+            <div style="flex: 1; padding: 15px; background: #ecfccb; border-radius: 6px; text-align: center;">
+                <div style="font-size: 24px; font-weight: bold; color: #3f6212;">{{ total_items }}</div>
+                <div style="font-size: 13px; color: #65a30d; text-transform: uppercase; letter-spacing: 0.5px;">Total Products</div>
+            </div>
+        </div>
+
+        <!-- Orders List -->
+        <div style="padding: 20px;">
+            <h2 style="margin-top: 0; font-size: 18px; color: #333; margin-bottom: 15px;">Order Details</h2>
+            
+            {% for assignment in assignments %}
+            <div style="border: 1px solid #eee; border-radius: 6px; margin-bottom: 20px; overflow: hidden;">
+                <!-- Order Header -->
+                <div style="background: #f8fafc; padding: 12px 15px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center;">
+                    <div>
+                        <a href="{% url 'admin:orders_order_change' assignment.order.id %}" style="font-size: 16px; font-weight: bold; color: #417690; text-decoration: none;">Order #{{ assignment.order.order_number }}</a>
+                        <span style="font-size: 12px; background: #e2e8f0; color: #475569; padding: 2px 8px; border-radius: 12px; margin-left: 10px;">{{ assignment.order.status }}</span>
+                    </div>
+                    <div style="font-size: 14px; font-weight: bold; color: #333; display: flex; align-items: center; gap: 15px;">
+                        <span>Total: ₹{{ assignment.order.total_amount }}</span>
+                        <a href="{% url 'admin:orders_order_print_card' assignment.order.id %}" target="_blank" style="background: #79aec8; color: white; padding: 6px 12px; border-radius: 4px; text-decoration: none; font-size: 12px; font-weight: bold;">
+                            🖨️ Print
+                        </a>
+                    </div>
+                </div>
+                
+                <!-- Order Content -->
+                <div style="padding: 15px; display: flex; gap: 20px; flex-wrap: wrap;">
+                    
+                    <!-- Products Table -->
+                    <div style="flex: 2; min-width: 300px;">
+                        <h3 style="font-size: 14px; color: #64748b; margin-top: 0; text-transform: uppercase; margin-bottom: 10px;">Products</h3>
+                        <table style="width: 100%; border-collapse: collapse; font-size: 14px;">
+                            <thead>
+                                <tr style="border-bottom: 2px solid #f1f5f9;">
+                                    <th style="text-align: left; padding: 8px 4px; color: #64748b; font-weight: normal;">Item</th>
+                                    <th style="text-align: center; padding: 8px 4px; color: #64748b; font-weight: normal;">Qty</th>
+                                    <th style="text-align: right; padding: 8px 4px; color: #64748b; font-weight: normal;">Price</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for item in assignment.order.items.all %}
+                                <tr style="border-bottom: 1px solid #f1f5f9;">
+                                    <td style="padding: 8px 4px; color: #334155;">{{ item.product_name }}</td>
+                                    <td style="padding: 8px 4px; text-align: center; color: #475569;">{{ item.quantity }} {{ item.unit_name }}</td>
+                                    <td style="padding: 8px 4px; text-align: right; color: #334155;">₹{{ item.total_price }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <!-- Customer & Address Info -->
+                    <div style="flex: 1; min-width: 200px; background: #f8fafc; padding: 15px; border-radius: 6px;">
+                        <h3 style="font-size: 14px; color: #64748b; margin-top: 0; text-transform: uppercase; margin-bottom: 10px;">Delivery Info</h3>
+                        <p style="margin: 0 0 5px 0; font-size: 14px;"><strong>Customer:</strong> {{ assignment.order.customer.username }}</p>
+                        <p style="margin: 0 0 5px 0; font-size: 14px;"><strong>Phone:</strong> {{ assignment.order.customer.phone_number|default:"N/A" }}</p>
+                        <p style="margin: 0; font-size: 13px; color: #555; line-height: 1.4;"><strong>Address:</strong><br/>{{ assignment.order.delivery_address }}</p>
+                    </div>
+                    
+                </div>
+            </div>
+            {% empty %}
+            <p style="color: #64748b;">No orders in this group.</p>
+            {% endfor %}
+            
+        </div>
+    </div>
+</div>
+{% endblock %}

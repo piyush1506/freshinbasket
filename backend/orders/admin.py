@@ -309,6 +309,7 @@ class DeliveryOrder(Order):
 
 @admin.register(DeliveryOrder)
 class DeliveryOrderAdmin(PrintOrderMixin, admin.ModelAdmin):
+    change_list_template = "admin/orders/order/change_list.html"
     list_display = (
         'order_number', 'customer', 'short_address', 'status',
         'delivery_boy_name', 'live_location_link', 'is_paid', 'created_at', 'print_action'
@@ -448,6 +449,7 @@ class DeliveryAssignmentAdmin(admin.ModelAdmin):
         custom_urls = [
             path('manual-assign/', self.admin_site.admin_view(self.manual_assign_view), name='orders_deliveryassignment_manual_assign'),
             path('print-cluster/<int:cluster_id>/', self.admin_site.admin_view(self.print_cluster_view), name='orders_deliveryassignment_print_cluster'),
+            path('cluster-detail/<int:cluster_id>/', self.admin_site.admin_view(self.cluster_detail_view), name='orders_deliveryassignment_cluster_detail'),
         ]
         return custom_urls + urls
 
@@ -458,6 +460,26 @@ class DeliveryAssignmentAdmin(admin.ModelAdmin):
         # Prefetch items for printing
         orders = [assignment.order for assignment in cluster.assignments.select_related('order').prefetch_related('order__items').all()]
         return render(request, 'admin/print_multiple_orders_card.html', {'orders': orders})
+
+    def cluster_detail_view(self, request, cluster_id):
+        from django.shortcuts import get_object_or_404, render
+        from orders.models import DeliveryCluster
+        cluster = get_object_or_404(DeliveryCluster, pk=cluster_id)
+        assignments = cluster.assignments.select_related('order', 'order__customer').prefetch_related('order__items').all()
+        
+        total_orders = assignments.count()
+        total_items = sum(a.order.items.count() for a in assignments)
+        
+        context = dict(
+            self.admin_site.each_context(request),
+            title=f"Group Details: {cluster.group_name or 'Unnamed Group'}",
+            cluster=cluster,
+            assignments=assignments,
+            total_orders=total_orders,
+            total_items=total_items,
+            opts=self.model._meta,
+        )
+        return render(request, "admin/orders/deliveryassignment/cluster_detail.html", context)
 
     def manual_assign_view(self, request):
         from django.shortcuts import render
@@ -509,7 +531,7 @@ class DeliveryAssignmentAdmin(admin.ModelAdmin):
                     else:
                         self.message_user(request, "Selected orders could not be found.", level=messages.ERROR)
 
-        unassigned_orders = Order.objects.filter(delivery_assignment__isnull=True).exclude(status='CANCELLED').order_by('-created_at')
+        unassigned_orders = Order.objects.filter(delivery_assignment__isnull=True).exclude(status__in=['CANCELLED', 'DELIVERED']).order_by('-created_at')
         delivery_boys = User.objects.filter(role='DELIVERY').order_by('username')
         all_groups = DeliveryCluster.objects.prefetch_related('assignments__order').all().order_by('-id')
         

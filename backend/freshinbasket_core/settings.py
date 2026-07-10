@@ -355,11 +355,16 @@ JAZZMIN_SETTINGS = {
         }],
     },
     "hide_models": [
+        "django_celery_beat.ClockedSchedule",
         "django_celery_beat.CrontabSchedule",
         "django_celery_beat.IntervalSchedule",
+        "django_celery_beat.PeriodicTask",
         "django_celery_beat.SolarSchedule",
-        "django_celery_beat.ClockedSchedule",
         "auth.Group",
+        "store.ContactQuery",
+        "orders.DeliverySlot",
+        "orders.DeliveryOrder",
+        "orders.Review"
     ],
     "icons": {
         "django_celery_beat.PeriodicTask": "fas fa-clock",

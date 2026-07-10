@@ -430,6 +430,7 @@ export default function CartPage() {
                     rows={4}
                     value={deliveryAddress}
                     onChange={(e) => setDeliveryAddress(e.target.value)}
+                    maxLength={1000}
                     className="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-green-700 resize-none"
                   />
                 </div>

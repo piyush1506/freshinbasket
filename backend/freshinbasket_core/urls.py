@@ -45,9 +45,10 @@ def custom_get_app_list(request, app_label=None):
         }
     }
 
-    store_models = {'User', 'Product', 'Order', 'Slide', 'Section', 'Category', 'SubProduct', 'Unit', 'OrderProduct'}
+    store_models = {'User', 'Product', 'Order', 'Slide', 'Section', 'Category', 'SubProduct', 'Unit', 'OrderProduct', 'StoreSettings'}
     delivery_models = {'DeliveryAssignment', 'DeliveryCluster', 'DeliveryBoy'}
     token_models = {'FCMToken', 'BlacklistedToken', 'OutstandingToken'}
+    system_models = {'ClockedSchedule', 'CrontabSchedule', 'SolarSchedule', 'IntervalSchedule', 'PeriodicTask', 'Group'}
     
     for app in app_dict.values():
         for model in app['models']:
@@ -58,6 +59,8 @@ def custom_get_app_list(request, app_label=None):
                 groups['Delivery Management']['models'].append(model)
             elif obj_name in token_models:
                 groups['Token Management']['models'].append(model)
+            elif obj_name in system_models:
+                groups['Other Settings']['models'].append(model)
             else:
                 groups['Other Settings']['models'].append(model)
                 

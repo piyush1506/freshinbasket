@@ -1,0 +1,77 @@
+{% extends "admin/change_list.html" %}
+{% load i18n admin_urls static admin_list %}
+
+{% block content %}
+<div id="content-main" style="display: flex; gap: 20px; flex-wrap: wrap; margin-top: 15px;">
+    <!-- Left Side: Standard Store Settings Table -->
+    <div class="module" style="flex: 3; min-width: 600px;">
+        {{ block.super }}
+    </div>
+
+    <!-- Right Side: Advanced & System Settings Panel -->
+    <div style="flex: 1; min-width: 300px;">
+        <div style="background: #fff; border: 1px solid #ddd; border-radius: 4px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
+            <div style="padding: 15px; background: #f8f8f8; border-bottom: 1px solid #ddd; border-radius: 4px 4px 0 0;">
+                <h2 style="margin: 0; font-size: 16px; color: #333;">
+                    <i class="fas fa-cogs" style="margin-right: 5px;"></i> System & Other Settings
+                </h2>
+            </div>
+            <div style="padding: 15px;">
+                <ul style="list-style: none; padding: 0; margin: 0;">
+                    <li style="margin-bottom: 15px;">
+                        <a href="{% url 'admin:django_celery_beat_clockedschedule_changelist' %}" style="text-decoration: none; color: #417690; font-weight: bold; display: flex; align-items: center; gap: 10px;">
+                            <i class="fas fa-clock" style="width: 20px; text-align: center;"></i> Clocked
+                        </a>
+                    </li>
+                    <li style="margin-bottom: 15px;">
+                        <a href="{% url 'admin:django_celery_beat_crontabschedule_changelist' %}" style="text-decoration: none; color: #417690; font-weight: bold; display: flex; align-items: center; gap: 10px;">
+                            <i class="fas fa-calendar" style="width: 20px; text-align: center;"></i> Crontabs
+                        </a>
+                    </li>
+                    <li style="margin-bottom: 15px;">
+                        <a href="{% url 'admin:auth_group_changelist' %}" style="text-decoration: none; color: #417690; font-weight: bold; display: flex; align-items: center; gap: 10px;">
+                            <i class="fas fa-users" style="width: 20px; text-align: center;"></i> Groups
+                        </a>
+                    </li>
+                    <li style="margin-bottom: 15px;">
+                        <a href="{% url 'admin:django_celery_beat_intervalschedule_changelist' %}" style="text-decoration: none; color: #417690; font-weight: bold; display: flex; align-items: center; gap: 10px;">
+                            <i class="fas fa-history" style="width: 20px; text-align: center;"></i> Intervals
+                        </a>
+                    </li>
+                    <li style="margin-bottom: 15px;">
+                        <a href="{% url 'admin:django_celery_beat_periodictask_changelist' %}" style="text-decoration: none; color: #417690; font-weight: bold; display: flex; align-items: center; gap: 10px;">
+                            <i class="fas fa-tasks" style="width: 20px; text-align: center;"></i> Periodic tasks
+                        </a>
+                    </li>
+                    <li style="margin-bottom: 15px;">
+                        <a href="{% url 'admin:django_celery_beat_solarschedule_changelist' %}" style="text-decoration: none; color: #417690; font-weight: bold; display: flex; align-items: center; gap: 10px;">
+                            <i class="fas fa-sun" style="width: 20px; text-align: center;"></i> Solar events
+                        </a>
+                    </li>
+                    <hr style="margin: 20px 0; border: 0; border-top: 1px solid #eee;">
+                    <li style="margin-bottom: 15px;">
+                        <a href="{% url 'admin:store_contactquery_changelist' %}" style="text-decoration: none; color: #417690; font-weight: bold; display: flex; align-items: center; gap: 10px;">
+                            <i class="fas fa-envelope" style="width: 20px; text-align: center;"></i> Contact Queries
+                        </a>
+                    </li>
+                    <li style="margin-bottom: 15px;">
+                        <a href="{% url 'admin:orders_deliveryslot_changelist' %}" style="text-decoration: none; color: #417690; font-weight: bold; display: flex; align-items: center; gap: 10px;">
+                            <i class="fas fa-truck" style="width: 20px; text-align: center;"></i> Delivery Slots
+                        </a>
+                    </li>
+                    <li style="margin-bottom: 15px;">
+                        <a href="{% url 'admin:orders_deliveryorder_changelist' %}" style="text-decoration: none; color: #417690; font-weight: bold; display: flex; align-items: center; gap: 10px;">
+                            <i class="fas fa-map-marker-alt" style="width: 20px; text-align: center;"></i> Delivery Tracker
+                        </a>
+                    </li>
+                    <li style="margin-bottom: 5px;">
+                        <a href="{% url 'admin:orders_review_changelist' %}" style="text-decoration: none; color: #417690; font-weight: bold; display: flex; align-items: center; gap: 10px;">
+                            <i class="fas fa-star" style="width: 20px; text-align: center;"></i> Reviews
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

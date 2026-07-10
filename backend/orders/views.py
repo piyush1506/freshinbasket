@@ -105,6 +105,10 @@ class CreateRazorpayOrderView(APIView):
         if total_paise <= 0:
             return Response({'error': 'Invalid order amount.'}, status=400)
 
+        slot = _get_delivery_slot()
+        if not slot:
+            return Response({'error': 'No delivery slots available for today. Please try again tomorrow.'}, status=400)
+
         try:
             razorpay_order = client.order.create({
                 'amount': total_paise,
@@ -136,6 +140,12 @@ class VerifyPaymentView(APIView):
 
         if not all([razorpay_order_id, razorpay_payment_id, razorpay_signature]):
             return Response({'error': 'Missing payment details'}, status=400)
+
+        if not delivery_address:
+            return Response({'error': 'Delivery address is required'}, status=400)
+            
+        if len(delivery_address) > 1000:
+            return Response({'error': 'Delivery address is too long (max 1000 characters)'}, status=400)
 
         try:
             client.utility.verify_payment_signature({
@@ -185,6 +195,9 @@ class VerifyPaymentView(APIView):
 
             with transaction.atomic():
                 slot = _get_delivery_slot()
+                if not slot:
+                    raise ValueError('No delivery slots available for today. Please try again tomorrow.')
+                
                 order = Order.objects.create(
                     customer=request.user,
                     subtotal=subtotal,
@@ -193,7 +206,7 @@ class VerifyPaymentView(APIView):
                     delivery_address=delivery_address,
                     delivery_latitude=delivery_latitude,
                     delivery_longitude=delivery_longitude,
-                    delivery_slot=slot.display_label if slot else "7 AM - 12 PM",
+                    delivery_slot=slot.display_label,
                     delivery_slot_ref=slot,
                     status=Order.Status.CONFIRMED,
                     is_paid=True,
@@ -235,6 +248,7 @@ class VerifyPaymentView(APIView):
         except ValueError as e:
             return Response({'error': str(e)}, status=400)
         except Exception as e:
+            logger.exception("Order creation failed in CreateRazorpayOrderView: %s", e)
             return Response({'error': 'Order creation failed. Please contact support.'}, status=500)
 
 
@@ -248,6 +262,9 @@ class CreateCODOrderView(APIView):
 
         if not delivery_address:
             return Response({'error': 'Delivery address is required'}, status=400)
+        
+        if len(delivery_address) > 1000:
+            return Response({'error': 'Delivery address is too long (max 1000 characters)'}, status=400)
 
         try:
             cart = Cart.objects.get(user=request.user)
@@ -258,82 +275,91 @@ class CreateCODOrderView(APIView):
         if not items.exists():
             return Response({'error': 'Your cart is empty.'}, status=400)
 
-        for item in items:
-            if item.product.stock <= 0:
-                return Response({
-                    'error': f'"{item.product.name}" is out of stock'
-                }, status=400)
-            if item.quantity > item.product.stock:
-                return Response({
-                    'error': f'Only {item.product.stock} units of "{item.product.name}" available'
-                }, status=400)
+        try:
+            for item in items:
+                if item.product.stock <= 0:
+                    return Response({
+                        'error': f'"{item.product.name}" is out of stock'
+                    }, status=400)
+                if item.quantity > item.product.stock:
+                    return Response({
+                        'error': f'Only {item.product.stock} units of "{item.product.name}" available'
+                    }, status=400)
 
-        subtotal = sum(item.product.price * item.quantity for item in items)
+            subtotal = sum(item.product.price * item.quantity for item in items)
 
-        tax_amount = sum(
-            item.product.price * item.quantity * item.product.tax_percentage / 100
-            for item in items
-        )
-
-        from store.models import StoreSettings
-        settings_obj = StoreSettings.get_settings()
-
-        delivery_charge = 0
-        is_first_order = False
-        if settings_obj.free_delivery_first_order:
-            from orders.models import Order
-            is_first_order = not Order.objects.filter(customer=request.user).exclude(status=Order.Status.CANCELLED).exists()
-
-        if not is_first_order and subtotal <= settings_obj.free_delivery_threshold:
-            delivery_charge = settings_obj.delivery_charge
-
-        total = subtotal + tax_amount + delivery_charge
-
-        with transaction.atomic():
-            slot = _get_delivery_slot()
-            order = Order.objects.create(
-                customer=request.user,
-                subtotal=subtotal,
-                delivery_charge=delivery_charge,
-                total_amount=total,
-                delivery_address=delivery_address,
-                delivery_latitude=delivery_latitude,
-                delivery_longitude=delivery_longitude,
-                delivery_slot=slot.display_label if slot else "7 AM - 12 PM",
-                delivery_slot_ref=slot,
-                status=Order.Status.CONFIRMED,
-                is_paid=False,
-                payment_method=Order.PaymentMethod.COD
+            tax_amount = sum(
+                item.product.price * item.quantity * item.product.tax_percentage / 100
+                for item in items
             )
 
-            for item in items:
-                # Atomic stock decrement — prevents overselling under concurrent orders
-                updated = Product.objects.filter(
-                    id=item.product.id,
-                    stock__gte=item.quantity   # only update if enough stock exists
-                ).update(stock=F('stock') - item.quantity)
+            from store.models import StoreSettings
+            settings_obj = StoreSettings.get_settings()
 
-                if not updated:
-                    raise ValueError(f'"{item.product.name}" went out of stock during checkout.')
+            delivery_charge = 0
+            is_first_order = False
+            if settings_obj.free_delivery_first_order:
+                from orders.models import Order
+                is_first_order = not Order.objects.filter(customer=request.user).exclude(status=Order.Status.CANCELLED).exists()
 
-                OrderItem.objects.create(
-                    order=order,
-                    product=item.product,
-                    product_name=item.product.name,
-                    quantity=item.quantity,
-                    unit_name=item.product.unit.name if item.product.unit else 'kg',
-                    unit_price=item.product.price
+            if not is_first_order and subtotal <= settings_obj.free_delivery_threshold:
+                delivery_charge = settings_obj.delivery_charge
+
+            total = subtotal + tax_amount + delivery_charge
+
+            with transaction.atomic():
+                slot = _get_delivery_slot()
+                if not slot:
+                    raise ValueError('No delivery slots available for today. Please try again tomorrow.')
+                
+                order = Order.objects.create(
+                    customer=request.user,
+                    subtotal=subtotal,
+                    delivery_charge=delivery_charge,
+                    total_amount=total,
+                    delivery_address=delivery_address,
+                    delivery_latitude=delivery_latitude,
+                    delivery_longitude=delivery_longitude,
+                    delivery_slot=slot.display_label,
+                    delivery_slot_ref=slot,
+                    status=Order.Status.CONFIRMED,
+                    is_paid=False,
+                    payment_method=Order.PaymentMethod.COD
                 )
 
-            items.delete()
+                for item in items:
+                    # Atomic stock decrement — prevents overselling under concurrent orders
+                    updated = Product.objects.filter(
+                        id=item.product.id,
+                        stock__gte=item.quantity   # only update if enough stock exists
+                    ).update(stock=F('stock') - item.quantity)
 
-        # ── Fire-and-forget: assignment + FCM in background thread ──
-        _fire_and_forget_post_order(order.id)
+                    if not updated:
+                        raise ValueError(f'"{item.product.name}" went out of stock during checkout.')
 
-        return Response({
-            'message': 'COD order created successfully',
-            'order_id': order.id,
-            'order_number': order.order_number,
-            'payment_method': 'COD'
-        })
+                    OrderItem.objects.create(
+                        order=order,
+                        product=item.product,
+                        product_name=item.product.name,
+                        quantity=item.quantity,
+                        unit_name=item.product.unit.name if item.product.unit else 'kg',
+                        unit_price=item.product.price
+                    )
+
+                items.delete()
+
+            # ── Fire-and-forget: assignment + FCM in background thread ──
+            _fire_and_forget_post_order(order.id)
+
+            return Response({
+                'message': 'COD order created successfully',
+                'order_id': order.id,
+                'order_number': order.order_number,
+                'payment_method': 'COD'
+            })
+        except ValueError as e:
+            return Response({'error': str(e)}, status=400)
+        except Exception as e:
+            logger.exception("Order creation failed in CreateCODOrderView: %s", e)
+            return Response({'error': 'Order creation failed. Please try again or contact support.'}, status=500)
 

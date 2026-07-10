@@ -188,27 +188,4 @@
             color: var(--text-muted);
         }
     </style>
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            // Disable action checkboxes for rows where status is Delivered/Cancelled
-            const rows = document.querySelectorAll('#result_list tbody tr');
-            rows.forEach(row => {
-                const statusSelect = row.querySelector('.field-status select');
-                if (statusSelect && statusSelect.disabled) {
-                    const checkbox = row.querySelector('.action-select');
-                    if (checkbox) {
-                        checkbox.disabled = true;
-                        checkbox.title = "Cannot select delivered or cancelled orders";
-                        row.style.opacity = '0.65';
-                        row.style.backgroundColor = '#f8fafc';
-                        
-                        // Disable hover effects on the disabled row
-                        row.addEventListener('mouseenter', (e) => {
-                            e.target.style.backgroundColor = '#f8fafc';
-                        });
-                    }
-                }
-            });
-        });
-    </script>
 {% endblock %}

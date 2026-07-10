@@ -90,9 +90,16 @@
             {% if all_groups %}
                 <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px;">
                     {% for group in all_groups %}
-                    <div style="border: 1px solid #eee; border-left: 4px solid #79aec8; padding: 15px; border-radius: 4px;">
+                    <div style="border: 1px solid #eee; border-left: 4px solid #79aec8; padding: 15px; border-radius: 4px; cursor: pointer;"
+                         onclick="if(!event.target.closest('a') && !event.target.closest('details')) { window.location.href='{% url 'admin:orders_deliveryassignment_cluster_detail' group.id %}'; }"
+                         onmouseover="this.style.backgroundColor='#f1f8fc'" 
+                         onmouseout="this.style.backgroundColor='transparent'">
                         <div style="display: flex; justify-content: space-between; align-items: flex-start;">
-                            <h3 style="margin-top: 0; margin-bottom: 10px; font-size: 15px; color: #333;">{{ group.group_name|default:"Unnamed Group" }}</h3>
+                            <h3 style="margin-top: 0; margin-bottom: 10px; font-size: 15px; color: #333;">
+                                <a href="{% url 'admin:orders_deliveryassignment_cluster_detail' group.id %}" style="color: #417690; text-decoration: none;">
+                                    {{ group.group_name|default:"Unnamed Group" }}
+                                </a>
+                            </h3>
                             <a href="{% url 'admin:orders_deliveryassignment_print_cluster' group.id %}" target="_blank" style="background: #417690; color: white; padding: 4px 8px; border-radius: 4px; text-decoration: none; font-size: 12px; font-weight: bold; white-space: nowrap; margin-left: 10px;">🖨️ Print</a>
                         </div>
                         <p style="margin: 5px 0; color: #666;"><strong>Delivery Boy:</strong> {{ group.assigned_delivery_boy.username }}</p>
