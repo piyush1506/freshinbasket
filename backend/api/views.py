@@ -572,6 +572,10 @@ class OrderViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         user = self.request.user
         qs = Order.objects.select_related('customer').prefetch_related('items__product').select_related('review').order_by('-created_at')
+        if user.role == User.Role.ADMIN:
+            return qs.all()
+        elif user.role == User.Role.DELIVERY:
+            return qs.filter(delivery_assignment__delivery_boy=user)
         return qs.filter(customer=user)
 
     def _reject_locked_address_change(self, request, order):
@@ -951,7 +955,22 @@ class DeliveryRegisterView(viewsets.ViewSet):
         }, status=status.HTTP_201_CREATED)
 
 class DeliverySlotViewSet(viewsets.ModelViewSet):
-    pass
+    queryset = DeliverySlot.objects.filter(is_active=True).order_by('sort_order', 'order_cutoff_time')
+    serializer_class = DeliverySlotSerializer
+    permission_classes = [permissions.AllowAny]
+
+    @action(detail=False, methods=['GET'])
+    def current(self, request):
+        result = DeliverySlot.get_current_slot()
+        slot = result.get('slot')
+        is_next_day = result.get('is_next_day', False)
+        
+        if not slot:
+            return Response({'display_label': None, 'is_next_day': True})
+            
+        data = self.get_serializer(slot).data
+        data['is_next_day'] = is_next_day
+        return Response(data)
 
 class SectionViewSet(viewsets.ModelViewSet):
     pass
