@@ -341,12 +341,12 @@ class OrderSerializer(serializers.ModelSerializer):
             'subtotal', 'delivery_charge', 'total_amount',
             'delivery_address', 'created_at',
             'delivery_latitude', 'delivery_longitude', 'delivery_slot',
-            'is_paid', 'payment_method', 'payment_id', 'items', 'review',
+            'is_paid', 'payment_method', 'payment_id', 'refund_id', 'refund_status', 'items', 'review',
         )
         read_only_fields = (
             'id', 'order_number', 'customer', 'status',
             'subtotal', 'delivery_charge', 'total_amount',
-            'created_at', 'is_paid', 'payment_method', 'payment_id'
+            'created_at', 'is_paid', 'payment_method', 'payment_id', 'refund_id', 'refund_status'
         )
 
     def get_review(self, obj):

@@ -628,9 +628,35 @@ class OrderViewSet(viewsets.ModelViewSet):
         if reason:
             update_fields.append('cancellation_reason')
             
+        # Handle Razorpay Refund
+        if order.payment_method == Order.PaymentMethod.ONLINE and order.is_paid and order.payment_id:
+            import razorpay
+            try:
+                client = razorpay.Client(auth=(settings.RAZORPAY_KEY_ID, settings.RAZORPAY_KEY_SECRET))
+                refund = client.payment.refund(order.payment_id, {'amount': int(order.total_amount * 100)})
+                order.refund_id = refund.get('id')
+                order.refund_status = 'PROCESSED'
+                update_fields.extend(['refund_id', 'refund_status'])
+                logger.info(f"Refund successful for Order {order.id} - Refund ID: {order.refund_id}")
+            except Exception as e:
+                order.refund_status = 'FAILED'
+                update_fields.append('refund_status')
+                logger.error(f"Refund failed for Order {order.id} with Payment ID {order.payment_id}: {str(e)}")
+
+        # Restore stock for each item
+        for item in order.items.all():
+            Product.objects.filter(id=item.product_id).update(stock=F('stock') + item.quantity)
+
         order.save(update_fields=update_fields)
         
-        return Response({'message': 'Order cancelled successfully', 'status': order.status})
+        message = 'Order cancelled successfully'
+        if order.payment_method == Order.PaymentMethod.ONLINE and order.is_paid:
+            if order.refund_status == 'PROCESSED':
+                message = 'Order cancelled successfully. You will get your refund in 2 to 3 days.'
+            elif order.refund_status == 'FAILED':
+                message = 'Order cancelled successfully. Refund is pending manual review and will be processed soon.'
+
+        return Response({'message': message, 'status': order.status})
 
 
 class DeliveryAssignmentViewSet(viewsets.ModelViewSet):

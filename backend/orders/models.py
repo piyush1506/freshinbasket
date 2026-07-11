@@ -120,6 +120,9 @@ class Order(models.Model):
 
     payment_id = models.CharField(max_length=100, blank=True, null=True, help_text="Razorpay payment ID for online payments")
 
+    refund_id = models.CharField(max_length=100, blank=True, null=True, help_text="Razorpay refund ID")
+    refund_status = models.CharField(max_length=50, blank=True, null=True, help_text="Refund status (e.g., PROCESSED, FAILED)")
+
     order_number = models.CharField(max_length=20, unique=True, blank=True, null=True)
 
     def save(self, *args, **kwargs):

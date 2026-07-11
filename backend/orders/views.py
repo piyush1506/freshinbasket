@@ -35,9 +35,10 @@ def _fire_and_forget_post_order(order_id):
         # Send FCM directly (no Celery dependency)
         try:
             from orders.models import Order
-            from notifications.fcm import send_order_notification
+            from notifications.fcm import send_order_notification, send_admin_new_order_alert
             order = Order.objects.get(id=order_id)
             send_order_notification(order)
+            send_admin_new_order_alert(order)
         except Exception as e:
             logger.warning("FCM notification failed for order %s: %s", order_id, e)
 
@@ -57,10 +58,47 @@ def _get_delivery_slot():
     return None
 
 
+from django.utils import timezone
+from datetime import timedelta
+
+def check_cancellation_limit(user):
+    """
+    Checks if a user has exceeded the daily cancellation limit.
+    Rule: > 3 cancellations in the last 24 hours.
+    Block: 5 hours from the last cancellation time.
+    Returns a Response object with 400 status if blocked, else None.
+    """
+    now = timezone.now()
+    twenty_four_hours_ago = now - timedelta(hours=24)
+    
+    recent_cancellations = Order.objects.filter(
+        customer=user,
+        status=Order.Status.CANCELLED,
+        updated_at__gte=twenty_four_hours_ago
+    ).order_by('-updated_at')
+    
+    if recent_cancellations.count() > 3:
+        last_cancellation = recent_cancellations.first()
+        time_since_last = now - last_cancellation.updated_at
+        if time_since_last < timedelta(hours=5):
+            remaining_time = timedelta(hours=5) - time_since_last
+            hours, remainder = divmod(remaining_time.seconds, 3600)
+            minutes, _ = divmod(remainder, 60)
+            return Response({
+                'error': f'You have exceeded the daily order cancellation limit (3 per day). Please try placing an order after {hours} hours and {minutes} minutes.'
+            }, status=400)
+    return None
+
+
+
 class CreateRazorpayOrderView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def post(self, request):
+        limit_response = check_cancellation_limit(request.user)
+        if limit_response:
+            return limit_response
+
         try:
             cart = Cart.objects.get(user=request.user)
         except Cart.DoesNotExist:
@@ -257,6 +295,10 @@ class CreateCODOrderView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def post(self, request):
+        limit_response = check_cancellation_limit(request.user)
+        if limit_response:
+            return limit_response
+
         delivery_address = request.data.get('delivery_address', '')
         delivery_latitude = request.data.get('delivery_latitude')
         delivery_longitude = request.data.get('delivery_longitude')

@@ -135,6 +135,51 @@ def send_order_notification(order) -> None:
         logger.error(f"send_order_notification failed for order {order.id}: {e}")
 
 
+def send_admin_new_order_alert(order) -> None:
+    """
+    Send a push notification to ALL admin users when a new order is received.
+    Called alongside send_order_notification after an order is created.
+    Never raises — wrapped in try/except.
+    """
+    try:
+        from django.contrib.auth import get_user_model
+        from django.db.models import Q
+        User = get_user_model()
+
+        admins = User.objects.filter(Q(role='ADMIN') | Q(is_superuser=True)).distinct()
+        if not admins.exists():
+            logger.debug("No admin users found — skipping admin order alert")
+            return
+
+        customer_name = order.customer.username or order.customer.phone_number
+        title = "🔔 New Order Received!"
+        body = (
+            f"Order #{order.order_number} from {customer_name} "
+            f"— ₹{order.total_amount} ({order.get_payment_method_display()})"
+        )
+
+        total_sent = 0
+        for admin_user in admins:
+            sent = send_push_to_user(
+                user=admin_user,
+                title=title,
+                body=body,
+                data={
+                    'route': 'admin_orders',
+                    'order_id': str(order.id),
+                    'order_number': str(order.order_number),
+                    'type': 'new_order_alert',
+                },
+            )
+            total_sent += sent
+
+        logger.info(
+            f"Admin new-order alert sent to {total_sent} device(s) for order {order.order_number}"
+        )
+    except Exception as e:
+        logger.error(f"send_admin_new_order_alert failed for order {order.id}: {e}")
+
+
 def send_status_notification(order) -> None:
     """
     Send order status change push (Out for Delivery, Delivered, Cancelled).

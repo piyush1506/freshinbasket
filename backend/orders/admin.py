@@ -182,9 +182,9 @@ class OrderAdmin(PrintOrderMixin, admin.ModelAdmin):
 
     list_display = (
         'order_number', 'customer', 'status', 'total_amount',
-        'payment_method', 'assigned_to', 'delivery_address_short', 'created_at', 'print_action'
+        'payment_method', 'refund_status', 'assigned_to', 'delivery_address_short', 'created_at', 'print_action'
     )
-    list_filter = ('status', 'is_paid', 'created_at', assignment_status)
+    list_filter = ('status', 'is_paid', 'refund_status', 'created_at', assignment_status)
     list_editable = ('status',)
     search_fields = ('id', 'order_number', 'customer__username', 'customer__email')
     readonly_fields = ('order_number', 'created_at', 'updated_at', 'total_amount', 'print_action')
