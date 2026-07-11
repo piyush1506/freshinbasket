@@ -316,7 +316,7 @@ class ReviewSerializer(serializers.ModelSerializer):
     def validate(self, data):
         request = self.context.get('request')
         order = data.get('order')
-        if order.customer != request.user:
+        if order.customer_id != request.user.id:
             raise serializers.ValidationError('You can only review your own orders.')
         if order.status != Order.Status.DELIVERED:
             raise serializers.ValidationError('You can only review delivered orders.')
