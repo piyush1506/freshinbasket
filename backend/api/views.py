@@ -652,7 +652,7 @@ class OrderViewSet(viewsets.ModelViewSet):
         message = 'Order cancelled successfully'
         if order.payment_method == Order.PaymentMethod.ONLINE and order.is_paid:
             if order.refund_status == 'PROCESSED':
-                message = 'Order cancelled successfully. You will get your refund in 2 to 3 days.'
+                message = 'Order cancelled successfully. You will get your refund in 5 to 7 days.'
             elif order.refund_status == 'FAILED':
                 message = 'Order cancelled successfully. Refund is pending manual review and will be processed soon.'
 
