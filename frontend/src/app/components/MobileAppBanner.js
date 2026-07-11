@@ -38,6 +38,8 @@ export default function MobileAppBanner() {
         <a 
           href="https://raw.githubusercontent.com/piyush1506/appurl/main/app-release.apk" 
           download
+          target="_blank"
+          rel="noopener noreferrer"
           aria-label="Download Freshinbasket app"
           className="bg-[#216140] hover:bg-green-800 text-white text-[11px] font-bold px-4 py-2 rounded-full shadow-sm min-h-[44px] flex items-center justify-center"
         >
