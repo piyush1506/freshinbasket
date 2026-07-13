@@ -31,6 +31,9 @@
         </div>
         <div class="info">
             <div><strong>Customer:</strong> {{ order.customer.username }}</div>
+            {% if order.customer.phone_number %}
+            <div><strong>Phone:</strong> {{ order.customer.phone_number }}</div>
+            {% endif %}
             <div><strong>Payment Status:</strong> {{ order.get_payment_method_display }} - {% if order.is_paid %}Paid{% else %}Unpaid{% endif %}</div>
             <div><strong>Date:</strong> {{ order.created_at|date:"M d, Y H:i" }}</div>
             {% if order.delivery_address %}
@@ -43,6 +46,7 @@
                     <tr>
                         <th>Item</th>
                         <th>Qty</th>
+                        <th>Price</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -50,6 +54,7 @@
                     <tr>
                         <td>{{ item.product_name }}</td>
                         <td>{{ item.quantity }} * {{ item.unit_name }}</td>
+                        <td>Rs {{ item.total_price }}</td>
                     </tr>
                     {% endfor %}
                 </tbody>
