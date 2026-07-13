@@ -90,7 +90,7 @@ export default function Hero({ slides: initialSlides }) {
         autoplay={{ delay: 5000, disableOnInteraction: false }}
         pagination={{ clickable: true, dynamicBullets: true }}
         onSlideChange={(swiper) => setActiveIndex(swiper.realIndex)}
-        className="w-full h-[220px] sm:h-[400px] md:h-[calc(100vh-72px)]"
+        className="w-full aspect-[4/3] sm:aspect-[16/9] lg:h-[500px] xl:h-[600px]"
         a11y={{
           prevSlideMessage: 'Previous slide',
           nextSlideMessage: 'Next slide',
