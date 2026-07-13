@@ -171,29 +171,30 @@ class AssignmentService:
 
     @classmethod
     @transaction.atomic
-    def assign_realtime_order(cls, order):
+    def assign_realtime_order(cls, order, force=False):
         if order.status != Order.Status.CONFIRMED or not (order.is_paid or order.payment_method == Order.PaymentMethod.COD):
             return {"status": "error", "message": "Order not eligible"}
 
         if not order.delivery_latitude or not order.delivery_longitude:
             return {"status": "error", "message": "Order missing coordinates"}
 
-        # Time-based assignment logic:
-        # Only assign instantly if we are past the batch assignment time for today's slot.
-        from orders.models import DeliverySlot
-        import datetime
-        slot_obj = DeliverySlot.objects.filter(display_label=order.delivery_slot).first()
-        if slot_obj:
-            now_time = timezone.localtime(timezone.now()).time()
-            assignment_time = datetime.time(slot_obj.assignment_hour, slot_obj.assignment_minute)
-            
-            # If the current time is past the order cutoff, this order is for tomorrow's slot.
-            if now_time > slot_obj.order_cutoff_time:
-                return {"status": "skipped", "message": "Order is for tomorrow, will be bulk assigned."}
+        # Time-based assignment logic (skipped when force=True for safety net):
+        if not force:
+            # Only assign instantly if we are past the batch assignment time for today's slot.
+            from orders.models import DeliverySlot
+            import datetime
+            slot_obj = DeliverySlot.objects.filter(display_label=order.delivery_slot).first()
+            if slot_obj:
+                now_time = timezone.localtime(timezone.now()).time()
+                assignment_time = datetime.time(slot_obj.assignment_hour, slot_obj.assignment_minute)
                 
-            # If we haven't reached the batch assignment time yet today, let the batch job handle it.
-            if now_time < assignment_time:
-                return {"status": "skipped", "message": "Will be bulk assigned before delivery window opens."}
+                # If the current time is past the order cutoff, this order is for tomorrow's slot.
+                if now_time > slot_obj.order_cutoff_time:
+                    return {"status": "skipped", "message": "Order is for tomorrow, will be bulk assigned."}
+                    
+                # If we haven't reached the batch assignment time yet today, let the batch job handle it.
+                if now_time < assignment_time:
+                    return {"status": "skipped", "message": "Will be bulk assigned before delivery window opens."}
 
         order_lat = float(order.delivery_latitude)
         order_lon = float(order.delivery_longitude)

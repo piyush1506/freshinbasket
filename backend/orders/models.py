@@ -252,6 +252,23 @@ class Review(models.Model):
         return f"Review for Order {self.order.order_number} - {self.rating}★"
 
 
+# =========================
+# SCHEDULER LOCK
+# =========================
+class SchedulerLock(models.Model):
+    """Database lock to prevent duplicate scheduler job execution across workers."""
+    job_name = models.CharField(max_length=100, unique=True)
+    locked_at = models.DateTimeField(auto_now_add=True)
+    locked_by = models.CharField(max_length=100)
+
+    class Meta:
+        verbose_name = "Scheduler Lock"
+        verbose_name_plural = "Scheduler Locks"
+
+    def __str__(self):
+        return f"Lock: {self.job_name} by {self.locked_by}"
+
+
 class DeliverySlot(models.Model):
     name = models.CharField(max_length=50, unique=True)
     display_label = models.CharField(
@@ -329,49 +346,9 @@ class DeliverySlot(models.Model):
         self._sync_periodic_tasks()
 
     def _sync_periodic_tasks(self):
+        """Update APScheduler jobs when slot config changes in admin."""
         try:
-            from django_celery_beat.models import PeriodicTask, CrontabSchedule
-        except ImportError:
-            return  # django-celery-beat not installed
-
-        slot_key = self.name.lower().replace(" ", "-")
-
-        try:
-            assign_crontab, _ = CrontabSchedule.objects.get_or_create(
-                hour=self.assignment_hour,
-                minute=self.assignment_minute,
-                day_of_week='*',
-                day_of_month='*',
-                month_of_year='*',
-            )
-            PeriodicTask.objects.update_or_create(
-                name=f'auto-assign-{slot_key}',
-                defaults={
-                    'task': 'orders.tasks.run_slot_assignment',
-                    'crontab': assign_crontab,
-                    'args': f'["{self.display_label}"]',
-                    'enabled': self.is_active,
-                }
-            )
+            from orders.scheduler import reload_slot_schedules
+            reload_slot_schedules()
         except Exception:
-            pass
-
-        try:
-            cleanup_crontab, _ = CrontabSchedule.objects.get_or_create(
-                hour=self.cleanup_hour,
-                minute=self.cleanup_minute,
-                day_of_week='*',
-                day_of_month='*',
-                month_of_year='*',
-            )
-            PeriodicTask.objects.update_or_create(
-                name=f'cleanup-{slot_key}',
-                defaults={
-                    'task': 'orders.tasks.cleanup_slot_clusters',
-                    'crontab': cleanup_crontab,
-                    'args': f'["{self.display_label}"]',
-                    'enabled': self.is_active,
-                }
-            )
-        except Exception:
-            pass
+            pass  # Scheduler may not be started yet (e.g., during migrations)

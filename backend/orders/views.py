@@ -19,20 +19,30 @@ def _fire_and_forget_post_order(order_id):
     """Run assignment + FCM notification in a background thread.
     Never blocks the HTTP response. Never raises."""
     def _run():
-        try:
-            from .tasks import auto_assign_realtime_order
-            auto_assign_realtime_order.apply_async(
-                args=[order_id], retry=False, expires=60
-            )
-        except Exception:
-            logger.info("Celery unavailable — running auto_assign_realtime_order synchronously in thread for order %s", order_id)
+        # ── Real-time assignment with retry ──
+        max_retries = 3
+        for attempt in range(1, max_retries + 1):
             try:
-                from .tasks import auto_assign_realtime_order
-                auto_assign_realtime_order(order_id)
-            except Exception as inner_e:
-                logger.error("Synchronous realtime assign failed for order %s: %s", order_id, inner_e)
+                from orders.models import Order
+                from orders.services.assignment_service import AssignmentService
+                order = Order.objects.get(id=order_id)
+                result = AssignmentService.assign_realtime_order(order)
+                logger.info(
+                    "Real-time assignment for order %s (attempt %d): %s",
+                    order_id, attempt, result
+                )
+                if result.get('status') in ('success', 'skipped'):
+                    break  # Assigned, or intentionally skipped (batch will handle)
+            except Exception as e:
+                logger.error(
+                    "Real-time assignment attempt %d failed for order %s: %s",
+                    attempt, order_id, e
+                )
+                if attempt < max_retries:
+                    import time
+                    time.sleep(2 * attempt)  # Backoff: 2s, 4s
 
-        # Send FCM directly (no Celery dependency)
+        # ── Send FCM notification ──
         try:
             from orders.models import Order
             from notifications.fcm import send_order_notification, send_admin_new_order_alert
@@ -44,6 +54,7 @@ def _fire_and_forget_post_order(order_id):
 
     thread = threading.Thread(target=_run, daemon=True)
     thread.start()
+
 
 client = razorpay.Client(auth=(settings.RAZORPAY_KEY_ID, settings.RAZORPAY_KEY_SECRET))
 
