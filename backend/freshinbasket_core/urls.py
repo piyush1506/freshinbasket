@@ -71,7 +71,7 @@ def custom_get_app_list(request, app_label=None):
     groups['Store Management']['models'].append({
         'name': 'Manual Groups',
         'object_name': 'ManualGroup',
-        'admin_url': '/admin/orders/deliveryassignment/manual-assign/',
+        'admin_url': '/admin-3a3aw44r34/orders/deliveryassignment/manual-assign/',
         'add_url': None,
         'view_only': True,
     })
@@ -82,9 +82,9 @@ admin.site.get_app_list = custom_get_app_list
 # --- END OF ADMIN REGROUPING PATCH ---
 
 urlpatterns = [
-    path('admin/delivery-dashboard/', DeliveryDashboardView.as_view(), name='admin_delivery_dashboard'),
-    path('admin/notifications/send/', SendNotificationView.as_view(), name='admin_send_notification'),
-    path('admin/', admin.site.urls),
+    path('admin-3a3aw44r34/delivery-dashboard/', DeliveryDashboardView.as_view(), name='admin_delivery_dashboard'),
+    path('admin-3a3aw44r34/notifications/send/', SendNotificationView.as_view(), name='admin_send_notification'),
+    path('admin-3a3aw44r34/', admin.site.urls),
     path('api/v1/', include('api.urls')),
 ]
 
