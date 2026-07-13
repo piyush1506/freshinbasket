@@ -106,6 +106,7 @@ class Product(models.Model):
     stock = models.PositiveIntegerField(default=0)
     tax_percentage = models.DecimalField(max_digits=5, decimal_places=2, default=0, help_text="Tax percentage (e.g. 5, 12, 18)")
     unit = models.ForeignKey(Unit, on_delete=models.SET_NULL, null=True, blank=True, help_text="Unit of measurement (e.g. kg, piece, 250g)")
+    is_active = models.BooleanField(default=True, help_text="Uncheck to hide product from the frontend without deleting it")
     image_url = models.ImageField(upload_to='products/', blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -146,7 +147,14 @@ class Product(models.Model):
         counter = 1
         while Product.objects.filter(slug=self.slug).exclude(pk=self.pk).exists():
             self.slug = f"{orig_slug}-{counter}"
-            counter += 1
+        from django.core.cache import cache
+        cache.clear()
+        try:
+            search_version = cache.get('product_search_version', 1)
+            cache.set('product_search_version', search_version + 1, timeout=None)
+        except Exception:
+            pass
+        
         super().save(*args, **kwargs)
 
 

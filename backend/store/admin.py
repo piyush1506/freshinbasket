@@ -76,9 +76,9 @@ class UnitAdmin(admin.ModelAdmin):
 class ProductAdmin(admin.ModelAdmin):
     change_list_template = "admin/store/product/change_list.html"
     change_form_template = "admin/store/product/change_form.html"
-    list_display = ('name', 'section', 'category_list', 'discount_display', 'unit', 'price', 'tax_percentage', 'stock', 'mrp', 'order_step', 'min_order_qty', 'stock_status', 'image_preview', 'created_at')
-    list_editable = ('price', 'tax_percentage', 'mrp', 'stock', 'order_step', 'min_order_qty')
-    list_filter = ('section', 'categories', 'created_at')
+    list_display = ('name', 'section', 'category_list', 'discount_display', 'unit', 'price', 'tax_percentage', 'stock', 'mrp', 'order_step', 'min_order_qty', 'is_active', 'stock_status', 'image_preview', 'created_at')
+    list_editable = ('price', 'tax_percentage', 'mrp', 'stock', 'order_step', 'min_order_qty', 'is_active')
+    list_filter = ('section', 'categories', 'created_at', 'is_active')
     search_fields = ('name', 'description')
     prepopulated_fields = {'slug': ('name',)}
     readonly_fields = ('created_at', 'updated_at', 'image_preview')

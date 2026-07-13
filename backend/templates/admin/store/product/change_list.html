@@ -77,6 +77,40 @@
             cursor: pointer;
         }
 
+        /* Toggle Switch for is_active */
+        .field-is_active input[type="checkbox"] {
+            appearance: none;
+            -webkit-appearance: none;
+            width: 40px;
+            height: 22px;
+            background: #cbd5e1;
+            border-radius: 20px;
+            position: relative;
+            cursor: pointer;
+            outline: none;
+            transition: background 0.3s ease;
+            vertical-align: middle;
+            margin: 0;
+        }
+        .field-is_active input[type="checkbox"]::after {
+            content: '';
+            position: absolute;
+            top: 2px;
+            left: 2px;
+            width: 18px;
+            height: 18px;
+            background: #ffffff;
+            border-radius: 50%;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+            transition: transform 0.3s ease;
+        }
+        .field-is_active input[type="checkbox"]:checked {
+            background: var(--success);
+        }
+        .field-is_active input[type="checkbox"]:checked::after {
+            transform: translateX(18px);
+        }
+
         /* Editable Select & Input Fields */
         #result_list select, #result_list input[type="text"], #result_list input[type="number"] {
             padding: 8px 12px;

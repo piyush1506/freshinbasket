@@ -214,7 +214,7 @@ class ProductSerializer(serializers.ModelSerializer):
             'discount_percentage', 'discount_amount',
             'unit', 'unit_id',
             'section', 'section_id', 'section_name', 'section_slug', 'section_product_label',
-            'order_step', 'min_order_qty',
+            'order_step', 'min_order_qty', 'is_active',
             'image', 'image_url', 'created_at', 'updated_at',
             'categories', 'category_names', 'subproducts',
         )

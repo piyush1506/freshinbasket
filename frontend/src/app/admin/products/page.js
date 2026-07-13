@@ -147,16 +147,15 @@ export default function AdminProductsPage() {
           <button
             onClick={() => setActiveSectionId("all")}
             className={`px-4 py-2 rounded-lg text-xs font-bold whitespace-nowrap transition-all cursor-pointer
-              ${
-                activeSectionId === "all"
-                  ? "bg-white text-green-800 shadow-sm"
-                  : "text-gray-500 hover:text-gray-800"
+              ${activeSectionId === "all"
+                ? "bg-white text-green-800 shadow-sm"
+                : "text-gray-500 hover:text-gray-800"
               }
             `}
           >
             All Products ({products.length})
           </button>
-          
+
           {sections.map((sec) => {
             const count = products.filter((p) => p.section === sec.id).length;
             return (
@@ -164,10 +163,9 @@ export default function AdminProductsPage() {
                 key={sec.id}
                 onClick={() => setActiveSectionId(sec.id)}
                 className={`px-4 py-2 rounded-lg text-xs font-bold whitespace-nowrap transition-all cursor-pointer flex items-center gap-1.5
-                  ${
-                    activeSectionId === sec.id
-                      ? "bg-white text-green-800 shadow-sm"
-                      : "text-gray-500 hover:text-gray-800"
+                  ${activeSectionId === sec.id
+                    ? "bg-white text-green-800 shadow-sm"
+                    : "text-gray-500 hover:text-gray-800"
                   }
                 `}
               >
@@ -181,10 +179,9 @@ export default function AdminProductsPage() {
             <button
               onClick={() => setActiveSectionId("unassigned")}
               className={`px-4 py-2 rounded-lg text-xs font-bold whitespace-nowrap transition-all cursor-pointer
-                ${
-                  activeSectionId === "unassigned"
-                    ? "bg-white text-green-800 shadow-sm"
-                    : "text-gray-500 hover:text-gray-800"
+                ${activeSectionId === "unassigned"
+                  ? "bg-white text-green-800 shadow-sm"
+                  : "text-gray-500 hover:text-gray-800"
                 }
               `}
             >

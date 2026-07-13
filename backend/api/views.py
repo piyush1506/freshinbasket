@@ -117,7 +117,7 @@ class HomeApiView(APIView):
                 queryset=Category.objects.prefetch_related(
                     Prefetch(
                         'products',
-                        queryset=Product.objects.select_related('unit').prefetch_related('categories').defer('description').filter(stock__gt=0),
+                        queryset=Product.objects.select_related('unit').prefetch_related('categories').defer('description').filter(stock__gt=0, is_active=True),
                         to_attr='cached_products'
                     )
                 )
@@ -470,6 +470,12 @@ class ProductViewSet(viewsets.ModelViewSet):
             'categories',
             Prefetch('subproducts', queryset=SubProduct.objects.select_related('unit'))
         ).defer('description')
+        
+        # Admins can see all products, regular users only see active ones
+        user = self.request.user
+        if not (user and user.is_authenticated and getattr(user, 'role', '') == 'ADMIN'):
+            qs = qs.filter(is_active=True)
+            
         category_slug = self.request.query_params.get('category')
         if category_slug:
             qs = qs.filter(categories__slug=category_slug)
@@ -530,13 +536,13 @@ class ProductViewSet(viewsets.ModelViewSet):
             return Response(cached)
 
         if index:
-            products = Product.objects.order_by('name')[:limit]
+            products = Product.objects.filter(is_active=True).order_by('name')[:limit]
             data = SearchProductSerializer(products, many=True, context={'request': request}).data
             cache.set(cache_key, data, timeout=300)
             return Response(data)
 
         if suggest:
-            qs = Product.objects.all()
+            qs = Product.objects.filter(is_active=True)
             if q:
                 qs = qs.filter(name__icontains=q)
                 qs = qs.annotate(
@@ -553,7 +559,7 @@ class ProductViewSet(viewsets.ModelViewSet):
             cache.set(cache_key, data, timeout=300)
             return Response(data)
 
-        products = Product.objects.filter(name__icontains=q).annotate(
+        products = Product.objects.filter(is_active=True, name__icontains=q).annotate(
             search_rank=Case(
                 When(name__istartswith=q, then=Value(0)),
                 default=Value(1),
