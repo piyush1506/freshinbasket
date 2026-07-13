@@ -9,9 +9,7 @@ import Navbar from "./Navbar";
 export default function HomeSections({ sections = [], children }) {
   const [activeIndex, setActiveIndex] = useState(0);
 
-  if (!sections || sections.length === 0) return null;
-
-  const activeSection = sections[activeIndex] || sections[0];
+  const activeSection = sections[activeIndex];
   const activeCategories = activeSection?.categories || [];
   const activeSlides = activeSection?.slides || [];
 
