@@ -90,7 +90,7 @@ export default function Hero({ slides: initialSlides }) {
         autoplay={{ delay: 5000, disableOnInteraction: false }}
         pagination={{ clickable: true, dynamicBullets: true }}
         onSlideChange={(swiper) => setActiveIndex(swiper.realIndex)}
-        className="w-full aspect-[4/3] sm:aspect-[16/9] lg:h-[500px] xl:h-[600px]"
+        className="w-full  aspect-[16/9] lg:h-[500px] xl:h-[600px]"
         a11y={{
           prevSlideMessage: 'Previous slide',
           nextSlideMessage: 'Next slide',
@@ -99,7 +99,7 @@ export default function Hero({ slides: initialSlides }) {
       >
         {slides.map((slide, index) => (
           <SwiperSlide key={slide.id}>
-            <section className="relative w-full h-full" aria-label={slide.title || "Hero banner"}>
+            <section className="relative w-full h-full " aria-label={slide.title || "Hero banner"}>
               <Image
                 src={slide.image_url}
                 alt={slide.title || "Hero slide"}
