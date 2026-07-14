@@ -269,6 +269,10 @@ class StoreSettings(models.Model):
         max_digits=5, decimal_places=2, default=5.00,
         help_text="Minimum order weight in kg to get free dhaniya."
     )
+    admin_notification_email = models.EmailField(
+        blank=True, null=True,
+        help_text="Email address that receives detailed alerts for new orders. Leave blank to disable."
+    )
 
     class Meta:
         verbose_name = 'Store Setting'

@@ -218,10 +218,13 @@ def send_admin_email_alert(order) -> None:
         import os
         from django.core.mail import send_mail
         from django.conf import settings
+        from store.models import StoreSettings
         
-        admin_email = os.getenv('ADMIN_EMAIL')
+        store_settings = StoreSettings.get_settings()
+        admin_email = store_settings.admin_notification_email
+        
         if not admin_email:
-            logger.debug("ADMIN_EMAIL not set — skipping admin email alert")
+            logger.debug("admin_notification_email not set in DB — skipping admin email alert")
             return
 
         customer_name = order.customer.username or order.customer.phone_number

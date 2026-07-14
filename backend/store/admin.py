@@ -254,8 +254,8 @@ class SubProductAdmin(admin.ModelAdmin):
 @admin.register(StoreSettings)
 class StoreSettingsAdmin(admin.ModelAdmin):
     change_list_template = "admin/store/storesettings/change_list.html"
-    list_display = ('__str__', 'free_delivery_threshold', 'delivery_charge', 'max_delivery_radius', 'free_delivery_first_order', 'is_free_dhaniya_active', 'free_dhaniya_threshold_kg')
-    list_editable = ('is_free_dhaniya_active', 'free_dhaniya_threshold_kg')
+    list_display = ('__str__', 'admin_notification_email', 'free_delivery_threshold', 'delivery_charge', 'max_delivery_radius', 'free_delivery_first_order', 'is_free_dhaniya_active')
+    list_editable = ('admin_notification_email', 'is_free_dhaniya_active')
     
     def has_add_permission(self, request):
         # Prevent adding more than one instance
