@@ -147,6 +147,7 @@ class Product(models.Model):
         counter = 1
         while Product.objects.filter(slug=self.slug).exclude(pk=self.pk).exists():
             self.slug = f"{orig_slug}-{counter}"
+            counter += 1
         from django.core.cache import cache
         cache.clear()
         try:

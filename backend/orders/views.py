@@ -1,6 +1,7 @@
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status, permissions
+from rest_framework.throttling import UserRateThrottle
 from store.models import Product
 from django.conf import settings
 from django.db.models import Count, Q, F
@@ -102,9 +103,21 @@ def check_cancellation_limit(user):
     return None
 
 
+class PaymentCreateThrottle(UserRateThrottle):
+    scope = 'payment_create'
+
+
+class PaymentVerifyThrottle(UserRateThrottle):
+    scope = 'payment_verify'
+
+
+class CODOrderThrottle(UserRateThrottle):
+    scope = 'cod_order'
+
 
 class CreateRazorpayOrderView(APIView):
     permission_classes = [permissions.IsAuthenticated]
+    throttle_classes = [PaymentCreateThrottle]
 
     def post(self, request):
         limit_response = check_cancellation_limit(request.user)
@@ -183,6 +196,7 @@ class CreateRazorpayOrderView(APIView):
 
 class VerifyPaymentView(APIView):
     permission_classes = [permissions.IsAuthenticated]
+    throttle_classes = [PaymentVerifyThrottle]
 
     def post(self, request):
         razorpay_order_id = request.data.get('razorpay_order_id')
@@ -313,6 +327,7 @@ class VerifyPaymentView(APIView):
 
 class CreateCODOrderView(APIView):
     permission_classes = [permissions.IsAuthenticated]
+    throttle_classes = [CODOrderThrottle]
 
     def post(self, request):
         limit_response = check_cancellation_limit(request.user)

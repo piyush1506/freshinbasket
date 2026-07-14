@@ -16,7 +16,7 @@ SECRET_KEY = os.getenv('DJANGO_SECRET_KEY', 'change-me-in-production')
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.getenv('DJANGO_DEBUG', 'False').lower() in ('true', '1', 'yes')
 
-ALLOWED_HOSTS = os.getenv('DJANGO_ALLOWED_HOSTS', 'localhost,127.0.0.1').split(',') + ['*']
+ALLOWED_HOSTS = os.getenv('DJANGO_ALLOWED_HOSTS', 'localhost,127.0.0.1').split(',')
 CSRF_TRUSTED_ORIGINS = os.getenv('DJANGO_CSRF_TRUSTED_ORIGINS', 'http://localhost:3000,http://127.0.0.1:3000,http://freshinbasket.com,https://freshinbasket.com,http://www.freshinbasket.com,https://www.freshinbasket.com,http://187.127.142.137,https://187.127.142.137').split(',')
 
 RAZORPAY_KEY_ID = os.getenv('RAZORPAY_KEY_ID', '')
@@ -37,10 +37,10 @@ SECURE_HSTS_PRELOAD = not DEBUG
 SECURE_BROWSER_XSS_FILTER = True
 SECURE_CONTENT_TYPE_NOSNIFF = True
 SECURE_REFERRER_POLICY = 'strict-origin-when-cross-origin'
-SESSION_COOKIE_SECURE = False
+SESSION_COOKIE_SECURE = not DEBUG
 SESSION_COOKIE_HTTPONLY = True
 SESSION_COOKIE_SAMESITE = 'Lax'
-CSRF_COOKIE_SECURE = False
+CSRF_COOKIE_SECURE = not DEBUG
 CSRF_COOKIE_HTTPONLY = False
 CSRF_COOKIE_SAMESITE = 'Lax'
 X_FRAME_OPTIONS = 'DENY'
@@ -180,6 +180,12 @@ REST_FRAMEWORK = {
         'logout': '20/minute',
         'search': '100/minute',
         'cart': '120/minute',
+        'otp_send': '5/minute',
+        'otp_verify': '10/minute',
+        'contact': '5/minute',
+        'payment_create': '10/minute',
+        'payment_verify': '10/minute',
+        'cod_order': '10/minute',
     },
 
     'DEFAULT_RENDERER_CLASSES': (

@@ -390,6 +390,7 @@ class SlideViewSet(viewsets.ModelViewSet):
 class ContactView(mixins.CreateModelMixin, mixins.ListModelMixin, mixins.RetrieveModelMixin, viewsets.GenericViewSet):
     queryset = ContactQuery.objects.all()
     serializer_class = ContactQuerySerializer
+    throttle_classes = [ContactRateThrottle]
 
     def get_permissions(self):
         if self.action == 'create':
@@ -455,6 +456,18 @@ class SearchRateThrottle(UserRateThrottle):
 
 class CartRateThrottle(UserRateThrottle):
     scope = 'cart'
+
+
+class SendOTPRateThrottle(AnonRateThrottle):
+    scope = 'otp_send'
+
+
+class VerifyOTPRateThrottle(AnonRateThrottle):
+    scope = 'otp_verify'
+
+
+class ContactRateThrottle(AnonRateThrottle):
+    scope = 'contact'
 
 
 
@@ -843,7 +856,7 @@ class StoreSettingsView(APIView):
 
 class SendOTPView(APIView):
     permission_classes = [permissions.AllowAny]
-    throttle_classes = [AnonRateThrottle]
+    throttle_classes = [SendOTPRateThrottle]
 
     def post(self, request):
         phone_number = request.data.get('phone_number')
@@ -887,7 +900,7 @@ class SendOTPView(APIView):
 
 class VerifyOTPView(APIView):
     permission_classes = [permissions.AllowAny]
-    throttle_classes = [AnonRateThrottle]
+    throttle_classes = [VerifyOTPRateThrottle]
 
     def post(self, request):
         phone_number = request.data.get('phone_number')
