@@ -146,9 +146,19 @@ def send_admin_new_order_alert(order) -> None:
         from django.db.models import Q
         User = get_user_model()
 
-        admins = User.objects.filter(Q(role='ADMIN') | Q(is_superuser=True)).distinct()
-        if not admins.exists():
-            logger.debug("No admin users found — skipping admin order alert")
+        from store.models import StoreSettings
+        
+        admins = list(User.objects.filter(Q(role='ADMIN') | Q(is_superuser=True)).distinct())
+        
+        # Add the specific phone number if provided in Store Settings
+        store_settings = StoreSettings.get_settings()
+        if store_settings.admin_notification_phone:
+            specific_admin = User.objects.filter(phone_number=store_settings.admin_notification_phone).first()
+            if specific_admin and specific_admin not in admins:
+                admins.append(specific_admin)
+
+        if not admins:
+            logger.debug("No admin users or admin_notification_phone found — skipping admin order alert")
             return
 
         customer_name = order.customer.username or order.customer.phone_number
