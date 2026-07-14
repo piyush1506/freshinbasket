@@ -34,7 +34,7 @@ export default function VegetableCard({ item }) {
       setTimeout(() => setShowUnitAnimation(false), 2000);
     } catch (error) {
       console.error("Error adding to cart:", error);
-      toast.error("Could not add item. Please try again.");
+      toast.error(error.message || "Could not add item. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -54,7 +54,7 @@ export default function VegetableCard({ item }) {
       });
     } catch (error) {
       console.error("Error incrementing:", error);
-      toast.error("Could not update quantity.");
+      toast.error(error.message || "Could not update quantity.");
     } finally {
       setLoading(false);
     }
@@ -78,7 +78,7 @@ export default function VegetableCard({ item }) {
       }
     } catch (error) {
       console.error("Error decrementing:", error);
-      toast.error("Could not update quantity.");
+      toast.error(error.message || "Could not update quantity.");
     } finally {
       setLoading(false);
     }

@@ -59,7 +59,7 @@ export default function ProductDetailClient({ product, related }) {
         toast.success(cartQty > 0 ? "Cart updated!" : "Added to cart!");
       }
     } catch (e) {
-      toast.error("Could not update cart");
+      toast.error(e.message || "Could not update cart");
     } finally {
       setAdding(false);
     }

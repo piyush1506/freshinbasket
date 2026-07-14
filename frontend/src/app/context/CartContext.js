@@ -231,12 +231,15 @@ export function CartProvider({ children }) {
           setCartItems(formatCartItems(updatedCartData));
           setBackendTotals(updatedCartData);
         } else {
+          const errData = await res.json().catch(() => ({}));
           console.error("Server cart update failed", res.status);
           setCartItems(previousCart);
+          throw new Error(errData.error || "Failed to add to cart");
         }
       } catch (e) {
         console.error("Failed to add item", e);
         setCartItems(previousCart);
+        throw e;
       } finally {
         setLoadingItems((prev) => ({ ...prev, [cartKey]: false }));
       }
@@ -266,11 +269,15 @@ export function CartProvider({ children }) {
           setCartItems(formatCartItems(updatedCartData));
           setBackendTotals(updatedCartData);
         } else {
+          const errData = await res.json().catch(() => ({}));
+          console.error("Server cart update failed", res.status);
           setCartItems(previousCart);
+          throw new Error(errData.error || "Failed to remove from cart");
         }
       } catch (e) {
         console.error("Failed to remove item", e);
         setCartItems(previousCart);
+        throw e;
       }
     }
   };
