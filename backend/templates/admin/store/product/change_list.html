@@ -210,3 +210,20 @@
     </div>
   </div>
 {% endblock %}
+
+{% block extrahead %}
+{{ block.super }}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const is_active_checkboxes = document.querySelectorAll('input[type="checkbox"][name$="-is_active"]');
+    is_active_checkboxes.forEach(function(checkbox) {
+        checkbox.addEventListener('change', function() {
+            const saveBtn = document.querySelector('input[name="_save"]');
+            if (saveBtn) {
+                saveBtn.click();
+            }
+        });
+    });
+});
+</script>
+{% endblock %}
