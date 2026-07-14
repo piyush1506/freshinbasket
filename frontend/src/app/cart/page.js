@@ -51,6 +51,7 @@ export default function CartPage() {
   const [lat, setLat] = useState(25.3471);
   const [lng, setLng] = useState(74.6408);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [isFetchingLocation, setIsFetchingLocation] = useState(false);
   const [razorpayLoaded, setRazorpayLoaded] = useState(false);
   const [suggestedProducts, setSuggestedProducts] = useState([]);
   const mapRef = useRef(null);
@@ -182,6 +183,8 @@ export default function CartPage() {
   const useCurrentLocation = () => {
     if (!navigator.geolocation) return toast.error('geolocation is not support by your browser');
 
+    setIsFetchingLocation(true);
+    const toastId = toast.loading("Fetching live location...");
 
     navigator.geolocation.getCurrentPosition(
       async (pos) => {
@@ -193,7 +196,9 @@ export default function CartPage() {
           markerRef.current.setLatLng([latitude, longitude]);
           mapInstance.current.setView([latitude, longitude], 14);
         }
-        reverseGeocode(latitude, longitude);
+        await reverseGeocode(latitude, longitude);
+        toast.success("Location fetched!", { id: toastId });
+        setIsFetchingLocation(false);
       },
 
       (err) => {
@@ -202,9 +207,11 @@ export default function CartPage() {
           2: "Location unavailable. Check your device settings.",
           3: "Location request timed out. Try again.",
         }
-        toast.error(messages[err.code] || "Unable to retrieve your location.")
+        toast.error(messages[err.code] || "Unable to retrieve your location.", { id: toastId })
         console.error('geolocation error', err.message)
-      }
+        setIsFetchingLocation(false);
+      },
+      { timeout: 15000 }
     );
   };
 
@@ -416,10 +423,11 @@ export default function CartPage() {
                 <div className="bg-gray-100 rounded-xl overflow-hidden border border-gray-200" style={{ height: 400 }} ref={mapRef} />
                 <button
                   onClick={useCurrentLocation}
-                  className="flex items-center gap-2 mt-3 px-4 py-2 border border-gray-300 rounded-lg text-sm text-gray-700 hover:bg-gray-50"
+                  disabled={isFetchingLocation}
+                  className="flex items-center gap-2 mt-3 px-4 py-2 border border-gray-300 rounded-lg text-sm text-gray-700 hover:bg-gray-50 disabled:opacity-50"
                 >
-                  <Crosshair size={16} />
-                  Use My Current Location
+                  {isFetchingLocation ? <RefreshCw size={16} className="animate-spin" /> : <Crosshair size={16} />}
+                  {isFetchingLocation ? "Fetching..." : "Fetch Live Location"}
                 </button>
               </div>
 
@@ -500,7 +508,7 @@ export default function CartPage() {
 
                 <button
                   onClick={handleCheckout}
-                  disabled={isProcessing || !isDeliverable}
+                  disabled={isProcessing || !isDeliverable || isFetchingLocation}
                   className="w-full bg-green-700 hover:bg-green-800 text-white py-3 rounded-lg font-semibold transition flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {isProcessing ? <RefreshCw size={18} className="animate-spin" /> : <Lock size={18} />}
