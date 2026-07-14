@@ -386,6 +386,8 @@ class SlideViewSet(viewsets.ModelViewSet):
         cache.delete('slides_list')
         cache.delete('home_page')
 
+class ContactRateThrottle(AnonRateThrottle):
+    scope = 'contact'
 
 class ContactView(mixins.CreateModelMixin, mixins.ListModelMixin, mixins.RetrieveModelMixin, viewsets.GenericViewSet):
     queryset = ContactQuery.objects.all()
@@ -464,10 +466,6 @@ class SendOTPRateThrottle(AnonRateThrottle):
 
 class VerifyOTPRateThrottle(AnonRateThrottle):
     scope = 'otp_verify'
-
-
-class ContactRateThrottle(AnonRateThrottle):
-    scope = 'contact'
 
 
 
