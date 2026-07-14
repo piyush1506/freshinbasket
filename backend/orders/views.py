@@ -121,6 +121,10 @@ class CreateRazorpayOrderView(APIView):
             return Response({'error': 'Your cart is empty.'}, status=400)
 
         for item in items:
+            if not item.product.is_active:
+                return Response({
+                    'error': f'"{item.product.name}" is no longer available'
+                }, status=400)
             if item.product.stock <= 0:
                 return Response({
                     'error': f'"{item.product.name}" is out of stock'
@@ -213,6 +217,10 @@ class VerifyPaymentView(APIView):
                 return Response({'error': 'Your cart is empty.'}, status=400)
 
             for item in items:
+                if not item.product.is_active:
+                    return Response({
+                        'error': f'"{item.product.name}" is no longer available'
+                    }, status=400)
                 if item.product.stock <= 0:
                     return Response({
                         'error': f'"{item.product.name}" is out of stock'
@@ -332,6 +340,10 @@ class CreateCODOrderView(APIView):
 
         try:
             for item in items:
+                if not item.product.is_active:
+                    return Response({
+                        'error': f'"{item.product.name}" is no longer available'
+                    }, status=400)
                 if item.product.stock <= 0:
                     return Response({
                         'error': f'"{item.product.name}" is out of stock'

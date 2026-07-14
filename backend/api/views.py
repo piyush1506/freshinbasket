@@ -708,6 +708,8 @@ class CartViewSet(viewsets.ModelViewSet):
 
         try:
             product = Product.objects.get(id=product_id)
+            if not product.is_active:
+                return Response({'error': f'"{product.name}" is no longer available'}, status=status.HTTP_400_BAD_REQUEST)
         except Product.DoesNotExist:
             return Response({'error': 'Product not found'}, status=status.HTTP_404_NOT_FOUND)
 
@@ -760,6 +762,8 @@ class CartViewSet(viewsets.ModelViewSet):
 
             try:
                 product = Product.objects.get(id=product_id)
+                if not product.is_active:
+                    continue
                 cart_item, created = CartItem.objects.get_or_create(
                     cart=cart,
                     product=product,
