@@ -1,6 +1,7 @@
 "use client";
 import { createContext, useContext, useEffect, useState } from "react";
-import { Toaster } from "react-hot-toast";
+import { Toaster, toast } from "react-hot-toast";
+import confetti from "canvas-confetti";
 import { getAccessToken, isAuthenticated, getUser, authFetch, setUser as saveUserLocal } from "@/lib/auth";
 
 const CartContext = createContext();
@@ -194,6 +195,26 @@ export function CartProvider({ children }) {
     const previousCart = cartItems;
     const quantityDelta = Number(product.quantity) || 1;
     const cartKey = getCartKey(product.id, product.subProductId);
+
+    // Calculate totals to check for free delivery unlock
+    const oldSubTotal = cartItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
+    const newSubTotal = oldSubTotal + (product.price * quantityDelta);
+    const threshold = backendTotals?.free_delivery_threshold !== undefined
+      ? parseFloat(backendTotals.free_delivery_threshold)
+      : parseFloat(storeSettings?.free_delivery_threshold) || 100;
+
+    // Fire confetti if they just crossed the threshold
+    if (oldSubTotal < threshold && newSubTotal >= threshold && quantityDelta > 0) {
+      confetti({
+        particleCount: 150,
+        spread: 70,
+        origin: { y: 0.6 },
+        colors: ['#216140', '#2e8b57', '#fbbf24', '#ffffff']
+      });
+      setTimeout(() => {
+        toast.success("Woohoo! You've unlocked FREE Delivery! 🚚✨", { duration: 4000 });
+      }, 500);
+    }
 
     setCartItems((prev) => {
       const existingIndex = prev.findIndex((item) => item.cartKey === cartKey);
