@@ -40,6 +40,7 @@
               <li><Link href="/about" className="hover:text-green-600 transition-colors">About Us</Link></li>
               <li><Link href="/contact" className="hover:text-green-600 transition-colors">Contact</Link></li>
               <li><Link href="/contact#support" aria-label="Get customer support" className="hover:text-green-600 transition-colors">Support</Link></li>
+              <li><Link href="/refund-policy" className="hover:text-green-600 transition-colors">Refund & Return Policy</Link></li>
               <li><Link href="/privacy" className="hover:text-green-600 transition-colors">Privacy Policy</Link></li>
               <li><Link href="/terms" className="hover:text-green-600 transition-colors">Terms of Service</Link></li>
             </ul>
