@@ -152,10 +152,18 @@ def send_admin_new_order_alert(order) -> None:
             return
 
         customer_name = order.customer.username or order.customer.phone_number
+        
+        # Build detailed body with items
+        items = order.items.all()
+        items_str = ", ".join([f"{item.quantity}x {item.product_name}" for item in items])
+        if len(items_str) > 100:
+            items_str = items_str[:97] + "..."
+            
         title = "🔔 New Order Received!"
         body = (
-            f"Order #{order.order_number} from {customer_name} "
-            f"— ₹{order.total_amount} ({order.get_payment_method_display()})"
+            f"Order #{order.order_number} - {customer_name}\n"
+            f"Total: ₹{order.total_amount} ({order.get_payment_method_display()})\n"
+            f"Items: {items_str}"
         )
 
         total_sent = 0
@@ -201,3 +209,64 @@ def send_status_notification(order) -> None:
             )
     except Exception as e:
         logger.error(f"send_status_notification failed for order {order.id}: {e}")
+
+def send_admin_email_alert(order) -> None:
+    """
+    Send an HTML email alert to the admin with full order details.
+    """
+    try:
+        import os
+        from django.core.mail import send_mail
+        from django.conf import settings
+        
+        admin_email = os.getenv('ADMIN_EMAIL')
+        if not admin_email:
+            logger.debug("ADMIN_EMAIL not set — skipping admin email alert")
+            return
+
+        customer_name = order.customer.username or order.customer.phone_number
+        customer_phone = order.customer.phone_number
+        
+        items = order.items.all()
+        items_html = "<ul>"
+        for item in items:
+            items_html += f"<li><b>{item.quantity} {item.unit_name}</b> x {item.product_name} (₹{item.unit_price})</li>"
+        items_html += "</ul>"
+
+        subject = f"🔔 New Order #{order.order_number} Received!"
+        message_plain = f"New order #{order.order_number} from {customer_name}. Total: ₹{order.total_amount}."
+        
+        message_html = f"""
+        <html>
+        <body style="font-family: Arial, sans-serif; color: #333; line-height: 1.6;">
+            <div style="max-width: 600px; margin: 0 auto; border: 1px solid #ddd; padding: 20px; border-radius: 8px;">
+                <h2 style="color: #216140; border-bottom: 2px solid #216140; padding-bottom: 10px;">New Order Received!</h2>
+                <p><strong>Order ID:</strong> #{order.order_number}</p>
+                <p><strong>Customer:</strong> {customer_name} ({customer_phone})</p>
+                <p><strong>Payment Method:</strong> {order.get_payment_method_display()}</p>
+                <p><strong>Total Amount:</strong> ₹{order.total_amount}</p>
+                
+                <h3 style="margin-top: 20px;">Delivery Details:</h3>
+                <p style="background: #f9f9f9; padding: 10px; border-radius: 4px;">{order.delivery_address}</p>
+                
+                <h3 style="margin-top: 20px;">Order Items:</h3>
+                {items_html}
+                
+                <hr style="border: 0; border-top: 1px solid #eee; margin: 20px 0;">
+                <p style="font-size: 12px; color: #888; text-align: center;">Freshinbasket Auto-Generated Alert</p>
+            </div>
+        </body>
+        </html>
+        """
+
+        send_mail(
+            subject=subject,
+            message=message_plain,
+            from_email=settings.DEFAULT_FROM_EMAIL,
+            recipient_list=[admin_email],
+            fail_silently=False,
+            html_message=message_html
+        )
+        logger.info(f"Admin email alert sent to {admin_email} for order {order.order_number}")
+    except Exception as e:
+        logger.error(f"send_admin_email_alert failed for order {order.id}: {e}")

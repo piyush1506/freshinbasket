@@ -42,13 +42,14 @@ def _fire_and_forget_post_order(order_id):
                     import time
                     time.sleep(2 * attempt)  # Backoff: 2s, 4s
 
-        # ── Send FCM notification ──
+        # ── Send FCM notification and Email ──
         try:
             from orders.models import Order
-            from notifications.fcm import send_order_notification, send_admin_new_order_alert
+            from notifications.fcm import send_order_notification, send_admin_new_order_alert, send_admin_email_alert
             order = Order.objects.get(id=order_id)
             send_order_notification(order)
             send_admin_new_order_alert(order)
+            send_admin_email_alert(order)
         except Exception as e:
             logger.warning("FCM notification failed for order %s: %s", order_id, e)
 
