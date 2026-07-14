@@ -265,6 +265,7 @@ export default function CartPage() {
   const handleOnlinePayment = async (fullAddress) => {
     if (!razorpayLoaded || typeof window.Razorpay === 'undefined') {
       toast.error("Payment gateway is still loading. Please try again.");
+      setIsProcessing(false);
       return;
     }
 
@@ -281,7 +282,11 @@ export default function CartPage() {
     });
 
     const data = await res.json();
-    if (!res.ok) return toast.error(data.error || "Failed to create payment order");
+    if (!res.ok) {
+      toast.error(data.error || "Failed to create payment order");
+      setIsProcessing(false);
+      return;
+    }
 
     const options = {
       key: data.key,
@@ -336,30 +341,37 @@ export default function CartPage() {
       rzp.open();
     } catch (err) {
       toast.error("Failed to open payment gateway. Please try again.");
+      setIsProcessing(false);
       console.error("Razorpay error:", err);
     }
   };
 
   const handleCODCheckout = async (fullAddress) => {
-    const res = await authFetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/payment/cod/`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        delivery_address: fullAddress,
-        delivery_latitude: lat,
-        delivery_longitude: lng
-      })
-    });
+    try {
+      const res = await authFetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/payment/cod/`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          delivery_address: fullAddress,
+          delivery_latitude: lat,
+          delivery_longitude: lng
+        })
+      });
 
-    const data = await res.json();
-    if (!res.ok) {
-      toast.error(data.error || "Failed to create COD order");
-      return;
+      const data = await res.json();
+      if (!res.ok) {
+        toast.error(data.error || "Failed to create COD order");
+        setIsProcessing(false);
+        return;
+      }
+
+      toast.success("COD order placed successfully! Pay on delivery.");
+      clearCart();
+      setTimeout(() => router.push(`/order-success/${data.order_id}`), 1500);
+    } catch (error) {
+      toast.error("Failed to place COD order");
+      setIsProcessing(false);
     }
-
-    toast.success("COD order placed successfully! Pay on delivery.");
-    clearCart();
-    setTimeout(() => router.push(`/order-success/${data.order_id}`), 1500);
   };
 
   const handleCheckout = async () => {
@@ -381,7 +393,8 @@ export default function CartPage() {
       } else {
         await handleOnlinePayment(fullAddress);
       }
-    } finally {
+    } catch (error) {
+      toast.error("An error occurred during checkout");
       setIsProcessing(false);
     }
   }
