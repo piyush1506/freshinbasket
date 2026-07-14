@@ -150,12 +150,14 @@ def send_admin_new_order_alert(order) -> None:
         
         admins = list(User.objects.filter(Q(role='ADMIN') | Q(is_superuser=True)).distinct())
         
-        # Add the specific phone number if provided in Store Settings
+        # Add the specific phone numbers if provided in Store Settings
         store_settings = StoreSettings.get_settings()
         if store_settings.admin_notification_phone:
-            specific_admin = User.objects.filter(phone_number=store_settings.admin_notification_phone).first()
-            if specific_admin and specific_admin not in admins:
-                admins.append(specific_admin)
+            phones = [p.strip() for p in store_settings.admin_notification_phone.split(',') if p.strip()]
+            for p in phones:
+                specific_admin = User.objects.filter(phone_number=p).first()
+                if specific_admin and specific_admin not in admins:
+                    admins.append(specific_admin)
 
         if not admins:
             logger.debug("No admin users or admin_notification_phone found — skipping admin order alert")
@@ -231,10 +233,13 @@ def send_admin_email_alert(order) -> None:
         from store.models import StoreSettings
         
         store_settings = StoreSettings.get_settings()
-        admin_email = store_settings.admin_notification_email
-        
-        if not admin_email:
+        if not store_settings.admin_notification_email:
             logger.debug("admin_notification_email not set in DB — skipping admin email alert")
+            return
+            
+        admin_emails = [e.strip() for e in store_settings.admin_notification_email.split(',') if e.strip()]
+        if not admin_emails:
+            logger.debug("No valid admin emails found — skipping admin email alert")
             return
 
         customer_name = order.customer.username or order.customer.phone_number
@@ -276,7 +281,7 @@ def send_admin_email_alert(order) -> None:
             subject=subject,
             message=message_plain,
             from_email=settings.DEFAULT_FROM_EMAIL,
-            recipient_list=[admin_email],
+            recipient_list=admin_emails,
             fail_silently=False,
             html_message=message_html
         )

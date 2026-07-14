@@ -269,16 +269,17 @@ class StoreSettings(models.Model):
         max_digits=5, decimal_places=2, default=5.00,
         help_text="Minimum order weight in kg to get free dhaniya."
     )
-    admin_notification_email = models.EmailField(
+    admin_notification_email = models.CharField(
+        max_length=500,
         blank=True, 
         null=True,
-        help_text="Email address to receive new order alerts (e.g. admin@freshinbasket.com)"
+        help_text="Comma-separated emails to receive new order alerts (e.g. admin1@gmail.com, admin2@gmail.com)"
     )
     admin_notification_phone = models.CharField(
-        max_length=15,
+        max_length=500,
         blank=True,
         null=True,
-        help_text="Phone number to receive new order Push Notifications (User must have logged into the app at least once)"
+        help_text="Comma-separated phone numbers to receive admin Push Notifications (e.g. 9876543210, 9123456789)"
     )
 
     class Meta:
