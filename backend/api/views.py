@@ -466,7 +466,7 @@ class ProductViewSet(viewsets.ModelViewSet):
     throttle_classes = [SearchRateThrottle]
 
     def get_queryset(self):
-        qs = Product.objects.select_related('unit', 'section').prefetch_related(
+        qs = Product.objects.filter(is_active=True).select_related('unit', 'section').prefetch_related(
             'categories',
             Prefetch('subproducts', queryset=SubProduct.objects.select_related('unit'))
         ).defer('description')
@@ -684,6 +684,7 @@ class CartViewSet(viewsets.ModelViewSet):
     throttle_classes = [CartRateThrottle]
 
     def get_queryset(self):
+        CartItem.objects.filter(cart__user=self.request.user, product__is_active=False).delete()
         return Cart.objects.filter(user=self.request.user).prefetch_related('items__product')
 
     def get_object(self):
@@ -693,6 +694,7 @@ class CartViewSet(viewsets.ModelViewSet):
         return cart
 
     def retrieve(self, request, *args, **kwargs):
+        CartItem.objects.filter(cart__user=self.request.user, product__is_active=False).delete()
         cart = Cart.objects.prefetch_related('items__product').get(user=self.request.user)
         return Response(CartSerializer(cart).data)
 
