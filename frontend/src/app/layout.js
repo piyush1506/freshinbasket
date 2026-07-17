@@ -1,11 +1,13 @@
 import { Plus_Jakarta_Sans } from "next/font/google";
 import Script from "next/script";
+import { Suspense } from "react";
 import "./globals.css";
 import { CartProvider } from "./context/CartContext";
 import CartBottomBar from "./components/CartBottomBar";
 import MobileAppBanner from "./components/MobileAppBanner";
 import Footer from "./components/Footer";
 import PageTransitionWrapper from "./components/PageTransitionWrapper";
+import GATracker from "./components/GATracker";
 
 const plusJakarta = Plus_Jakarta_Sans({
   variable: "--font-plus-jakarta",
@@ -170,6 +172,27 @@ export default function RootLayout({ children }) {
       className={`${plusJakarta.variable} scroll-smooth h-full antialiased`}
       data-scroll-behavior="smooth"
     >
+      <head>
+        {/* Google Analytics — must be in <head> for reliable firing */}
+        {gaId && (
+          <>
+            <Script
+              strategy="afterInteractive"
+              src={`https://www.googletagmanager.com/gtag/js?id=${gaId}`}
+            />
+            <Script id="google-analytics" strategy="afterInteractive">
+              {`
+                window.dataLayer = window.dataLayer || [];
+                function gtag(){dataLayer.push(arguments);}
+                gtag('js', new Date());
+                gtag('config', '${gaId}', {
+                  page_path: window.location.pathname,
+                });
+              `}
+            </Script>
+          </>
+        )}
+      </head>
       <body className="min-h-full flex flex-col" style={{ fontFamily: "var(--font-plus-jakarta), sans-serif" }}>
         <script
           type="application/ld+json"
@@ -183,27 +206,14 @@ export default function RootLayout({ children }) {
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(navigationSchema) }}
         />
-        
-        {/* Google Analytics */}
-        {gaId && (
-          <>
-            <Script
-              strategy="afterInteractive"
-              src={`https://www.googletagmanager.com/gtag/js?id=${gaId}`}
-            />
-            <Script id="google-analytics" strategy="afterInteractive">
-              {`
-                window.dataLayer = window.dataLayer || [];
-                function gtag(){dataLayer.push(arguments);}
-                gtag('js', new Date());
-
-                gtag('config', '${gaId}');
-              `}
-            </Script>
-          </>
-        )}
 
         <CartProvider>
+          {/* GA4 page_view tracker for client-side navigation */}
+          {gaId && (
+            <Suspense fallback={null}>
+              <GATracker gaId={gaId} />
+            </Suspense>
+          )}
           <main className="flex-grow flex flex-col">
             <PageTransitionWrapper>
               {children}
