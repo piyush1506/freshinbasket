@@ -3,23 +3,25 @@ export default async function sitemap() {
   const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://www.freshinbasket.com';
 
   const routes = [
-    '',
-    '/about',
-    '/contact',
-    '/privacy',
-    '/terms',
-    '/search',
-    '/login'
-  ].map((route) => ({
+    { route: '',           changeFrequency: 'daily',   priority: 1.0 },
+    { route: '/about',     changeFrequency: 'monthly',  priority: 0.7 },
+    { route: '/contact',   changeFrequency: 'monthly',  priority: 0.7 },
+    { route: '/privacy',   changeFrequency: 'yearly',   priority: 0.4 },
+    { route: '/terms',     changeFrequency: 'yearly',   priority: 0.4 },
+    { route: '/refund-policy',   changeFrequency: 'yearly',  priority: 0.4 },
+    { route: '/delete-account',  changeFrequency: 'yearly',  priority: 0.3 },
+  ].map(({ route, changeFrequency, priority }) => ({
     url: `${baseUrl}${route}`,
     lastModified: new Date().toISOString(),
-    changeFrequency: 'weekly',
-    priority: route === '' ? 1 : 0.8,
+    changeFrequency,
+    priority,
   }));
 
   // Add categories dynamically
   try {
-    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/categories/`);
+    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/categories/`, {
+      next: { revalidate: 3600 }
+    });
     if (res.ok) {
       const data = await res.json();
       const categories = data.results || data;
@@ -28,7 +30,7 @@ export default async function sitemap() {
           url: `${baseUrl}/category/${category.slug || category.id}`,
           lastModified: new Date().toISOString(),
           changeFrequency: 'weekly',
-          priority: 0.7,
+          priority: 0.8,
         });
       });
     }
@@ -38,7 +40,9 @@ export default async function sitemap() {
 
   // Add products dynamically
   try {
-    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/products/`);
+    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/products/`, {
+      next: { revalidate: 3600 }
+    });
     if (res.ok) {
       const data = await res.json();
       const products = data.results || data;

@@ -1,6 +1,6 @@
 export const metadata = {
-  title: 'Refund & Return Policy | Greenmart',
-  description: 'Our open-box delivery and refund policy.',
+  title: 'Refund & Return Policy | Freshinbasket',
+  description: 'Our open-box delivery and refund policy at Freshinbasket. Learn about on-the-spot returns, no post-delivery claims, and refund processing for fresh grocery orders in Bhilwara.',
 };
 
 export default function RefundPolicy() {
@@ -23,7 +23,7 @@ export default function RefundPolicy() {
                 Open-Box Delivery
               </h2>
               <p className="leading-relaxed">
-                At Greenmart, we prioritize transparency and freshness. That's why we strictly follow an <strong>Open-Box Delivery</strong> policy. When our delivery partner arrives with your order, you are encouraged to open the package and inspect all products before accepting the delivery.
+                At Freshinbasket, we prioritize transparency and freshness. That's why we strictly follow an <strong>Open-Box Delivery</strong> policy. When our delivery partner arrives with your order, you are encouraged to open the package and inspect all products before accepting the delivery.
               </p>
             </section>
 

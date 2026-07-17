@@ -9,7 +9,7 @@ import HowItWorks from "./components/HowItWorks";
 import AnnouncementBanner from "./components/AnnouncementBanner";
 import HomeSections from "./components/HomeSections";
 
-export const dynamic = 'force-dynamic';
+export const revalidate = 60; // ISR: revalidate homepage data every 60 seconds
 
 export default async function Home() {
   // Fetch sections (with nested categories & products) and slides from the backend
@@ -18,7 +18,7 @@ export default async function Home() {
 
   try {
     const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/home/`, {
-      next: { revalidate: 0 }
+      next: { revalidate: 60 }
     });
     if (res.ok) {
       const data = await res.json();
@@ -31,6 +31,9 @@ export default async function Home() {
 
   return (
     <div className="min-h-screen bg-[#FDFDFD] text-[#1A1A1A] font-sans">
+      {/* SEO H1 — visually hidden, meaningful for crawlers */}
+      <h1 className="sr-only">Freshinbasket — Fresh Vegetables &amp; Fruits Delivery in Bhilwara</h1>
+
       {/* Section Tabs + Category Nav + Products (Client Component handles tab state) */}
       <HomeSections sections={sections}>
         {/* Announcement Banner (conditionally displayed if active in Admin) */}

@@ -1,7 +1,19 @@
-"use client";
 import Navbar from "../components/Navbar";
 import Link from "next/link";
 import { ArrowLeft, ShieldCheck } from "lucide-react";
+
+export const metadata = {
+  title: "Privacy Policy | Freshinbasket",
+  description: "Read Freshinbasket's Privacy Policy. Learn how we collect, use, and protect your personal data when you use our farm-fresh grocery delivery service in Bhilwara.",
+  openGraph: {
+    title: "Privacy Policy | Freshinbasket",
+    description: "How Freshinbasket collects, uses, and protects your personal information.",
+    url: "https://www.freshinbasket.com/privacy",
+  },
+  alternates: {
+    canonical: "https://www.freshinbasket.com/privacy",
+  },
+};
 
 export default function PrivacyPolicy() {
   return (

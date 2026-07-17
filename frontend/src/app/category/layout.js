@@ -5,40 +5,78 @@ import Link from "next/link";
 import Image from "next/image";
 import Navbar from "../components/Navbar";
 
+const CATEGORIES_CACHE_KEY = "cat_layout_cache";
+const CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
+
+function getCachedCategories() {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = sessionStorage.getItem(CATEGORIES_CACHE_KEY);
+    if (!raw) return null;
+    const { data, ts } = JSON.parse(raw);
+    if (Date.now() - ts > CACHE_TTL_MS) {
+      sessionStorage.removeItem(CATEGORIES_CACHE_KEY);
+      return null;
+    }
+    return data;
+  } catch {
+    return null;
+  }
+}
+
+function setCachedCategories(data) {
+  if (typeof window === "undefined") return;
+  try {
+    sessionStorage.setItem(CATEGORIES_CACHE_KEY, JSON.stringify({ data, ts: Date.now() }));
+  } catch {}
+}
+
 export default function CategoryLayout({ children }) {
   const params = useParams();
   const slug = params?.slug;
+  const [allCategories, setAllCategories] = useState([]);
   const [categories, setCategories] = useState([]);
 
+  // Fetch once and cache — don't re-fetch on every slug change
   useEffect(() => {
     const fetchCategories = async () => {
+      const cached = getCachedCategories();
+      if (cached) {
+        setAllCategories(cached);
+        return;
+      }
+
       const apiUrl = process.env.NEXT_PUBLIC_API_URL;
       if (!apiUrl) return;
-      
       const base = apiUrl.endsWith('/') ? apiUrl.slice(0, -1) : apiUrl;
       try {
         const catRes = await fetch(`${base}/api/v1/categories/`);
         if (catRes.ok) {
           const catData = await catRes.json();
-          
-          if (slug) {
-            const currentCat = catData.find((c) => c.slug?.toLowerCase() === slug?.toLowerCase());
-            if (currentCat && currentCat.section) {
-              const sectionFiltered = catData.filter((c) => c.section === currentCat.section);
-              setCategories(sectionFiltered);
-            } else {
-              setCategories(catData);
-            }
-          } else {
-            setCategories(catData);
-          }
+          setCachedCategories(catData);
+          setAllCategories(catData);
         }
       } catch (err) {
         console.error("Layout categories fetch error:", err);
       }
     };
     fetchCategories();
-  }, [slug]);
+  }, []); // ← fetch ONCE on mount, not on every slug change
+
+  // Filter sidebar categories when slug or allCategories changes
+  useEffect(() => {
+    if (!allCategories.length) return;
+    if (slug) {
+      const currentCat = allCategories.find((c) => c.slug?.toLowerCase() === slug?.toLowerCase());
+      if (currentCat && currentCat.section) {
+        setCategories(allCategories.filter((c) => c.section === currentCat.section));
+      } else {
+        setCategories(allCategories);
+      }
+    } else {
+      setCategories(allCategories);
+    }
+  }, [slug, allCategories]);
 
   return (
     <div className="flex flex-col h-screen overflow-hidden">

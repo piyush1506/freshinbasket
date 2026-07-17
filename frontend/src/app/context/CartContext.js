@@ -173,19 +173,31 @@ export function CartProvider({ children }) {
 
     try {
       for (const item of guestItems) {
-        await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/cart/add_item/`, {
+        const qty = Number(item.quantity);
+        // Skip items with invalid quantity — these would cause 400 errors
+        if (!qty || qty <= 0 || isNaN(qty)) continue;
+
+        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/cart/add_item/`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${token}`
           },
-          body: JSON.stringify({ product_id: item.id, quantity: Number(item.quantity) || 1 })
+          body: JSON.stringify({ product_id: item.id, quantity: qty })
         });
+
+        // 400 = product inactive or invalid — skip silently, don't retry
+        // 404 = product deleted — skip silently
+        if (!res.ok && res.status !== 400 && res.status !== 404) {
+          console.warn(`merge cart item ${item.id} failed with status ${res.status}`);
+        }
       }
-      localStorage.removeItem(GUEST_CART_KEY);
-      await fetchCart();
     } catch (e) {
       console.error("Failed to merge guest cart", e);
+    } finally {
+      // Always clean up guest cart and refresh from backend regardless of errors
+      localStorage.removeItem(GUEST_CART_KEY);
+      await fetchCart();
     }
   };
 

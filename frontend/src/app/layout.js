@@ -19,34 +19,54 @@ export const metadata = {
     default: "Freshinbasket — Farm Fresh Delivered",
     template: "%s | Freshinbasket",
   },
-  description: "Order fresh organic vegetables and fruits delivered to your doorstep. Farm-fresh produce from local farmers.",
+  description: "Order fresh organic vegetables and fruits delivered to your doorstep in Bhilwara. Farm-fresh produce from local farmers.",
   keywords: [
     "organic vegetables",
     "fresh fruits",
     "farm delivery",
     "online vegetables shop",
     "online fruits shop",
-    
     "organic grocery",
     "Freshinbasket",
     "fresh in basket",
     "freshinbasket",
     "fresh fruits in bhilwara",
     "vegetables in bhilwara",
-    "bhilwara aaj ki mandi ka bhav"
+    "bhilwara aaj ki mandi ka bhav",
+    "grocery delivery bhilwara",
+    "sabzi delivery bhilwara",
   ],
   robots: { index: true, follow: true },
+  metadataBase: new URL("https://www.freshinbasket.com"),
+  alternates: {
+    canonical: "https://www.freshinbasket.com",
+  },
   openGraph: {
     title: "Freshinbasket — Farm Fresh Delivered",
-    description: "Order fresh organic vegetables and fruits delivered to your doorstep.",
+    description: "Order fresh organic vegetables and fruits delivered to your doorstep in Bhilwara.",
     type: "website",
+    url: "https://www.freshinbasket.com",
     locale: "en_IN",
     siteName: "Freshinbasket",
+    images: [
+      {
+        url: "https://www.freshinbasket.com/logo/logo.jpg",
+        width: 800,
+        height: 600,
+        alt: "Freshinbasket — Farm Fresh Delivered",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Freshinbasket — Farm Fresh Delivered",
+    description: "Order fresh organic vegetables and fruits delivered to your doorstep in Bhilwara.",
+    images: ["https://www.freshinbasket.com/logo/logo.jpg"],
   },
   icons: {
     icon: "/favicon.ico",
-     shortcut: "/favicon.ico",
-     apple:"/apple-touch-icon.png",
+    shortcut: "/favicon.ico",
+    apple: "/apple-touch-icon.png",
   },
 };
 
@@ -69,6 +89,46 @@ export default function RootLayout({ children }) {
       "target": "https://freshinbasket.com/search?q={search_term_string}",
       "query-input": "required name=search_term_string"
     }
+  };
+
+  const localBusinessSchema = {
+    "@context": "https://schema.org",
+    "@type": "GroceryStore",
+    "name": "Freshinbasket",
+    "description": "Farm-fresh organic vegetables and fruits delivered to your doorstep in Bhilwara, Rajasthan.",
+    "url": "https://www.freshinbasket.com",
+    "telephone": "+919461877701",
+    "priceRange": "₹",
+    "image": "https://www.freshinbasket.com/logo/logo.jpg",
+    "address": {
+      "@type": "PostalAddress",
+      "addressLocality": "Bhilwara",
+      "addressRegion": "Rajasthan",
+      "postalCode": "311001",
+      "addressCountry": "IN"
+    },
+    "geo": {
+      "@type": "GeoCoordinates",
+      "latitude": "25.3462",
+      "longitude": "74.6313"
+    },
+    "areaServed": {
+      "@type": "City",
+      "name": "Bhilwara"
+    },
+    "openingHoursSpecification": [
+      {
+        "@type": "OpeningHoursSpecification",
+        "dayOfWeek": [
+          "Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"
+        ],
+        "opens": "07:00",
+        "closes": "21:00"
+      }
+    ],
+    "sameAs": [
+      "https://wa.me/919461877701"
+    ]
   };
 
   const navigationSchema = {
@@ -114,6 +174,10 @@ export default function RootLayout({ children }) {
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteSchema) }}
+        />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(localBusinessSchema) }}
         />
         <script
           type="application/ld+json"

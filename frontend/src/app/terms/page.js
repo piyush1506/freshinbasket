@@ -1,7 +1,19 @@
-"use client";
 import Navbar from "../components/Navbar";
 import Link from "next/link";
 import { ArrowLeft, FileText } from "lucide-react";
+
+export const metadata = {
+  title: "Terms and Conditions | Freshinbasket",
+  description: "Read the Terms and Conditions for using Freshinbasket — Bhilwara's farm-fresh online grocery delivery service. Understand your rights and responsibilities.",
+  openGraph: {
+    title: "Terms and Conditions | Freshinbasket",
+    description: "Terms and Conditions governing use of the Freshinbasket grocery delivery platform.",
+    url: "https://www.freshinbasket.com/terms",
+  },
+  alternates: {
+    canonical: "https://www.freshinbasket.com/terms",
+  },
+};
 
 export default function TermsAndConditions() {
   return (

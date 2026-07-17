@@ -107,7 +107,7 @@ class Product(models.Model):
     tax_percentage = models.DecimalField(max_digits=5, decimal_places=2, default=0, help_text="Tax percentage (e.g. 5, 12, 18)")
     unit = models.ForeignKey(Unit, on_delete=models.SET_NULL, null=True, blank=True, help_text="Unit of measurement (e.g. kg, piece, 250g)")
     is_active = models.BooleanField(default=True, help_text="Uncheck to hide product from the frontend without deleting it")
-    image_url = models.ImageField(upload_to='products/', blank=True, null=True)
+    image_url = models.ImageField(upload_to='products/', max_length=500, blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     mrp = models.DecimalField(
@@ -203,7 +203,7 @@ class SubProduct(models.Model):
     price = models.DecimalField(max_digits=10, decimal_places=2)
     mrp = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
     stock = models.PositiveIntegerField(default=0)
-    image_url = models.ImageField(upload_to='subproducts/', blank=True, null=True)
+    image_url = models.ImageField(upload_to='subproducts/', max_length=500, blank=True, null=True)
     unit = models.ForeignKey(Unit, on_delete=models.SET_NULL, null=True, blank=True)
     description = models.TextField(blank=True, default='')
     created_at = models.DateTimeField(auto_now_add=True)
