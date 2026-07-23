@@ -303,7 +303,7 @@ export default function OrdersPage() {
                                     return (
                                         <div
                                             key={order.id}
-                                            className="bg-white border border-gray-200 rounded-2xl overflow-hidden hover:border-gray-300 transition-colors p-5"
+                                            className="bg-white border border-gray-200 rounded-2xl overflow-hidden hover:border-gray-300 transition-colors p-5 w-full max-w-2xl"
                                         >
                                             <div className="flex flex-col md:flex-row gap-6">
                                                 {/* Content */}
