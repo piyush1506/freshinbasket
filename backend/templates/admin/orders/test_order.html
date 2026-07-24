@@ -1,0 +1,436 @@
+{% extends "admin/base_site.html" %}
+{% load i18n static %}
+
+{% block extrahead %}
+{{ block.super }}
+<!-- Leaflet CSS & JS for Interactive Map -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+<style>
+    .test-order-card {
+        background: #ffffff;
+        border-radius: 12px;
+        border: 1px solid #e2e8f0;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+        padding: 24px;
+        max-width: 950px;
+        margin: 20px 0;
+        font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    }
+
+    .notice-banner {
+        background-color: #fef2f2;
+        border-left: 4px solid #ef4444;
+        color: #991b1b;
+        padding: 16px 20px;
+        border-radius: 8px;
+        margin-bottom: 24px;
+        font-size: 0.95rem;
+        line-height: 1.5;
+    }
+
+    .notice-banner ul {
+        margin: 8px 0 0 20px;
+        padding: 0;
+    }
+
+    .form-group {
+        margin-bottom: 20px;
+    }
+
+    .form-group label {
+        display: block;
+        font-weight: 600;
+        margin-bottom: 8px;
+        color: #334155;
+        font-size: 0.9rem;
+    }
+
+    .form-control {
+        width: 100%;
+        padding: 10px 14px;
+        border: 1px solid #cbd5e1;
+        border-radius: 8px;
+        font-size: 0.95rem;
+        color: #1e293b;
+        background-color: #f8fafc;
+        box-sizing: border-box;
+        transition: all 0.2s;
+    }
+
+    .form-control:focus {
+        border-color: #3b82f6;
+        background-color: #ffffff;
+        outline: none;
+        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+    }
+
+    .form-row {
+        display: flex;
+        gap: 16px;
+    }
+
+    .form-col {
+        flex: 1;
+    }
+
+    #map {
+        height: 280px;
+        width: 100%;
+        border-radius: 8px;
+        border: 1px solid #cbd5e1;
+        margin-top: 8px;
+        z-index: 1;
+    }
+
+    .btn-geo {
+        background-color: #3b82f6;
+        color: white;
+        border: none;
+        padding: 6px 12px;
+        border-radius: 6px;
+        font-size: 0.82rem;
+        font-weight: 600;
+        cursor: pointer;
+        margin-left: 10px;
+    }
+
+    .btn-geo:hover {
+        background-color: #2563eb;
+    }
+
+    .product-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 12px;
+        margin-bottom: 16px;
+    }
+
+    .product-table th {
+        background-color: #f1f5f9;
+        color: #475569;
+        font-weight: 600;
+        font-size: 0.85rem;
+        text-transform: uppercase;
+        padding: 10px 12px;
+        text-align: left;
+        border-bottom: 2px solid #e2e8f0;
+    }
+
+    .product-table td {
+        padding: 10px 12px;
+        border-bottom: 1px solid #e2e8f0;
+        vertical-align: middle;
+    }
+
+    .btn-add-item {
+        background-color: #e0f2fe;
+        color: #0369a1;
+        border: 1px solid #bae6fd;
+        padding: 8px 16px;
+        border-radius: 6px;
+        font-weight: 600;
+        cursor: pointer;
+        font-size: 0.88rem;
+        transition: all 0.2s;
+    }
+
+    .btn-add-item:hover {
+        background-color: #bae6fd;
+    }
+
+    .btn-remove-item {
+        background-color: #fee2e2;
+        color: #dc2626;
+        border: none;
+        padding: 6px 12px;
+        border-radius: 6px;
+        cursor: pointer;
+        font-weight: 600;
+        font-size: 0.82rem;
+    }
+
+    .btn-remove-item:hover {
+        background-color: #fca5a5;
+    }
+
+    .btn-submit {
+        background-color: #10b981;
+        color: white;
+        border: none;
+        padding: 12px 24px;
+        border-radius: 8px;
+        font-weight: 700;
+        font-size: 1rem;
+        cursor: pointer;
+        transition: background-color 0.2s;
+    }
+
+    .btn-submit:hover {
+        background-color: #059669;
+    }
+
+    .btn-cancel {
+        background-color: #94a3b8;
+        color: white;
+        padding: 12px 20px;
+        border-radius: 8px;
+        text-decoration: none;
+        font-weight: 600;
+        font-size: 0.95rem;
+        margin-left: 12px;
+    }
+
+    .checkbox-label {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        cursor: pointer;
+        font-weight: 600;
+        color: #334155;
+    }
+
+    .checkbox-label input[type="checkbox"] {
+        width: 18px;
+        height: 18px;
+        accent-color: #10b981;
+    }
+</style>
+{% endblock %}
+
+{% block breadcrumbs %}
+<div class="breadcrumbs">
+<a href="{% url 'admin:index' %}">{% translate 'Home' %}</a>
+&rsaquo; <a href="{% url 'admin:orders_testorder_changelist' %}">Test Orders</a>
+&rsaquo; Add Test Order
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="test-order-card">
+    <h2 style="margin-top: 0; color: #0f172a; font-size: 1.4rem;">🧪 Add Test Order (Silent Mode + Lat/Lng for Delivery App Testing)</h2>
+    
+    <div class="notice-banner">
+        <strong>⚠️ TEST MODE ACTIVE:</strong>
+        <ul>
+            <li><strong>NO Email Notification</strong> will be sent.</li>
+            <li><strong>NO FCM Push Notification</strong> will be sent.</li>
+            <li><strong>NO SMS</strong> will be sent.</li>
+            <li><strong>NO Stock Deduction</strong> — inventory levels remain untouched.</li>
+            <li><strong>Latitude & Longitude</strong> will be stored on the order so it can be tested in the <strong>Delivery Boy App</strong>.</li>
+        </ul>
+    </div>
+
+    <form method="post" action="">
+        {% csrf_token %}
+
+        <div class="form-row">
+            <div class="form-col form-group">
+                <label for="customer_id">Select Customer *</label>
+                <select name="customer_id" id="customer_id" class="form-control" required>
+                    <option value="">-- Choose Customer --</option>
+                    {% for user in users %}
+                        <option value="{{ user.id }}">{{ user.username }} ({{ user.phone_number }}) - {{ user.get_role_display }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="form-col form-group">
+                <label for="slot_id">Delivery Slot</label>
+                <select name="slot_id" id="slot_id" class="form-control">
+                    {% for slot in slots %}
+                        <option value="{{ slot.id }}">{{ slot.name }} ({{ slot.display_label }})</option>
+                    {% empty %}
+                        <option value="">Default Slot (7 AM - 12 PM)</option>
+                    {% endfor %}
+                </select>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label for="delivery_address">Delivery Address *</label>
+            <textarea name="delivery_address" id="delivery_address" class="form-control" rows="2" placeholder="e.g. 102 Green Heights, Near CG Road, Ahmedabad" required></textarea>
+        </div>
+
+        <!-- Location Lat/Lng Picker -->
+        <div class="form-group">
+            <div style="display: flex; align-items: center; justify-content: space-between;">
+                <label style="margin: 0;">Delivery Location Coordinates (Latitude / Longitude) *</label>
+                <button type="button" class="btn-geo" onclick="useCurrentLocation()">📍 Get My Current Location</button>
+            </div>
+            <p style="font-size: 0.82rem; color: #64748b; margin: 4px 0 8px 0;">Click anywhere on the map or drag the pin to set exact coordinates for testing in the delivery app.</p>
+            
+            <div class="form-row">
+                <div class="form-col">
+                    <input type="number" step="0.000001" name="delivery_latitude" id="delivery_latitude" class="form-control" placeholder="Latitude (e.g. 23.022500)" value="23.022500" required>
+                </div>
+                <div class="form-col">
+                    <input type="number" step="0.000001" name="delivery_longitude" id="delivery_longitude" class="form-control" placeholder="Longitude (e.g. 72.571400)" value="72.571400" required>
+                </div>
+            </div>
+
+            <div id="map"></div>
+        </div>
+
+        <div class="form-row" style="align-items: center; margin-top: 20px;">
+            <div class="form-col form-group">
+                <label for="payment_method">Payment Method</label>
+                <select name="payment_method" id="payment_method" class="form-control">
+                    <option value="COD">Cash on Delivery (COD)</option>
+                    <option value="ONLINE">Online Payment (ONLINE)</option>
+                </select>
+            </div>
+            <div class="form-col form-group">
+                <label for="delivery_charge">Delivery Charge (₹)</label>
+                <input type="number" step="0.01" name="delivery_charge" id="delivery_charge" class="form-control" value="0.00">
+            </div>
+            <div class="form-col form-group" style="margin-top: 18px;">
+                <label class="checkbox-label">
+                    <input type="checkbox" name="is_paid" id="is_paid">
+                    Mark as Paid
+                </label>
+            </div>
+        </div>
+
+        <hr style="border: 0; border-top: 1px solid #e2e8f0; margin: 24px 0;">
+
+        <h3 style="color: #334155; margin-bottom: 12px;">Order Items</h3>
+
+        <table class="product-table">
+            <thead>
+                <tr>
+                    <th style="width: 50%;">Product</th>
+                    <th style="width: 25%;">Quantity</th>
+                    <th style="width: 15%;">Unit Price</th>
+                    <th style="width: 10%;">Action</th>
+                </tr>
+            </thead>
+            <tbody id="product-items-body">
+                <tr>
+                    <td>
+                        <select name="product_ids[]" class="form-control product-select" required onchange="updateRowPrice(this)">
+                            <option value="">-- Select Product --</option>
+                            {% for p in products %}
+                                <option value="{{ p.id }}" data-price="{{ p.price }}" data-unit="{% if p.unit %}{{ p.unit.name }}{% else %}kg{% endif %}">
+                                    {{ p.name }} (₹{{ p.price }}/{% if p.unit %}{{ p.unit.name }}{% else %}kg{% endif %})
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </td>
+                    <td>
+                        <input type="number" step="0.01" name="quantities[]" class="form-control qty-input" value="1" min="0.01" required>
+                    </td>
+                    <td>
+                        <span class="unit-price-text" style="font-weight: 600; color: #475569;">₹0.00</span>
+                    </td>
+                    <td>
+                        <button type="button" class="btn-remove-item" onclick="removeRow(this)">Remove</button>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+
+        <button type="button" class="btn-add-item" onclick="addProductRow()">+ Add Another Product</button>
+
+        <div style="margin-top: 32px; display: flex; align-items: center;">
+            <button type="submit" class="btn-submit">🧪 Create Test Order</button>
+            <a href="{% url 'admin:orders_testorder_changelist' %}" class="btn-cancel">Cancel</a>
+        </div>
+    </form>
+</div>
+
+<script>
+// Leaflet Map Initialization
+let defaultLat = 23.022500;
+let defaultLng = 72.571400;
+
+const map = L.map('map').setView([defaultLat, defaultLng], 13);
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    maxZoom: 19,
+    attribution: '© OpenStreetMap'
+}).addTo(map);
+
+let marker = L.marker([defaultLat, defaultLng], { draggable: true }).addTo(map);
+
+function updateInputs(lat, lng) {
+    document.getElementById('delivery_latitude').value = lat.toFixed(6);
+    document.getElementById('delivery_longitude').value = lng.toFixed(6);
+}
+
+marker.on('dragend', function (e) {
+    const coord = e.target.getLatLng();
+    updateInputs(coord.lat, coord.lng);
+});
+
+map.on('click', function (e) {
+    const lat = e.latlng.lat;
+    const lng = e.latlng.lng;
+    marker.setLatLng([lat, lng]);
+    updateInputs(lat, lng);
+});
+
+document.getElementById('delivery_latitude').addEventListener('input', function() {
+    const lat = parseFloat(this.value);
+    const lng = parseFloat(document.getElementById('delivery_longitude').value);
+    if (!isNaN(lat) && !isNaN(lng)) {
+        marker.setLatLng([lat, lng]);
+        map.setView([lat, lng]);
+    }
+});
+
+document.getElementById('delivery_longitude').addEventListener('input', function() {
+    const lat = parseFloat(document.getElementById('delivery_latitude').value);
+    const lng = parseFloat(this.value);
+    if (!isNaN(lat) && !isNaN(lng)) {
+        marker.setLatLng([lat, lng]);
+        map.setView([lat, lng]);
+    }
+});
+
+function useCurrentLocation() {
+    if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(function (position) {
+            const lat = position.coords.latitude;
+            const lng = position.coords.longitude;
+            marker.setLatLng([lat, lng]);
+            map.setView([lat, lng], 15);
+            updateInputs(lat, lng);
+        }, function (error) {
+            alert("Could not get current location. Please allow location permissions or select manually on map.");
+        });
+    } else {
+        alert("Geolocation is not supported by this browser.");
+    }
+}
+
+function updateRowPrice(selectElem) {
+    const option = selectElem.options[selectElem.selectedIndex];
+    const price = option.getAttribute('data-price') || '0.00';
+    const unit = option.getAttribute('data-unit') || 'kg';
+    const row = selectElem.closest('tr');
+    const priceSpan = row.querySelector('.unit-price-text');
+    priceSpan.textContent = `₹${price}/${unit}`;
+}
+
+function addProductRow() {
+    const tbody = document.getElementById('product-items-body');
+    const firstRow = tbody.querySelector('tr');
+    const newRow = firstRow.cloneNode(true);
+
+    newRow.querySelector('select').selectedIndex = 0;
+    newRow.querySelector('.qty-input').value = '1';
+    newRow.querySelector('.unit-price-text').textContent = '₹0.00';
+
+    tbody.appendChild(newRow);
+}
+
+function removeRow(btn) {
+    const tbody = document.getElementById('product-items-body');
+    if (tbody.querySelectorAll('tr').length > 1) {
+        btn.closest('tr').remove();
+    } else {
+        alert("You must have at least one product item in the test order.");
+    }
+}
+</script>
+{% endblock %}

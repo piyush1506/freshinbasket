@@ -1,7 +1,7 @@
 from django.contrib import admin
 from django.utils.html import format_html
 from django.db.models import Q
-from .models import Order, OrderItem, Cart, CartItem, DeliveryAssignment, Review, DeliveryCluster, DeliverySlot, OrderProduct
+from .models import Order, OrderItem, Cart, CartItem, DeliveryAssignment, Review, DeliveryCluster, DeliverySlot, OrderProduct, TestOrder
 
 
 class OrderItemInline(admin.TabularInline):
@@ -192,7 +192,7 @@ class OrderAdmin(PrintOrderMixin, admin.ModelAdmin):
     inlines = [OrderItemInline, DeliveryAssignmentInline]
 
     def get_queryset(self, request):
-        return super().get_queryset(request).select_related('delivery_assignment', 'delivery_assignment__delivery_boy')
+        return super().get_queryset(request).filter(is_test_order=False).select_related('delivery_assignment', 'delivery_assignment__delivery_boy')
 
     def get_changelist_form(self, request, **kwargs):
         form = super().get_changelist_form(request, **kwargs)
@@ -213,6 +213,42 @@ class OrderAdmin(PrintOrderMixin, admin.ModelAdmin):
 
     def assigned_to(self, obj):
         """Show assigned delivery boy or a red 'Unassigned' badge."""
+        try:
+            assignment = obj.delivery_assignment
+            return format_html(
+                '<span style="color:green; font-weight:bold;">✅ {}</span>',
+                assignment.delivery_boy.username
+            )
+        except DeliveryAssignment.DoesNotExist:
+            from django.utils.safestring import mark_safe
+            return mark_safe('<span style="color:red; font-weight:bold;"> Unassigned</span>')
+    assigned_to.short_description = 'Delivery Boy'
+
+
+@admin.register(TestOrder)
+class TestOrderAdmin(PrintOrderMixin, admin.ModelAdmin):
+    change_list_template = "admin/orders/order/change_list.html"
+    list_display = (
+        'order_number', 'customer', 'status', 'total_amount',
+        'payment_method', 'assigned_to', 'delivery_address_short', 'created_at', 'print_action'
+    )
+    list_filter = ('status', 'is_paid', 'created_at')
+    list_editable = ('status',)
+    search_fields = ('id', 'order_number', 'customer__username', 'customer__email')
+    readonly_fields = ('order_number', 'created_at', 'updated_at', 'total_amount', 'print_action')
+    ordering = ('-created_at',)
+    inlines = [OrderItemInline, DeliveryAssignmentInline]
+
+    def get_queryset(self, request):
+        return super().get_queryset(request).filter(is_test_order=True).select_related('delivery_assignment', 'delivery_assignment__delivery_boy')
+
+    def delivery_address_short(self, obj):
+        if not obj.delivery_address:
+            return '-'
+        return obj.delivery_address[:40] + '...' if len(obj.delivery_address) > 40 else obj.delivery_address
+    delivery_address_short.short_description = 'Address'
+
+    def assigned_to(self, obj):
         try:
             assignment = obj.delivery_assignment
             return format_html(

@@ -124,6 +124,7 @@ class Order(models.Model):
     refund_status = models.CharField(max_length=50, blank=True, null=True, help_text="Refund status (e.g., PROCESSED, FAILED)")
 
     order_number = models.CharField(max_length=20, unique=True, blank=True, null=True)
+    is_test_order = models.BooleanField(default=False, help_text="Test order created via admin without sending notifications")
 
     def save(self, *args, **kwargs):
         if not self.order_number:
@@ -171,6 +172,13 @@ class OrderProduct(Order):
         proxy = True
         verbose_name = "OrderDetail Card"
         verbose_name_plural = "OrderDetail Cards"
+
+
+class TestOrder(Order):
+    class Meta:
+        proxy = True
+        verbose_name = "Test Order"
+        verbose_name_plural = "Test Orders"
 
 
 # =========================

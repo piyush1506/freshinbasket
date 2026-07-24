@@ -5,6 +5,7 @@ from django.urls import path, include
 
 from orders.admin_views import DeliveryDashboardView
 from notifications.admin_views import SendNotificationView
+from orders.test_order_view import CreateTestOrderView
 
 # --- START OF ADMIN REGROUPING PATCH ---
 original_get_app_list = admin.site.get_app_list
@@ -53,7 +54,10 @@ def custom_get_app_list(request, app_label=None):
     for app in app_dict.values():
         for model in app['models']:
             obj_name = model.get('object_name')
-            if obj_name in store_models:
+            if obj_name == 'TestOrder':
+                model['add_url'] = '/admin-3a3aw44r34/test-order/'
+                groups['Other Settings']['models'].append(model)
+            elif obj_name in store_models:
                 groups['Store Management']['models'].append(model)
             elif obj_name in delivery_models:
                 groups['Delivery Management']['models'].append(model)
@@ -75,6 +79,15 @@ def custom_get_app_list(request, app_label=None):
         'add_url': None,
         'view_only': True,
     })
+    
+    # Inject Create Test Order link into Other Settings
+    groups['Other Settings']['models'].append({
+        'name': '🧪 Create Test Order',
+        'object_name': 'CreateTestOrder',
+        'admin_url': '/admin-3a3aw44r34/test-order/',
+        'add_url': None,
+        'view_only': True,
+    })
         
     return [group for group in groups.values() if group['models']]
 
@@ -84,6 +97,7 @@ admin.site.get_app_list = custom_get_app_list
 urlpatterns = [
     path('admin-3a3aw44r34/delivery-dashboard/', DeliveryDashboardView.as_view(), name='admin_delivery_dashboard'),
     path('admin-3a3aw44r34/notifications/send/', SendNotificationView.as_view(), name='admin_send_notification'),
+    path('admin-3a3aw44r34/test-order/', CreateTestOrderView.as_view(), name='admin_create_test_order'),
     path('admin-3a3aw44r34/', admin.site.urls),
     path('api/v1/', include('api.urls')),
 ]
