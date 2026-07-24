@@ -36,11 +36,10 @@ export default function MobileAppBanner() {
       </div>
       <div className="flex items-center gap-2 shrink-0">
         <a 
-          href="https://raw.githubusercontent.com/piyush1506/appurl/main/app-release.apk" 
-          download
+          href="https://play.google.com/store/apps/details?id=in.freshinbasket.app&pcampaignid=web_share" 
           target="_blank"
           rel="noopener noreferrer"
-          aria-label="Download Freshinbasket app"
+          aria-label="Download Freshinbasket app on Google Play Store"
           className="bg-[#216140] hover:bg-green-800 text-white text-[11px] font-bold px-4 py-2 rounded-full shadow-sm min-h-[44px] flex items-center justify-center"
         >
           GET APP
