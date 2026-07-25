@@ -10,7 +10,7 @@ from .views import (
     WishlistViewSet, SendOTPView, VerifyOTPView, RetryOTPView, OTPLogsView,
     DeliveryRegisterView, DeliverySlotViewSet, SectionViewSet
 )
-from orders.views import CreateRazorpayOrderView, VerifyPaymentView, CreateCODOrderView
+from orders.views import CreateRazorpayOrderView, VerifyPaymentView, CreateCODOrderView, RazorpayConfigView, GenerateUPIQRView, CheckQRStatusView
 from notifications.views import RegisterFCMTokenView
 from .import_views import ProductImportView, ProductTemplateDownloadView
 from orders.delivery_views import (
@@ -62,6 +62,9 @@ urlpatterns = [
     path('payment/create-order/', CreateRazorpayOrderView.as_view(), name='create_razorpay_order'),
     path('payment/verify/', VerifyPaymentView.as_view(), name='verify_payment'),
     path('payment/cod/', CreateCODOrderView.as_view(), name='create_cod_order'),
+    path('payment/config/', RazorpayConfigView.as_view(), name='razorpay_config'),
+    path('payment/qr/generate/', GenerateUPIQRView.as_view(), name='generate_upi_qr'),
+    path('payment/qr/status/<str:qr_id>/', CheckQRStatusView.as_view(), name='check_qr_status'),
 
     # Delivery Boy Panel
     path('delivery/dashboard/', DeliveryDashboardView.as_view(), name='delivery_dashboard'),

@@ -115,6 +115,13 @@ class CODOrderThrottle(UserRateThrottle):
     scope = 'cod_order'
 
 
+class RazorpayConfigView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request):
+        return Response({'razorpay_key_id': settings.RAZORPAY_KEY_ID})
+
+
 class CreateRazorpayOrderView(APIView):
     permission_classes = [permissions.IsAuthenticated]
     throttle_classes = [PaymentCreateThrottle]
@@ -446,3 +453,72 @@ class CreateCODOrderView(APIView):
             logger.exception("Order creation failed in CreateCODOrderView: %s", e)
             return Response({'error': 'Order creation failed. Please try again or contact support.'}, status=500)
 
+
+class GenerateUPIQRView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+    
+    def post(self, request):
+        order_id = request.data.get('order_id')
+        order_number = request.data.get('order_number')
+        amount = request.data.get('amount')
+        
+        if not all([order_id, order_number, amount]):
+            return Response({'error': 'Missing required fields'}, status=400)
+            
+        try:
+            total_paise = int(float(amount) * 100)
+            import time
+            
+            # The close_by time must be at least 15 minutes in the future according to Razorpay docs
+            close_time = int(time.time()) + 1800 
+            
+            qr_response = client.qrcode.create({
+                "type": "upi_qr",
+                "name": "FreshInBasket",
+                "usage": "single_use",
+                "fixed_amount": True,
+                "payment_amount": total_paise,
+                "description": f"Order #{order_number}",
+                "close_by": close_time,
+                "notes": {
+                    "order_id": str(order_id),
+                    "order_number": str(order_number)
+                }
+            })
+            
+            return Response({
+                'qr_id': qr_response.get('id'),
+                'image_url': qr_response.get('image_url'),
+                'payment_amount': qr_response.get('payment_amount'),
+                'qr_string': qr_response.get('id')  # We will use image_url mainly
+            })
+        except Exception as e:
+            logger.exception(f"Error generating Razorpay QR: {e}")
+            return Response({'error': f'Failed to generate QR: {str(e)}'}, status=500)
+
+
+class CheckQRStatusView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+    
+    def get(self, request, qr_id):
+        if not qr_id:
+            return Response({'error': 'QR ID is required'}, status=400)
+            
+        try:
+            qr_data = client.qrcode.fetch(qr_id)
+            received_amount = qr_data.get('payments_amount_received', 0)
+            expected_amount = qr_data.get('payment_amount', 0)
+            status = qr_data.get('status', '')
+            
+            # If received amount matches expected amount, it's paid
+            is_paid = (received_amount > 0 and received_amount >= expected_amount) or (status == 'closed' and received_amount >= expected_amount)
+            
+            return Response({
+                'qr_id': qr_id,
+                'is_paid': is_paid,
+                'received_amount': received_amount,
+                'status': status
+            })
+        except Exception as e:
+            logger.exception(f"Error fetching QR status: {e}")
+            return Response({'error': f'Failed to check status: {str(e)}'}, status=500)
