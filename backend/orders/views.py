@@ -469,8 +469,11 @@ class GenerateUPIQRView(APIView):
             from orders.models import Order
             order = Order.objects.get(id=order_id)
             customer_name = order.customer.get_full_name() or "Customer"
-            customer_phone = str(order.customer.phone)
-            if not customer_phone.startswith("+"):
+            
+            customer_phone = str(order.customer.phone) if order.customer.phone else ""
+            if not customer_phone or len(customer_phone) < 10:
+                customer_phone = "+919876543210"
+            elif not customer_phone.startswith("+"):
                 customer_phone = f"+91{customer_phone[-10:]}"
                 
             total_paise = int(float(amount) * 100)
