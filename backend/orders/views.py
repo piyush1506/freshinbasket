@@ -661,6 +661,14 @@ class GenerateUPIQRView(APIView):
             return Response({'error': 'Missing required fields'}, status=400)
             
         try:
+            from orders.models import Order
+            order = Order.objects.get(id=order_id)
+            customer_name = order.customer.get_full_name() or "Customer"
+            # Ensure the phone number has country code for Razorpay, or fallback
+            customer_phone = str(order.customer.phone)
+            if not customer_phone.startswith("+"):
+                customer_phone = f"+91{customer_phone[-10:]}"
+                
             total_paise = int(float(amount) * 100)
             import time
             
@@ -670,8 +678,8 @@ class GenerateUPIQRView(APIView):
                 "accept_partial": False,
                 "description": f"Order #{order_number}",
                 "customer": {
-                    "name": "Customer",
-                    "contact": "+919999999999"
+                    "name": customer_name,
+                    "contact": customer_phone
                 },
                 "notify": {
                     "sms": False,
