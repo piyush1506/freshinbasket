@@ -10,7 +10,8 @@ from .views import (
     WishlistViewSet, SendOTPView, VerifyOTPView, RetryOTPView, OTPLogsView,
     DeliveryRegisterView, DeliverySlotViewSet, SectionViewSet
 )
-from orders.views import CreateRazorpayOrderView, VerifyPaymentView, CreateCODOrderView, RazorpayConfigView, GenerateUPIQRView, CheckQRStatusView
+from orders.views import CreateRazorpayOrderView, VerifyPaymentView, CreateCODOrderView, RazorpayConfigView, GenerateUPIQRView, CheckQRStatusView, RazorpayWebhookView
+from django.views.decorators.csrf import csrf_exempt
 from notifications.views import RegisterFCMTokenView
 from .import_views import ProductImportView, ProductTemplateDownloadView
 from orders.delivery_views import (
@@ -65,6 +66,7 @@ urlpatterns = [
     path('payment/config/', RazorpayConfigView.as_view(), name='razorpay_config'),
     path('payment/qr/generate/', GenerateUPIQRView.as_view(), name='generate_upi_qr'),
     path('payment/qr/status/<str:qr_id>/', CheckQRStatusView.as_view(), name='check_qr_status'),
+    path('payment/webhook/razorpay/', csrf_exempt(RazorpayWebhookView.as_view()), name='razorpay_webhook'),
 
     # Delivery Boy Panel
     path('delivery/dashboard/', DeliveryDashboardView.as_view(), name='delivery_dashboard'),

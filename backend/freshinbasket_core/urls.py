@@ -46,7 +46,7 @@ def custom_get_app_list(request, app_label=None):
         }
     }
 
-    store_models = {'User', 'Product', 'Order', 'Slide', 'Section', 'Category', 'SubProduct', 'Unit', 'OrderProduct', 'StoreSettings'}
+    store_models = {'User', 'Product', 'Order', 'Slide', 'Section', 'Category', 'SubProduct', 'Unit', 'OrderProduct', 'StoreSettings', 'AutoAssignConfig'}
     delivery_models = {'DeliveryAssignment', 'DeliveryCluster', 'DeliveryBoy'}
     token_models = {'FCMToken', 'BlacklistedToken', 'OutstandingToken'}
     system_models = {'ClockedSchedule', 'CrontabSchedule', 'SolarSchedule', 'IntervalSchedule', 'PeriodicTask', 'Group'}

@@ -467,44 +467,71 @@ class GenerateUPIQRView(APIView):
             
         try:
             from orders.models import Order
+            import time
+            
             order = Order.objects.get(id=order_id)
             customer_name = order.customer.get_full_name() or "Customer"
             
-            customer_phone = str(order.customer.phone) if order.customer.phone else ""
-            if not customer_phone or len(customer_phone) < 10:
-                customer_phone = "+919876543210"
-            elif not customer_phone.startswith("+"):
-                customer_phone = f"+91{customer_phone[-10:]}"
-                
             total_paise = int(float(amount) * 100)
-            import time
             
-            qr_response = client.payment_link.create({
-                "amount": total_paise,
-                "currency": "INR",
-                "accept_partial": False,
-                "description": f"Order #{order_number}",
-                "customer": {
-                    "name": customer_name,
-                    "contact": customer_phone
-                },
-                "notify": {
-                    "sms": False,
-                    "email": False
-                },
-                "reminder_enable": False,
-                "reference_id": f"cod_{order_id}_{int(time.time())}",
+            # Use Razorpay QR Code API — generates a real UPI QR
+            # that directly opens the customer's UPI app when scanned
+            close_time = int(time.time()) + 1800  # QR valid for 30 minutes
+            
+            qr_response = client.qrcode.create({
+                "type": "upi_qr",
+                "name": f"Order #{order_number}",
+                "usage": "single_use",
+                "fixed_amount": True,
+                "payment_amount": total_paise,
+                "description": f"Payment for Order #{order_number} - {customer_name}",
+                "close_by": close_time,
                 "notes": {
                     "order_id": str(order_id),
                     "order_number": str(order_number)
                 }
             })
             
+            # Log full response to see all available fields
+            logger.info(f"Razorpay QR response keys: {list(qr_response.keys())}")
+            logger.info(f"Razorpay QR full response: {qr_response}")
+            
+            qr_id = qr_response.get('id')
+            image_url = qr_response.get('image_url', '')
+            
+            # Try to get the raw UPI intent string from the response
+            # Razorpay may include it as 'qr_string', 'short_url', or 'upi_link'
+            raw_qr_string = (
+                qr_response.get('qr_string') or
+                qr_response.get('short_url') or
+                qr_response.get('upi_link') or
+                ''
+            )
+            
+            # If no raw string from create, try fetching the QR details
+            if not raw_qr_string and qr_id:
+                try:
+                    fetch_response = client.qrcode.fetch(qr_id)
+                    logger.info(f"Razorpay QR fetch response keys: {list(fetch_response.keys())}")
+                    logger.info(f"Razorpay QR fetch response: {fetch_response}")
+                    raw_qr_string = (
+                        fetch_response.get('qr_string') or
+                        fetch_response.get('short_url') or
+                        fetch_response.get('upi_link') or
+                        ''
+                    )
+                except Exception as fetch_err:
+                    logger.warning(f"Could not fetch QR details: {fetch_err}")
+            
+            # Save the QR code ID on the order for status checking
+            order.payment_id = qr_id
+            order.save(update_fields=['payment_id'])
+            
             return Response({
-                'qr_id': qr_response.get('id'),
-                'image_url': qr_response.get('short_url'),
+                'qr_id': qr_id,
+                'image_url': image_url,
                 'payment_amount': total_paise,
-                'qr_string': qr_response.get('short_url')
+                'qr_string': raw_qr_string if raw_qr_string else image_url
             })
         except Exception as e:
             logger.exception(f"Error generating Razorpay QR: {e}")
@@ -519,20 +546,172 @@ class CheckQRStatusView(APIView):
             return Response({'error': 'QR ID is required'}, status=400)
             
         try:
-            qr_data = client.payment_link.fetch(qr_id)
-            status = qr_data.get('status', '')
-            received_amount = qr_data.get('amount_paid', 0)
-            expected_amount = qr_data.get('amount', 0)
+            qr_data = client.qrcode.fetch(qr_id)
+            qr_status = qr_data.get('status', '')
+            received_amount = qr_data.get('payments_amount_received', 0)
+            expected_amount = qr_data.get('payment_amount', 0)
+            payments_count = qr_data.get('payments_count_received', 0)
             
-            # If received amount matches expected amount, it's paid
-            is_paid = (status == 'paid') or (received_amount > 0 and received_amount >= expected_amount)
+            # QR code API: status is 'closed' after payment for single_use QRs
+            is_paid = (qr_status == 'closed' and payments_count > 0) or (received_amount > 0 and received_amount >= expected_amount)
+            
+            # Auto-update order proactively to prevent race conditions with webhook
+            if is_paid:
+                try:
+                    from orders.models import Order
+                    order = Order.objects.filter(payment_id=qr_id).first()
+                    if order and not order.is_paid:
+                        order.is_paid = True
+                        order.payment_method = 'ONLINE'
+                        order.save(update_fields=['is_paid', 'payment_method'])
+                except Exception as update_err:
+                    logger.warning(f"Failed to proactively update order from QR status: {update_err}")
             
             return Response({
                 'qr_id': qr_id,
                 'is_paid': is_paid,
                 'received_amount': received_amount,
-                'status': status
+                'status': qr_status
             })
         except Exception as e:
             logger.exception(f"Error fetching QR status: {e}")
             return Response({'error': f'Failed to check status: {str(e)}'}, status=500)
+
+
+class RazorpayWebhookView(APIView):
+    """
+    Receives Razorpay webhook callbacks for payment_link.paid events.
+    Verifies signature, updates order, and notifies the delivery boy via FCM.
+    """
+    permission_classes = [permissions.AllowAny]  # Razorpay calls this — no JWT
+    authentication_classes = []  # Skip auth entirely for webhooks
+
+    def post(self, request):
+        import hmac
+        import hashlib
+        import json as json_module
+
+        webhook_secret = settings.RAZORPAY_WEBHOOK_SECRET
+        if not webhook_secret:
+            logger.error("RAZORPAY_WEBHOOK_SECRET not configured")
+            return Response({'status': 'ok'}, status=200)  # Don't expose config issues
+
+        # ── 1. Verify webhook signature ──
+        received_signature = request.headers.get('X-Razorpay-Signature', '')
+        request_body = request.body
+
+        expected_signature = hmac.new(
+            webhook_secret.encode('utf-8'),
+            request_body,
+            hashlib.sha256
+        ).hexdigest()
+
+        if not hmac.compare_digest(expected_signature, received_signature):
+            logger.warning("Razorpay webhook signature mismatch — rejecting")
+            return Response({'error': 'Invalid signature'}, status=400)
+
+        # ── 2. Parse payload ──
+        try:
+            payload = json_module.loads(request_body)
+        except json_module.JSONDecodeError:
+            return Response({'error': 'Invalid JSON'}, status=400)
+
+        event = payload.get('event', '')
+        logger.info(f"Razorpay webhook received: {event}")
+
+        if event == 'payment_link.paid':
+            # Legacy payment link flow
+            try:
+                payment_link_entity = payload['payload']['payment_link']['entity']
+                payment_entity = payload['payload']['payment']['entity']
+
+                razorpay_payment_id = payment_entity.get('id')
+                amount_paid = payment_entity.get('amount', 0)  # in paise
+                notes = payment_link_entity.get('notes', {})
+                order_id = notes.get('order_id')
+                order_number = notes.get('order_number')
+
+                logger.info(
+                    f"Payment link paid: "
+                    f"payment_id={razorpay_payment_id}, amount={amount_paid}, "
+                    f"order_id={order_id}, order_number={order_number}"
+                )
+            except (KeyError, TypeError) as e:
+                logger.error(f"Razorpay webhook payload parsing error: {e}")
+                return Response({'status': 'ok'}, status=200)
+
+        elif event == 'qr_code.credited':
+            # New UPI QR code flow
+            try:
+                qr_entity = payload['payload']['qr_code']['entity']
+                payment_entity = payload['payload']['payment']['entity']
+
+                razorpay_payment_id = payment_entity.get('id')
+                amount_paid = payment_entity.get('amount', 0)  # in paise
+                notes = qr_entity.get('notes', {})
+                order_id = notes.get('order_id')
+                order_number = notes.get('order_number')
+
+                logger.info(
+                    f"QR code credited: "
+                    f"payment_id={razorpay_payment_id}, amount={amount_paid}, "
+                    f"order_id={order_id}, order_number={order_number}"
+                )
+            except (KeyError, TypeError) as e:
+                logger.error(f"Razorpay webhook payload parsing error: {e}")
+                return Response({'status': 'ok'}, status=200)
+        else:
+            # We only care about payment events; acknowledge others silently
+            return Response({'status': 'ok'}, status=200)
+
+        if not order_id:
+            logger.warning("Razorpay webhook: no order_id in notes")
+            return Response({'status': 'ok'}, status=200)
+
+        # ── 4. Update order ──
+        try:
+            from orders.models import Order, DeliveryAssignment
+            order = Order.objects.get(id=order_id)
+
+            if order.is_paid:
+                logger.info(f"Order {order_id} already marked as paid — skipping")
+                return Response({'status': 'ok'}, status=200)
+
+            order.is_paid = True
+            order.payment_method = 'ONLINE'
+            order.payment_id = razorpay_payment_id
+            order.status = Order.Status.DELIVERED
+            order.save(update_fields=['is_paid', 'payment_method', 'payment_id', 'status'])
+
+            logger.info(f"Order {order_id} marked as PAID and DELIVERED via webhook")
+
+            # ── 5. Send FCM push to the assigned delivery boy ──
+            try:
+                assignment = DeliveryAssignment.objects.select_related('delivery_boy').get(order=order)
+                delivery_boy = assignment.delivery_boy
+
+                from notifications.fcm import send_push_to_user
+                send_push_to_user(
+                    user=delivery_boy,
+                    title="✅ Payment Received!",
+                    body=f"₹{amount_paid / 100:.2f} received for Order #{order_number}",
+                    data={
+                        'type': 'PAYMENT_SUCCESS',
+                        'order_id': str(order_id),
+                        'order_number': str(order_number),
+                        'amount': str(amount_paid / 100),
+                        'transaction_id': str(razorpay_payment_id),
+                    }
+                )
+                logger.info(f"FCM payment notification sent to delivery boy {delivery_boy.id}")
+            except DeliveryAssignment.DoesNotExist:
+                logger.warning(f"No delivery assignment found for order {order_id}")
+            except Exception as e:
+                logger.error(f"FCM notification failed for order {order_id}: {e}")
+
+        except Order.DoesNotExist:
+            logger.error(f"Razorpay webhook: Order {order_id} not found in database")
+        except Exception as e:
+            logger.exception(f"Razorpay webhook processing error: {e}")
+
+        return Response({'status': 'ok'}, status=200)

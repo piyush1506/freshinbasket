@@ -236,6 +236,71 @@ class DeliveryAssignment(models.Model):
 
 
 # =========================
+# AUTO ASSIGN CONFIGURATION
+# =========================
+class AutoAssignConfig(models.Model):
+    is_active = models.BooleanField(default=False, help_text="Enable auto-assignment of new orders")
+    default_delivery_boy = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        limit_choices_to={'role': 'DELIVERY'}
+    )
+
+    class Meta:
+        verbose_name = "Auto Assign Configuration"
+        verbose_name_plural = "Auto Assign Configuration"
+
+    def __str__(self):
+        status = "Active" if self.is_active else "Inactive"
+        boy = self.default_delivery_boy.username if self.default_delivery_boy else "None"
+        return f"Auto Assign: {status} ({boy})"
+
+
+from django.db.models.signals import post_save
+from django.dispatch import receiver
+
+@receiver(post_save, sender=DeliveryAssignment)
+def notify_delivery_boy_on_assignment(sender, instance, created, **kwargs):
+    if created and instance.delivery_boy:
+        try:
+            from notifications.fcm import send_push_to_user
+            send_push_to_user(
+                user=instance.delivery_boy,
+                title="🚨 NEW DELIVERY ORDER!",
+                body=f"You have been assigned Order #{instance.order.order_number}. Tap to accept.",
+                data={
+                    'type': 'NEW_ORDER',
+                    'order_id': str(instance.order.id),
+                    'order_number': str(instance.order.order_number),
+                    'customer_name': str(instance.order.customer.username or instance.order.customer.phone_number),
+                    'customer_phone': str(instance.order.customer.phone_number),
+                    'delivery_address': str(instance.order.delivery_address),
+                    'total_amount': str(instance.order.total_amount),
+                }
+            )
+        except Exception as e:
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.error("Failed to send FCM assignment push to delivery boy: %s", e)
+
+
+@receiver(post_save, sender=Order)
+def auto_assign_order(sender, instance, created, **kwargs):
+    if created and instance.status in ['PENDING', 'CONFIRMED']:
+        config = AutoAssignConfig.objects.first()
+        if config and config.is_active and config.default_delivery_boy:
+            # Check if assignment already exists just in case
+            if not DeliveryAssignment.objects.filter(order=instance).exists():
+                DeliveryAssignment.objects.create(
+                    order=instance,
+                    delivery_boy=config.default_delivery_boy,
+                    notes="Auto-assigned by system."
+                )
+
+
+# =========================
 # REVIEW MODEL
 # =========================
 class Review(models.Model):

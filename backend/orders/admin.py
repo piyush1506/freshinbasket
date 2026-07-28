@@ -599,3 +599,15 @@ class DeliveryAssignmentAdmin(admin.ModelAdmin):
             User = get_user_model()
             kwargs["queryset"] = User.objects.filter(role='DELIVERY')
         return super().formfield_for_foreignkey(db_field, request, **kwargs)
+
+from .models import AutoAssignConfig
+
+@admin.register(AutoAssignConfig)
+class AutoAssignConfigAdmin(admin.ModelAdmin):
+    list_display = ('__str__', 'is_active', 'default_delivery_boy')
+
+    def has_add_permission(self, request):
+        if self.model.objects.exists():
+            return False
+        return super().has_add_permission(request)
+
