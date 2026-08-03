@@ -17,21 +17,28 @@ export default function VegetableCard({ item }) {
   const itemUnit = item.unit?.name || 'kg';
   const isOutOfStock = Number(item.stock) <= 0;
 
+  // Order step (e.g. 0.25 for 250g steps) and min qty from backend
+  const orderStep = Number(item.order_step) || 1;
+  const minOrderQty = Number(item.min_order_qty) || 0;
+
+  // Display quantity rounded to avoid float weirdness
+  const displayQty = parseFloat(cartQty.toFixed(3));
+
+  // ADD: add one step (or min_order_qty if set above 0)
   const handleAdd = async () => {
     if (loading) return;
     setLoading(true);
+    const initialQty = minOrderQty > 0 ? minOrderQty : orderStep;
     try {
       await addToCart({
         id: item.id,
         name: item.name,
         price: item.price,
         image_url: item.image_url,
-        quantity: 1,
+        quantity: initialQty,
         unit: itemUnit,
       });
       toast.success("Added to cart!");
-      setShowUnitAnimation(true);
-      setTimeout(() => setShowUnitAnimation(false), 2000);
     } catch (error) {
       console.error("Error adding to cart:", error);
       toast.error(error.message || "Could not add item. Please try again.");
@@ -40,6 +47,7 @@ export default function VegetableCard({ item }) {
     }
   };
 
+  // +: increment by order_step
   const handleIncrement = async () => {
     if (loading) return;
     setLoading(true);
@@ -49,7 +57,7 @@ export default function VegetableCard({ item }) {
         name: item.name,
         price: item.price,
         image_url: item.image_url,
-        quantity: 1,
+        quantity: orderStep,
         unit: itemUnit,
       });
     } catch (error) {
@@ -60,11 +68,14 @@ export default function VegetableCard({ item }) {
     }
   };
 
+  // -: decrement by order_step; remove item if qty would reach 0 or below min
   const handleDecrement = async () => {
     if (loading) return;
     setLoading(true);
     try {
-      if (cartQty <= 1) {
+      const newQty = parseFloat((cartQty - orderStep).toFixed(3));
+      // Remove if going to 0 or negative, or below min_order_qty (if set)
+      if (newQty <= 0 || (minOrderQty > 0 && newQty < minOrderQty)) {
         await removeFromCart(item.id);
       } else {
         await addToCart({
@@ -72,7 +83,7 @@ export default function VegetableCard({ item }) {
           name: item.name,
           price: item.price,
           image_url: item.image_url,
-          quantity: -1,
+          quantity: -orderStep,
           unit: itemUnit,
         });
       }
@@ -82,13 +93,6 @@ export default function VegetableCard({ item }) {
     } finally {
       setLoading(false);
     }
-  };
-
-  const getUnitPosition = () => {
-    if (cartQty > 0) {
-      return 'left';
-    }
-    return 'right';
   };
 
   return (
@@ -173,7 +177,7 @@ export default function VegetableCard({ item }) {
               </button>
 
               <span className="w-5 sm:w-6 text-center text-xs sm:text-sm font-extrabold text-white">
-                {cartQty} <span className="text-[10px] font-normal text-white/80 ml-0.5">/{itemUnit.toLowerCase()}</span>
+                {displayQty} <span className="text-[10px] font-normal text-white/80 ml-0.5">/{itemUnit.toLowerCase()}</span>
               </span>
 
               <button

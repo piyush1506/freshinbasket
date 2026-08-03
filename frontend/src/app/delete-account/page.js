@@ -1,83 +1,262 @@
 "use client";
-import Navbar from "../components/Navbar";
-import Link from "next/link";
-import { ArrowLeft, UserX } from "lucide-react";
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { LogOut, UserX, ShieldAlert, ArrowLeft, Loader2 } from "lucide-react";
+import { AUTH_API, getAccessToken, isAuthenticated, getUser, authFetch } from "@/lib/auth";
+import { useCart } from "../context/CartContext";
+import toast from "react-hot-toast";
 
-export default function DeleteAccount() {
-  return (
-    <div className="min-h-screen bg-gray-50 flex flex-col font-sans">
-      <Navbar />
-      
-      <div className="max-w-4xl mx-auto px-6 py-12 flex-grow w-full">
-        <div className="flex items-center gap-3 mb-8">
-          <Link href="/" className="text-gray-400 hover:text-gray-600">
-            <ArrowLeft size={20} />
-          </Link>
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center shrink-0">
-              <UserX size={20} className="text-red-700" />
-            </div>
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900">Account Deletion</h1>
-              <p className="text-gray-500 text-sm mt-1">How to delete your Freshinbasket account</p>
-            </div>
+export default function DeleteAccountPage() {
+  const router = useRouter();
+  const { setUser, clearCart } = useCart();
+  const [user, setLocalUser] = useState(null);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [confirmText, setConfirmText] = useState("");
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const [deleted, setDeleted] = useState(false);
+
+  useEffect(() => {
+    const loggedIn = isAuthenticated();
+    setIsLoggedIn(loggedIn);
+    if (loggedIn) {
+      const savedUser = getUser();
+      setLocalUser(savedUser);
+    }
+  }, []);
+
+  const handleLogout = async () => {
+    setIsLoggingOut(true);
+    try {
+      await AUTH_API.logout();
+      setUser(null);
+      clearCart();
+      toast.success("Logged out successfully");
+      setTimeout(() => router.push("/login"), 1000);
+    } catch {
+      toast.error("Logout failed. Please try again.");
+    } finally {
+      setIsLoggingOut(false);
+    }
+  };
+
+  const handleDeleteAccount = async () => {
+    if (confirmText !== "DELETE") {
+      toast.error("Please type DELETE to confirm");
+      return;
+    }
+
+    setIsDeleting(true);
+    try {
+      const res = await authFetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/api/v1/auth/delete-account/`,
+        { method: "DELETE" }
+      );
+
+      if (res.ok) {
+        // Clear local auth data
+        await AUTH_API.logout().catch(() => {});
+        setUser(null);
+        clearCart();
+        setDeleted(true);
+        toast.success("Account deleted successfully");
+      } else {
+        const data = await res.json().catch(() => ({}));
+        toast.error(data.error || "Failed to delete account. Please try again.");
+      }
+    } catch {
+      toast.error("Something went wrong. Please try again.");
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  // After successful deletion
+  if (deleted) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
+        <div className="bg-white rounded-2xl border border-gray-200 shadow-lg p-8 max-w-md w-full text-center">
+          <div className="w-16 h-16 rounded-full bg-green-100 flex items-center justify-center mx-auto mb-4">
+            <svg className="w-8 h-8 text-green-600" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+            </svg>
           </div>
+          <h2 className="text-2xl font-bold text-gray-900 mb-2">Account Deleted</h2>
+          <p className="text-gray-500 text-sm mb-6">
+            Your account and all associated data have been permanently deleted. We're sorry to see you go.
+          </p>
+          <button
+            onClick={() => router.push("/")}
+            className="w-full bg-green-700 hover:bg-green-800 text-white py-3 rounded-xl font-semibold transition-colors"
+          >
+            Go to Homepage
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // Not logged in
+  if (!isLoggedIn) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
+        <div className="bg-white rounded-2xl border border-gray-200 shadow-lg p-8 max-w-md w-full text-center">
+          <div className="w-16 h-16 rounded-full bg-amber-100 flex items-center justify-center mx-auto mb-4">
+            <ShieldAlert size={28} className="text-amber-600" />
+          </div>
+          <h2 className="text-2xl font-bold text-gray-900 mb-2">Login Required</h2>
+          <p className="text-gray-500 text-sm mb-6">
+            Please log in to manage your account or delete it.
+          </p>
+          <button
+            onClick={() => router.push("/login")}
+            className="w-full bg-green-700 hover:bg-green-800 text-white py-3 rounded-xl font-semibold transition-colors"
+          >
+            Log In
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4 py-8">
+      <div className="max-w-md w-full">
+        {/* Header */}
+        <div className="text-center mb-6">
+          <div className="w-16 h-16 rounded-full bg-green-100 flex items-center justify-center mx-auto mb-3">
+            <img src="/icon.png" alt="Freshinbasket" className="w-10 h-10 rounded-full" onError={(e) => { e.target.style.display = 'none'; }} />
+          </div>
+          <h1 className="text-2xl font-bold text-gray-900">Account Settings</h1>
+          {user && (
+            <p className="text-gray-500 text-sm mt-1">
+              {user.username || user.phone_number}
+            </p>
+          )}
         </div>
 
-        <div className="bg-white border border-gray-200 rounded-xl p-8 shadow-sm space-y-8 text-gray-600">
-          <section>
-            <h2 className="text-xl font-semibold text-gray-900 mb-3">Deleting Your Account</h2>
-            <p className="text-sm leading-relaxed mb-3">
-              If you wish to delete your Freshinbasket account and remove your personal data from our systems, you can do so by following the instructions below.
-            </p>
-            <p className="text-sm leading-relaxed mb-3">
-              Please note that deleting your account is a permanent action. Once your account is deleted, you will lose access to your order history, saved addresses, and any active subscriptions or benefits.
-            </p>
-          </section>
-
-          <section>
-            <h2 className="text-xl font-semibold text-gray-900 mb-3">How to Request Account Deletion</h2>
-            <p className="text-sm leading-relaxed mb-2">You have two options to delete your account:</p>
-            
-            <h3 className="text-md font-semibold text-gray-800 mt-4 mb-2">Option 1: Delete via the App or Website (Recommended)</h3>
-            <ol className="list-decimal pl-5 text-sm space-y-1 mb-4">
-              <li>Log in to your Freshinbasket account.</li>
-              <li>Navigate to your <strong>Profile</strong> or <strong>Account Settings</strong>.</li>
-              <li>Look for the <strong>Delete Account</strong> option at the bottom of the page.</li>
-              <li>Follow the on-screen prompts to confirm the deletion of your account.</li>
-            </ol>
-
-            <h3 className="text-md font-semibold text-gray-800 mt-4 mb-2">Option 2: Contact Customer Support</h3>
-            <p className="text-sm leading-relaxed mb-2">
-              If you are unable to access your account or prefer to have us handle the deletion, you can request account deletion by contacting our support team.
-            </p>
-            <ol className="list-decimal pl-5 text-sm space-y-1 mb-3">
-              <li>Send an email to <a href="mailto:support@freshinbasket.com" className="text-green-700 hover:underline">support@freshinbasket.com</a> from the email address associated with your Freshinbasket account.</li>
-              <li>Use the subject line: <strong>"Account Deletion Request"</strong>.</li>
-              <li>Include your full name and registered phone number in the body of the email.</li>
-            </ol>
-            <p className="text-sm leading-relaxed">
-              Our support team will process your request and confirm once your account has been successfully deleted. This process may take up to 7 business days.
-            </p>
-          </section>
-
-          <section>
-            <h2 className="text-xl font-semibold text-gray-900 mb-3">Data Retention</h2>
-            <p className="text-sm leading-relaxed mb-3">
-              Upon account deletion, we will remove your personal data from our active databases. However, we may retain certain information as required by law, for legitimate business purposes (such as fraud prevention or resolving disputes), or for tax and accounting purposes.
-            </p>
-          </section>
-          
-          <section>
-            <h2 className="text-xl font-semibold text-gray-900 mb-3">Contact Information</h2>
-            <div className="bg-gray-50 p-4 rounded-lg border border-gray-100 text-sm">
-              <p className="font-semibold text-gray-900 mb-2">Need Help?</p>
-              <ul className="space-y-2">
-                <li><span className="font-medium text-gray-700">Email:</span> <a href="mailto:support@freshinbasket.com" className="text-green-700 hover:underline">support@freshinbasket.com</a></li>
-                <li><span className="font-medium text-gray-700">Phone:</span> +91-9461877701</li>
-              </ul>
+        <div className="space-y-4">
+          {/* Logout Option */}
+          <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6">
+            <div className="flex items-start gap-4">
+              <div className="w-12 h-12 rounded-full bg-blue-50 flex items-center justify-center shrink-0">
+                <LogOut size={22} className="text-blue-600" />
+              </div>
+              <div className="flex-1">
+                <h2 className="text-lg font-bold text-gray-900">Log Out</h2>
+                <p className="text-sm text-gray-500 mt-1">
+                  Sign out of your account. Your data will be preserved and you can log back in anytime.
+                </p>
+                <button
+                  onClick={handleLogout}
+                  disabled={isLoggingOut}
+                  className="mt-4 w-full bg-gray-900 hover:bg-gray-800 disabled:bg-gray-400 text-white py-3 rounded-xl font-semibold text-sm transition-colors flex items-center justify-center gap-2"
+                >
+                  {isLoggingOut ? (
+                    <>
+                      <Loader2 size={16} className="animate-spin" />
+                      Logging out...
+                    </>
+                  ) : (
+                    <>
+                      <LogOut size={16} />
+                      Log Out
+                    </>
+                  )}
+                </button>
+              </div>
             </div>
-          </section>
+          </div>
+
+          {/* Delete Account Option */}
+          <div className="bg-white rounded-2xl border border-red-200 shadow-sm p-6">
+            <div className="flex items-start gap-4">
+              <div className="w-12 h-12 rounded-full bg-red-50 flex items-center justify-center shrink-0">
+                <UserX size={22} className="text-red-600" />
+              </div>
+              <div className="flex-1">
+                <h2 className="text-lg font-bold text-gray-900">Delete Account</h2>
+                <p className="text-sm text-gray-500 mt-1">
+                  Permanently delete your account and all associated data including order history, saved addresses, cart, and wishlist.
+                </p>
+
+                {!showDeleteConfirm ? (
+                  <button
+                    onClick={() => setShowDeleteConfirm(true)}
+                    className="mt-4 w-full bg-red-600 hover:bg-red-700 text-white py-3 rounded-xl font-semibold text-sm transition-colors flex items-center justify-center gap-2"
+                  >
+                    <UserX size={16} />
+                    Delete My Account
+                  </button>
+                ) : (
+                  <div className="mt-4 space-y-3">
+                    {/* Warning */}
+                    <div className="bg-red-50 border border-red-200 rounded-lg p-3">
+                      <p className="text-xs text-red-700 font-semibold flex items-start gap-2">
+                        <ShieldAlert size={14} className="shrink-0 mt-0.5" />
+                        This action is permanent and cannot be undone. All your data will be permanently removed.
+                      </p>
+                    </div>
+
+                    {/* Confirmation input */}
+                    <div>
+                      <label className="text-xs text-gray-500 font-medium block mb-1.5">
+                        Type <span className="font-bold text-red-600">DELETE</span> to confirm
+                      </label>
+                      <input
+                        type="text"
+                        value={confirmText}
+                        onChange={(e) => setConfirmText(e.target.value.toUpperCase())}
+                        placeholder="Type DELETE here"
+                        className="w-full border border-gray-300 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500"
+                        autoComplete="off"
+                      />
+                    </div>
+
+                    <div className="flex gap-3">
+                      <button
+                        onClick={() => { setShowDeleteConfirm(false); setConfirmText(""); }}
+                        className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 py-2.5 rounded-xl font-semibold text-sm transition-colors"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        onClick={handleDeleteAccount}
+                        disabled={isDeleting || confirmText !== "DELETE"}
+                        className="flex-1 bg-red-600 hover:bg-red-700 disabled:bg-red-300 disabled:cursor-not-allowed text-white py-2.5 rounded-xl font-semibold text-sm transition-colors flex items-center justify-center gap-2"
+                      >
+                        {isDeleting ? (
+                          <>
+                            <Loader2 size={14} className="animate-spin" />
+                            Deleting...
+                          </>
+                        ) : (
+                          "Confirm Delete"
+                        )}
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Data Retention Notice */}
+          <div className="bg-gray-100 rounded-xl p-4 text-center">
+            <p className="text-xs text-gray-500 leading-relaxed">
+              Upon deletion, your personal data will be removed from our systems. Certain anonymized order records may be retained as required by law for tax and accounting purposes.
+            </p>
+          </div>
+
+          {/* Back to app link */}
+          <button
+            onClick={() => router.push("/")}
+            className="w-full text-center text-sm text-gray-500 hover:text-gray-700 font-medium py-2 flex items-center justify-center gap-1"
+          >
+            <ArrowLeft size={14} />
+            Back to Freshinbasket
+          </button>
         </div>
       </div>
     </div>

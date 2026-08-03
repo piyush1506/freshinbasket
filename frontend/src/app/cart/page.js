@@ -218,8 +218,25 @@ export default function CartPage() {
   const handleCartDecrement = async (item) => {
     const orderStep = Number(item.order_step) || 1;
     const minOrderQty = Number(item.min_order_qty) || 0;
-    const newQty = parseFloat((item.quantity - orderStep).toFixed(3));
-    if (newQty <= 0 || (minOrderQty > 0 && newQty < minOrderQty)) {
+    const currentQty = Number(item.quantity);
+    const newQty = parseFloat((currentQty - orderStep).toFixed(3));
+
+    // If already at or below min_order_qty, don't decrement — user must use trash icon to remove
+    if (minOrderQty > 0 && currentQty <= minOrderQty) {
+      toast.error(`Minimum order quantity is ${minOrderQty} ${item.unit || 'kg'}. Use the remove button to delete.`);
+      return;
+    }
+
+    // If decrementing would go below min_order_qty, clamp to min_order_qty
+    if (minOrderQty > 0 && newQty < minOrderQty) {
+      const clampDelta = parseFloat((minOrderQty - currentQty).toFixed(3));
+      addToCart({ ...item, quantity: clampDelta });
+      toast.error(`Minimum order quantity is ${minOrderQty} ${item.unit || 'kg'}`);
+      return;
+    }
+
+    // If going to zero or below, remove the item
+    if (newQty <= 0) {
       removeFromCart(item.id);
     } else {
       addToCart({ ...item, quantity: -orderStep });
@@ -592,13 +609,19 @@ export default function CartPage() {
                             {item.name}
                           </h3>
                           <p className="text-xs text-gray-400 mt-0.5">{item.unit || 'kg'} · ₹{parseInt(item.price)}/{item.unit || 'kg'}</p>
+                          {Number(item.min_order_qty) > 0 && (
+                            <p className="text-[10px] text-amber-600 font-semibold mt-0.5">Min: {Number(item.min_order_qty)} {item.unit || 'kg'}</p>
+                          )}
+                          {Number(item.min_order_qty) > 0 && Number(item.quantity) < Number(item.min_order_qty) && (
+                            <p className="text-[10px] text-red-500 font-bold mt-0.5">⚠ Below minimum qty!</p>
+                          )}
 
                           {/* Mobile: quantity + total inline */}
                           <div className="flex items-center gap-3 mt-2 sm:hidden">
                             {/* Stepper */}
                             <div className="flex items-center gap-1 bg-[#0c831f] text-white rounded-lg p-1 select-none">
                               <button
-                                className="w-6 h-6 flex items-center justify-center hover:bg-green-800 rounded-md transition-colors"
+                                className={`w-6 h-6 flex items-center justify-center hover:bg-green-800 rounded-md transition-colors ${Number(item.min_order_qty) > 0 && Number(item.quantity) <= Number(item.min_order_qty) ? 'opacity-40 cursor-not-allowed' : ''}`}
                                 onClick={() => handleCartDecrement(item)}
                               >
                                 <Minus size={11} className="stroke-[3px]" />
@@ -624,7 +647,7 @@ export default function CartPage() {
                           <div className="flex items-center gap-1.5">
                             <div className="flex items-center gap-1 bg-[#0c831f] text-white rounded-lg p-1 select-none shadow-sm">
                               <button
-                                className="w-7 h-7 flex items-center justify-center hover:bg-green-800 rounded-md transition-colors"
+                                className={`w-7 h-7 flex items-center justify-center hover:bg-green-800 rounded-md transition-colors ${Number(item.min_order_qty) > 0 && Number(item.quantity) <= Number(item.min_order_qty) ? 'opacity-40 cursor-not-allowed' : ''}`}
                                 onClick={() => handleCartDecrement(item)}
                               >
                                 <Minus size={12} className="stroke-[3px]" />

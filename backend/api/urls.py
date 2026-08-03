@@ -5,7 +5,7 @@ from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 from .views import (
     UserViewSet, CategoryViewSet, ProductViewSet, SlideViewSet,
     OrderViewSet, DeliveryAssignmentViewSet,
-    CartViewSet, LoginView, RegisterView, LogoutView, ContactView,
+    CartViewSet, LoginView, RegisterView, LogoutView, DeleteAccountView, AccountPageView, ContactView,
     upload_image, HomeApiView, StoreSettingsView, ReviewViewSet,
     WishlistViewSet, SendOTPView, VerifyOTPView, RetryOTPView, OTPLogsView,
     DeliveryRegisterView, DeliverySlotViewSet, SectionViewSet
@@ -50,6 +50,8 @@ urlpatterns = [
     path('auth/register/', RegisterView.as_view({'post': 'create'}), name='register'),
     path('auth/delivery-register/', DeliveryRegisterView.as_view({'post': 'create'}), name='delivery_register'),
     path('auth/logout/', LogoutView.as_view(), name='logout'),
+    path('auth/delete-account/', DeleteAccountView.as_view(), name='delete_account'),
+    path('auth/account-page/', AccountPageView.as_view(), name='account_page'),
     path('auth/token/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
     path('auth/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
     

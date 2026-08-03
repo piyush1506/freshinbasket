@@ -83,6 +83,488 @@ class LogoutView(APIView):
             )
 
 
+class DeleteAccountView(APIView):
+    """
+    Permanently delete the authenticated user's account and all associated data.
+    Apple App Store Guideline 5.1.1(v) compliant.
+    """
+    permission_classes = [permissions.IsAuthenticated]
+
+    def delete(self, request):
+        user = request.user
+        phone = user.phone_number
+        user_id = user.id
+
+        try:
+            # Blacklist all outstanding refresh tokens for this user
+            outstanding_tokens = OutstandingToken.objects.filter(user=user)
+            for token in outstanding_tokens:
+                try:
+                    BlacklistedToken.objects.get_or_create(token=token)
+                except Exception:
+                    pass
+
+            # Delete associated data
+            Cart.objects.filter(user=user).delete()
+            WishlistItem.objects.filter(user=user).delete()
+            Review.objects.filter(user=user).delete()
+            ContactQuery.objects.filter(user=user).delete()
+            OTPVerification.objects.filter(phone_number=phone).delete()
+
+            # Anonymize orders instead of deleting (for business records)
+            Order.objects.filter(user=user).update(
+                delivery_address='[DELETED]',
+                delivery_latitude=None,
+                delivery_longitude=None,
+            )
+
+            # Delete the user account permanently
+            user.delete()
+
+            logger.info(
+                'Account deleted user_id=%s phone=%s ip=%s',
+                user_id, phone, request.META.get('REMOTE_ADDR')
+            )
+
+            return Response(
+                {'message': 'Your account and all associated data have been permanently deleted.'},
+                status=status.HTTP_200_OK
+            )
+        except Exception as e:
+            logger.error(
+                'Account deletion failed user_id=%s error=%s',
+                user_id, str(e)
+            )
+            return Response(
+                {'error': 'Failed to delete account. Please try again or contact support.'},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+
+class AccountPageView(APIView):
+    """
+    Serves a self-contained HTML page for iOS app users.
+    iOS app opens: /api/v1/auth/account-page/?token=<access_token>
+    The page shows Logout and Delete Account options.
+    Apple App Store Guideline 5.1.1(v) compliant.
+    """
+    permission_classes = []
+    authentication_classes = []
+
+    def get(self, request):
+        from django.http import HttpResponse
+        from rest_framework_simplejwt.tokens import AccessToken
+
+        token = request.GET.get('token', '')
+        user_info = ''
+        is_valid = False
+
+        if token:
+            try:
+                access = AccessToken(token)
+                user_id = access['user_id']
+                user = User.objects.get(id=user_id)
+                user_info = user.username or user.phone_number or f'User #{user_id}'
+                is_valid = True
+            except Exception:
+                is_valid = False
+
+        # Build the API base URL
+        api_base = request.build_absolute_uri('/api/v1')
+
+        html = f'''<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Account Settings - Freshinbasket</title>
+    <style>
+        * {{ margin: 0; padding: 0; box-sizing: border-box; }}
+        body {{
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f5f5f5;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            color: #1a1a1a;
+        }}
+        .container {{ max-width: 420px; width: 100%; }}
+        .header {{
+            text-align: center;
+            margin-bottom: 24px;
+        }}
+        .logo {{
+            width: 56px; height: 56px;
+            background: #dcfce7;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 12px;
+            font-size: 28px;
+        }}
+        .header h1 {{
+            font-size: 22px;
+            font-weight: 700;
+            color: #111;
+        }}
+        .header .user-info {{
+            font-size: 14px;
+            color: #666;
+            margin-top: 4px;
+        }}
+        .card {{
+            background: #fff;
+            border-radius: 16px;
+            border: 1px solid #e5e7eb;
+            padding: 24px;
+            margin-bottom: 12px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+        }}
+        .card.danger {{ border-color: #fecaca; }}
+        .card-header {{
+            display: flex;
+            gap: 16px;
+            align-items: flex-start;
+        }}
+        .icon-circle {{
+            width: 48px; height: 48px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            font-size: 22px;
+        }}
+        .icon-blue {{ background: #eff6ff; }}
+        .icon-red {{ background: #fef2f2; }}
+        .card-body {{ flex: 1; }}
+        .card-body h2 {{
+            font-size: 17px;
+            font-weight: 700;
+            margin-bottom: 6px;
+        }}
+        .card-body p {{
+            font-size: 13px;
+            color: #6b7280;
+            line-height: 1.5;
+        }}
+        .btn {{
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            width: 100%;
+            padding: 14px;
+            border-radius: 12px;
+            border: none;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            margin-top: 16px;
+            transition: all 0.2s;
+        }}
+        .btn:disabled {{
+            opacity: 0.5;
+            cursor: not-allowed;
+        }}
+        .btn-dark {{
+            background: #111;
+            color: #fff;
+        }}
+        .btn-dark:hover:not(:disabled) {{ background: #333; }}
+        .btn-red {{
+            background: #dc2626;
+            color: #fff;
+        }}
+        .btn-red:hover:not(:disabled) {{ background: #b91c1c; }}
+        .btn-gray {{
+            background: #f3f4f6;
+            color: #374151;
+        }}
+        .btn-gray:hover:not(:disabled) {{ background: #e5e7eb; }}
+        .btn-confirm {{
+            background: #dc2626;
+            color: #fff;
+        }}
+        .btn-confirm:hover:not(:disabled) {{ background: #991b1b; }}
+
+        .warning-box {{
+            background: #fef2f2;
+            border: 1px solid #fecaca;
+            border-radius: 10px;
+            padding: 12px;
+            margin-top: 14px;
+        }}
+        .warning-box p {{
+            font-size: 12px;
+            color: #991b1b;
+            font-weight: 600;
+            line-height: 1.5;
+        }}
+        .confirm-input {{
+            width: 100%;
+            padding: 12px 16px;
+            border: 1px solid #d1d5db;
+            border-radius: 10px;
+            font-size: 14px;
+            margin-top: 10px;
+            outline: none;
+            transition: border-color 0.2s;
+        }}
+        .confirm-input:focus {{
+            border-color: #dc2626;
+            box-shadow: 0 0 0 3px rgba(220,38,38,0.1);
+        }}
+        .confirm-label {{
+            font-size: 12px;
+            color: #6b7280;
+            margin-top: 12px;
+            display: block;
+        }}
+        .confirm-label span {{ color: #dc2626; font-weight: 700; }}
+        .btn-row {{
+            display: flex;
+            gap: 10px;
+            margin-top: 12px;
+        }}
+        .btn-row .btn {{ flex: 1; margin-top: 0; }}
+        .notice {{
+            background: #f3f4f6;
+            border-radius: 12px;
+            padding: 14px;
+            text-align: center;
+            margin-bottom: 12px;
+        }}
+        .notice p {{
+            font-size: 11px;
+            color: #6b7280;
+            line-height: 1.6;
+        }}
+        .back-link {{
+            text-align: center;
+            margin-top: 8px;
+        }}
+        .back-link a {{
+            font-size: 13px;
+            color: #6b7280;
+            text-decoration: none;
+        }}
+        .back-link a:hover {{ color: #374151; }}
+
+        .result-page {{
+            text-align: center;
+        }}
+        .result-icon {{
+            width: 64px; height: 64px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 16px;
+            font-size: 32px;
+        }}
+        .result-green {{ background: #dcfce7; }}
+        .result-red {{ background: #fef2f2; }}
+        .result-page h2 {{
+            font-size: 22px;
+            font-weight: 700;
+            margin-bottom: 8px;
+        }}
+        .result-page p {{
+            font-size: 14px;
+            color: #6b7280;
+            line-height: 1.6;
+            margin-bottom: 24px;
+        }}
+        .spinner {{
+            display: inline-block;
+            width: 16px; height: 16px;
+            border: 2px solid rgba(255,255,255,0.3);
+            border-top-color: #fff;
+            border-radius: 50%;
+            animation: spin 0.6s linear infinite;
+        }}
+        @keyframes spin {{ to {{ transform: rotate(360deg); }} }}
+
+        #delete-confirm {{ display: none; }}
+        #result-section {{ display: none; }}
+        #main-section {{ display: block; }}
+    </style>
+</head>
+<body>
+    <div class="container">
+        {"" if is_valid else '''
+        <div class="card" style="text-align:center;">
+            <div class="icon-circle icon-red" style="margin:0 auto 16px;font-size:28px;">⚠️</div>
+            <h2 style="font-size:20px;margin-bottom:8px;">Session Expired</h2>
+            <p style="font-size:14px;color:#6b7280;margin-bottom:20px;">
+                Your session has expired or the link is invalid. Please open this page again from the app.
+            </p>
+            <a href="/" class="btn btn-dark" style="text-decoration:none;">Go to Homepage</a>
+        </div>
+        '''}
+
+        {"" if not is_valid else f"""
+        <div id="main-section">
+            <div class="header">
+                <div class="logo">🥬</div>
+                <h1>Account Settings</h1>
+                <p class="user-info">{user_info}</p>
+            </div>
+
+            <!-- Logout Option -->
+            <div class="card">
+                <div class="card-header">
+                    <div class="icon-circle icon-blue">🔓</div>
+                    <div class="card-body">
+                        <h2>Log Out</h2>
+                        <p>Sign out of your account. Your data will be preserved and you can log back in anytime.</p>
+                        <button class="btn btn-dark" id="logout-btn" onclick="handleLogout()">
+                            🔓 Log Out
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Delete Account Option -->
+            <div class="card danger">
+                <div class="card-header">
+                    <div class="icon-circle icon-red">🗑️</div>
+                    <div class="card-body">
+                        <h2>Delete Account</h2>
+                        <p>Permanently delete your account and all associated data including order history, saved addresses, cart, and wishlist.</p>
+                        <button class="btn btn-red" id="delete-btn" onclick="showDeleteConfirm()">
+                            🗑️ Delete My Account
+                        </button>
+
+                        <div id="delete-confirm">
+                            <div class="warning-box">
+                                <p>⚠️ This action is permanent and cannot be undone. All your data will be permanently removed from our systems.</p>
+                            </div>
+                            <label class="confirm-label">Type <span>DELETE</span> to confirm</label>
+                            <input type="text" class="confirm-input" id="confirm-input"
+                                   placeholder="Type DELETE here" autocomplete="off"
+                                   oninput="this.value=this.value.toUpperCase();checkConfirm()">
+                            <div class="btn-row">
+                                <button class="btn btn-gray" onclick="hideDeleteConfirm()">Cancel</button>
+                                <button class="btn btn-confirm" id="confirm-delete-btn" disabled onclick="handleDelete()">
+                                    Confirm Delete
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="notice">
+                <p>Upon deletion, your personal data will be removed from our systems. Certain anonymized order records may be retained as required by law for tax and accounting purposes.</p>
+            </div>
+
+            <div class="back-link">
+                <a href="/">← Back to Freshinbasket</a>
+            </div>
+        </div>
+
+        <div id="result-section"></div>
+
+        <script>
+            const TOKEN = '{token}';
+            const API_BASE = '{api_base}';
+
+            function showDeleteConfirm() {{
+                document.getElementById('delete-btn').style.display = 'none';
+                document.getElementById('delete-confirm').style.display = 'block';
+            }}
+
+            function hideDeleteConfirm() {{
+                document.getElementById('delete-btn').style.display = 'flex';
+                document.getElementById('delete-confirm').style.display = 'none';
+                document.getElementById('confirm-input').value = '';
+                checkConfirm();
+            }}
+
+            function checkConfirm() {{
+                const val = document.getElementById('confirm-input').value;
+                document.getElementById('confirm-delete-btn').disabled = val !== 'DELETE';
+            }}
+
+            function showResult(icon, bgClass, title, message) {{
+                document.getElementById('main-section').style.display = 'none';
+                document.getElementById('result-section').style.display = 'block';
+                document.getElementById('result-section').innerHTML = `
+                    <div class="card result-page">
+                        <div class="result-icon ${{bgClass}}">${{icon}}</div>
+                        <h2>${{title}}</h2>
+                        <p>${{message}}</p>
+                        <a href="/" class="btn btn-dark" style="text-decoration:none;">Go to Homepage</a>
+                    </div>
+                `;
+            }}
+
+            function setLoading(btn, loading, text) {{
+                if (loading) {{
+                    btn.disabled = true;
+                    btn.innerHTML = '<span class="spinner"></span> ' + text;
+                }} else {{
+                    btn.disabled = false;
+                }}
+            }}
+
+            async function handleLogout() {{
+                const btn = document.getElementById('logout-btn');
+                setLoading(btn, true, 'Logging out...');
+                try {{
+                    const refreshToken = '';  // iOS app doesn't pass refresh token, just blacklist via access
+                    await fetch(API_BASE + '/auth/logout/', {{
+                        method: 'POST',
+                        headers: {{
+                            'Content-Type': 'application/json',
+                            'Authorization': 'Bearer ' + TOKEN
+                        }},
+                        body: JSON.stringify({{ refresh: refreshToken }})
+                    }});
+                    // Even if API fails (no refresh token), show success — iOS app should clear local tokens
+                    showResult('✅', 'result-green', 'Logged Out', 'You have been successfully logged out. You can close this page and return to the app.');
+                }} catch(e) {{
+                    showResult('✅', 'result-green', 'Logged Out', 'You have been logged out. You can close this page and return to the app.');
+                }}
+            }}
+
+            async function handleDelete() {{
+                const btn = document.getElementById('confirm-delete-btn');
+                setLoading(btn, true, 'Deleting...');
+                try {{
+                    const res = await fetch(API_BASE + '/auth/delete-account/', {{
+                        method: 'DELETE',
+                        headers: {{
+                            'Authorization': 'Bearer ' + TOKEN
+                        }}
+                    }});
+                    if (res.ok) {{
+                        showResult('✅', 'result-green', 'Account Deleted', 'Your account and all associated data have been permanently deleted. We\\'re sorry to see you go.');
+                    }} else {{
+                        const data = await res.json().catch(() => ({{}}));
+                        alert(data.error || 'Failed to delete account. Please try again.');
+                        setLoading(btn, false, '');
+                        btn.innerHTML = 'Confirm Delete';
+                        btn.disabled = false;
+                    }}
+                }} catch(e) {{
+                    alert('Something went wrong. Please try again.');
+                    setLoading(btn, false, '');
+                    btn.innerHTML = 'Confirm Delete';
+                    btn.disabled = false;
+                }}
+            }}
+        </script>
+        """}
+    </div>
+</body>
+</html>'''
+        return HttpResponse(html, content_type='text/html')
 class LoginRateThrottle(AnonRateThrottle):
     scope = 'login'
 
@@ -665,6 +1147,10 @@ class OrderViewSet(viewsets.ModelViewSet):
             Product.objects.filter(id=item.product_id).update(stock=F('stock') + item.quantity)
 
         order.save(update_fields=update_fields)
+        
+        # Send push notification for cancellation
+        from notifications.fcm import send_status_notification
+        send_status_notification(order)
         
         message = 'Order cancelled successfully'
         if order.payment_method == Order.PaymentMethod.ONLINE and order.is_paid:
