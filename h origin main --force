@@ -1,0 +1,10 @@
+[33m85d2673[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m)[m Fix cart logic, add delete account endpoint and UI, add order cancellation push notification
+[33m4ba2888[m Update backend, delivery dashboard and features
+[33ma042aaa[m fix fallback
+[33me1ff76b[m fix crash issues
+[33med2d440[m Use actual customer data for Razorpay QR generation
+[33m9a2e36e[m Update orders view and add test_qr script
+[33m513f2f1[m Add COD QR Payment endpoints via Razorpay
+[33me07a178[m Update frontend Play Store app link in Footer and MobileAppBanner
+[33ma5a8a9c[m Add test orders feature in admin panel with silent notification bypass and lat/lng map support
+[33mc08d65d[m fix: constrain order card width to half page on print and limit card width in order list

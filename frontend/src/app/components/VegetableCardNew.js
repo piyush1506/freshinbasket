@@ -198,8 +198,8 @@ export default function VegetableCard({ item }) {
             </button>
           )}
           <span className="text-xs font-semibold text-white/80 ml-2">
-                /{itemUnit}
-              </span>
+            /{itemUnit}
+          </span>
         </div>
       </div>
     </div>

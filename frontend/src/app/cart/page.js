@@ -54,6 +54,7 @@ export default function CartPage() {
   const [isFetchingLocation, setIsFetchingLocation] = useState(false);
   const [razorpayLoaded, setRazorpayLoaded] = useState(false);
   const [suggestedProducts, setSuggestedProducts] = useState([]);
+  const [productMeta, setProductMeta] = useState({});
   const mapRef = useRef(null);
   const mapInstance = useRef(null);
   const markerRef = useRef(null);
@@ -81,6 +82,15 @@ export default function CartPage() {
         const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/products/`);
         if (res.ok) {
           const data = await res.json();
+          // Build product metadata map for order_step and min_order_qty
+          const meta = {};
+          data.forEach(p => {
+            meta[Number(p.id)] = {
+              order_step: Number(p.order_step) || 1,
+              min_order_qty: Number(p.min_order_qty) || 0,
+            };
+          });
+          setProductMeta(meta);
           const cartItemIds = cartItems.map(item => item.id);
           const suggestions = data.filter(p => !cartItemIds.includes(p.id)).slice(0, 100);
           setSuggestedProducts(suggestions);
@@ -216,8 +226,9 @@ export default function CartPage() {
   };
 
   const handleCartDecrement = async (item) => {
-    const orderStep = Number(item.order_step) || 1;
-    const minOrderQty = Number(item.min_order_qty) || 0;
+    const meta = productMeta[item.id];
+    const orderStep = meta?.order_step || Number(item.order_step) || 1;
+    const minOrderQty = meta?.min_order_qty ?? Number(item.min_order_qty) ?? 0;
     const currentQty = Number(item.quantity);
     const newQty = parseFloat((currentQty - orderStep).toFixed(3));
 
@@ -244,7 +255,8 @@ export default function CartPage() {
   };
 
   const handleCartIncrement = (item) => {
-    const orderStep = Number(item.order_step) || 1;
+    const meta = productMeta[item.id];
+    const orderStep = meta?.order_step || Number(item.order_step) || 1;
     addToCart({ ...item, quantity: orderStep });
   };
 
@@ -609,10 +621,10 @@ export default function CartPage() {
                             {item.name}
                           </h3>
                           <p className="text-xs text-gray-400 mt-0.5">{item.unit || 'kg'} · ₹{parseInt(item.price)}/{item.unit || 'kg'}</p>
-                          {Number(item.min_order_qty) > 0 && (
-                            <p className="text-[10px] text-amber-600 font-semibold mt-0.5">Min: {Number(item.min_order_qty)} {item.unit || 'kg'}</p>
+                          {(productMeta[item.id]?.min_order_qty || Number(item.min_order_qty)) > 0 && (
+                            <p className="text-[10px] text-amber-600 font-semibold mt-0.5">Min: {productMeta[item.id]?.min_order_qty || Number(item.min_order_qty)} {item.unit || 'kg'}</p>
                           )}
-                          {Number(item.min_order_qty) > 0 && Number(item.quantity) < Number(item.min_order_qty) && (
+                          {(productMeta[item.id]?.min_order_qty || Number(item.min_order_qty)) > 0 && Number(item.quantity) < (productMeta[item.id]?.min_order_qty || Number(item.min_order_qty)) && (
                             <p className="text-[10px] text-red-500 font-bold mt-0.5">⚠ Below minimum qty!</p>
                           )}
 
@@ -621,7 +633,8 @@ export default function CartPage() {
                             {/* Stepper */}
                             <div className="flex items-center gap-1 bg-[#0c831f] text-white rounded-lg p-1 select-none">
                               <button
-                                className={`w-6 h-6 flex items-center justify-center hover:bg-green-800 rounded-md transition-colors ${Number(item.min_order_qty) > 0 && Number(item.quantity) <= Number(item.min_order_qty) ? 'opacity-40 cursor-not-allowed' : ''}`}
+                                disabled={(productMeta[item.id]?.min_order_qty || Number(item.min_order_qty)) > 0 && Number(item.quantity) <= (productMeta[item.id]?.min_order_qty || Number(item.min_order_qty))}
+                                className={`w-6 h-6 flex items-center justify-center hover:bg-green-800 rounded-md transition-colors disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent`}
                                 onClick={() => handleCartDecrement(item)}
                               >
                                 <Minus size={11} className="stroke-[3px]" />
@@ -647,7 +660,8 @@ export default function CartPage() {
                           <div className="flex items-center gap-1.5">
                             <div className="flex items-center gap-1 bg-[#0c831f] text-white rounded-lg p-1 select-none shadow-sm">
                               <button
-                                className={`w-7 h-7 flex items-center justify-center hover:bg-green-800 rounded-md transition-colors ${Number(item.min_order_qty) > 0 && Number(item.quantity) <= Number(item.min_order_qty) ? 'opacity-40 cursor-not-allowed' : ''}`}
+                                disabled={(productMeta[item.id]?.min_order_qty || Number(item.min_order_qty)) > 0 && Number(item.quantity) <= (productMeta[item.id]?.min_order_qty || Number(item.min_order_qty))}
+                                className={`w-7 h-7 flex items-center justify-center hover:bg-green-800 rounded-md transition-colors disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent`}
                                 onClick={() => handleCartDecrement(item)}
                               >
                                 <Minus size={12} className="stroke-[3px]" />
