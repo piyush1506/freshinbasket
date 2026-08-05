@@ -4,6 +4,7 @@ Custom Django Admin view for sending manual push notifications.
 Accessible at: /admin/notifications/send/
 """
 import logging
+import cloudinary.uploader
 from django.contrib import admin
 from django.contrib.auth import get_user_model
 from django.contrib.admin.views.decorators import staff_member_required
@@ -44,10 +45,38 @@ class SendNotificationView(View):
         body = request.POST.get('body', '').strip()
         target = request.POST.get('target', 'all')  # 'all' or user id
         channel = request.POST.get('channel', 'promotions')
+        image_file = request.FILES.get('image')  # Optional image upload
 
         if not title or not body:
             messages.error(request, 'Title and message body are required.')
             return redirect('admin_send_notification')
+
+        # Upload image to Cloudinary if provided
+        image_url = None
+        if image_file:
+            # Validate file type
+            allowed_types = ['image/jpeg', 'image/png', 'image/webp', 'image/gif']
+            if image_file.content_type not in allowed_types:
+                messages.error(request, 'Invalid image type. Allowed: JPEG, PNG, WebP, GIF.')
+                return redirect('admin_send_notification')
+
+            # Validate file size (max 5MB)
+            if image_file.size > 5 * 1024 * 1024:
+                messages.error(request, 'Image too large. Maximum 5MB allowed.')
+                return redirect('admin_send_notification')
+
+            try:
+                upload_result = cloudinary.uploader.upload(
+                    image_file,
+                    folder='freshinbasket/notifications',
+                    resource_type='image',
+                    allowed_formats=['jpg', 'png', 'webp', 'gif'],
+                )
+                image_url = upload_result['secure_url']
+            except Exception as e:
+                logger.error(f"Cloudinary upload failed for notification image: {e}")
+                messages.error(request, f'Image upload failed: {e}')
+                return redirect('admin_send_notification')
 
         sent_count = 0
         failed_count = 0
@@ -61,6 +90,7 @@ class SendNotificationView(View):
                     title=title,
                     body=body,
                     data={'channel': channel, 'route': 'home'},
+                    image_url=image_url,
                 )
                 if count > 0:
                     sent_count += 1
@@ -72,6 +102,7 @@ class SendNotificationView(View):
                     request,
                     f'✅ Notification sent to {sent_count} user(s).'
                     + (f' {failed_count} skipped (no token).' if failed_count else '')
+                    + (' 📷 With image.' if image_url else '')
                 )
             else:
                 messages.warning(request, 'No users with registered devices found.')
@@ -85,6 +116,7 @@ class SendNotificationView(View):
                     title=title,
                     body=body,
                     data={'channel': channel, 'route': 'home'},
+                    image_url=image_url,
                 )
                 if count > 0:
                     messages.success(request, f'✅ Notification sent to {user.phone_number}.')
@@ -95,5 +127,7 @@ class SendNotificationView(View):
 
         logger.info(
             f'Admin {request.user} sent notification: title="{title}", target={target}'
+            f'{", with_image=True" if image_url else ""}'
         )
         return redirect('admin_send_notification')
+

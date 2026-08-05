@@ -34,11 +34,15 @@ def _get_app():
         return None
 
 
-def send_push(token: str, title: str, body: str, data: dict = None) -> bool:
+def send_push(token: str, title: str, body: str, data: dict = None, image_url: str = None) -> bool:
     """
     Send a single FCM push notification to a device token.
     Returns True if sent successfully, False otherwise.
     Never raises — caller should not be affected by notification failures.
+
+    Args:
+        image_url: Optional public HTTPS URL for a rich notification image.
+                   Shown as big-picture on Android, attachment on iOS.
     """
     app = _get_app()
     if app is None:
@@ -47,14 +51,24 @@ def send_push(token: str, title: str, body: str, data: dict = None) -> bool:
     try:
         from firebase_admin import messaging
 
+        # Build data payload, include image_url so the client can also use it
+        payload = {k: str(v) for k, v in (data or {}).items()}
+        if image_url:
+            payload['image_url'] = image_url
+
         message = messaging.Message(
-            notification=messaging.Notification(title=title, body=body),
-            data={k: str(v) for k, v in (data or {}).items()},
+            notification=messaging.Notification(
+                title=title,
+                body=body,
+                image=image_url,  # FCM native rich notification image
+            ),
+            data=payload,
             android=messaging.AndroidConfig(
                 priority='high',
                 notification=messaging.AndroidNotification(
                     channel_id='order_updates',
                     sound='default',
+                    image=image_url,  # Android big-picture notification
                 ),
             ),
             apns=messaging.APNSConfig(
@@ -72,11 +86,14 @@ def send_push(token: str, title: str, body: str, data: dict = None) -> bool:
         return False
 
 
-def send_push_to_user(user, title: str, body: str, data: dict = None) -> int:
+def send_push_to_user(user, title: str, body: str, data: dict = None, image_url: str = None) -> int:
     """
     Send a push notification to ALL active tokens of a user.
     Automatically removes stale/invalid tokens.
     Returns number of successful sends.
+
+    Args:
+        image_url: Optional public HTTPS URL for a rich notification image.
     """
     from .models import FCMToken
     from firebase_admin import messaging as fb_messaging
@@ -91,7 +108,7 @@ def send_push_to_user(user, title: str, body: str, data: dict = None) -> int:
 
     for fcm_token in tokens:
         try:
-            success = send_push(fcm_token.token, title, body, data)
+            success = send_push(fcm_token.token, title, body, data, image_url=image_url)
             if success:
                 sent += 1
         except Exception as e:

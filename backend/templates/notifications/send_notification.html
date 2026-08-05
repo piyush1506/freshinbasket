@@ -49,17 +49,32 @@
   .char-hint { font-size: 12px; color: #888; margin-top: 4px; }
   .preview-box {
     background: #1e1e2e; border-radius: 10px; padding: 16px 18px;
-    margin-bottom: 24px; display: flex; align-items: flex-start; gap: 14px;
+    margin-bottom: 24px; overflow: hidden;
+  }
+  .preview-top {
+    display: flex; align-items: flex-start; gap: 14px;
   }
   .preview-icon {
     width: 42px; height: 42px; background: #164431; border-radius: 10px;
     display: flex; align-items: center; justify-content: center; flex-shrink: 0;
     font-size: 20px;
   }
-  .preview-content { color: #fff; }
+  .preview-content { color: #fff; flex: 1; }
   .preview-title { font-weight: 600; font-size: 14px; }
   .preview-body  { font-size: 13px; opacity: .8; margin-top: 3px; }
   .preview-app   { font-size: 11px; opacity: .5; margin-top: 6px; }
+  .preview-image-wrapper {
+    margin-top: 12px;
+    border-radius: 8px;
+    overflow: hidden;
+    display: none;
+  }
+  .preview-image-wrapper img {
+    width: 100%;
+    max-height: 200px;
+    object-fit: cover;
+    display: block;
+  }
   .btn-send {
     background: linear-gradient(135deg, #1a6b3c, #164431);
     color: #fff; border: none; border-radius: 8px;
@@ -82,6 +97,74 @@
     border-color: #164431; background: #f0fdf4; color: #164431; font-weight: 600;
   }
   .channel-pill input { display: none; }
+
+  /* Image upload area */
+  .image-upload-area {
+    border: 2px dashed #d1d5db;
+    border-radius: 10px;
+    padding: 24px;
+    text-align: center;
+    cursor: pointer;
+    transition: all .2s;
+    background: #fafafa;
+    position: relative;
+  }
+  .image-upload-area:hover,
+  .image-upload-area.dragover {
+    border-color: #164431;
+    background: #f0fdf4;
+  }
+  .image-upload-area input[type="file"] {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    cursor: pointer;
+  }
+  .upload-icon { font-size: 32px; margin-bottom: 8px; }
+  .upload-text { font-size: 13px; color: #666; }
+  .upload-text strong { color: #164431; }
+  .upload-hint { font-size: 11px; color: #999; margin-top: 6px; }
+
+  /* Image preview in form */
+  .image-preview-container {
+    display: none;
+    margin-top: 12px;
+    position: relative;
+    border-radius: 8px;
+    overflow: hidden;
+    border: 1px solid #e5e7eb;
+  }
+  .image-preview-container img {
+    width: 100%;
+    max-height: 180px;
+    object-fit: cover;
+    display: block;
+  }
+  .image-preview-overlay {
+    position: absolute;
+    top: 0; right: 0;
+    display: flex; gap: 6px;
+    padding: 8px;
+  }
+  .image-preview-info {
+    background: rgba(0,0,0,0.6);
+    color: #fff;
+    font-size: 11px;
+    padding: 4px 10px;
+    border-radius: 12px;
+  }
+  .image-remove-btn {
+    background: rgba(220,38,38,0.85);
+    color: #fff;
+    border: none;
+    width: 28px; height: 28px;
+    border-radius: 50%;
+    cursor: pointer;
+    font-size: 14px;
+    display: flex; align-items: center; justify-content: center;
+    transition: background .15s;
+  }
+  .image-remove-btn:hover { background: rgba(220,38,38,1); }
 </style>
 {% endblock %}
 
@@ -118,17 +201,22 @@
       {% endfor %}
     {% endif %}
 
-    <form method="post" id="notifForm">
+    <form method="post" id="notifForm" enctype="multipart/form-data">
       {% csrf_token %}
 
       <!-- Notification Preview -->
       <div class="section-title">Live Preview</div>
       <div class="preview-box">
-        <div class="preview-icon">🛒</div>
-        <div class="preview-content">
-          <div class="preview-title" id="previewTitle">Notification Title</div>
-          <div class="preview-body"  id="previewBody">Your message will appear here...</div>
-          <div class="preview-app">FreshInBasket • now</div>
+        <div class="preview-top">
+          <div class="preview-icon">🛒</div>
+          <div class="preview-content">
+            <div class="preview-title" id="previewTitle">Notification Title</div>
+            <div class="preview-body"  id="previewBody">Your message will appear here...</div>
+            <div class="preview-app">FreshInBasket • now</div>
+          </div>
+        </div>
+        <div class="preview-image-wrapper" id="previewImageWrapper">
+          <img id="previewImage" src="" alt="Notification image preview">
         </div>
       </div>
 
@@ -146,6 +234,24 @@
         <textarea name="body" id="bodyInput" maxlength="178"
                   placeholder="e.g. Get 20% off on all vegetables today. Order now!" required></textarea>
         <div class="char-hint"><span id="bodyCount">0</span>/178 characters</div>
+      </div>
+
+      <!-- Image Upload -->
+      <div class="form-group">
+        <label>🖼️ Notification Image (Optional)</label>
+        <div class="image-upload-area" id="imageUploadArea">
+          <input type="file" name="image" id="imageInput" accept="image/jpeg,image/png,image/webp,image/gif">
+          <div class="upload-icon">📷</div>
+          <div class="upload-text">Drag & drop an image or <strong>click to browse</strong></div>
+          <div class="upload-hint">JPEG, PNG, WebP, GIF • Max 5MB • Recommended: 1024×512px</div>
+        </div>
+        <div class="image-preview-container" id="imagePreviewContainer">
+          <img id="imagePreviewThumb" src="" alt="Selected image">
+          <div class="image-preview-overlay">
+            <span class="image-preview-info" id="imageInfo"></span>
+            <button type="button" class="image-remove-btn" id="imageRemoveBtn" title="Remove image">✕</button>
+          </div>
+        </div>
       </div>
 
       <!-- Channel -->
@@ -192,6 +298,16 @@
   const bodyCount  = document.getElementById('bodyCount');
   const sendBtn    = document.getElementById('sendBtn');
 
+  // Image elements
+  const imageInput        = document.getElementById('imageInput');
+  const imageUploadArea   = document.getElementById('imageUploadArea');
+  const imagePreviewCont  = document.getElementById('imagePreviewContainer');
+  const imagePreviewThumb = document.getElementById('imagePreviewThumb');
+  const imageInfo         = document.getElementById('imageInfo');
+  const imageRemoveBtn    = document.getElementById('imageRemoveBtn');
+  const previewImageWrap  = document.getElementById('previewImageWrapper');
+  const previewImage      = document.getElementById('previewImage');
+
   titleInput.addEventListener('input', () => {
     prevTitle.textContent = titleInput.value || 'Notification Title';
     titleCount.textContent = titleInput.value.length;
@@ -199,6 +315,71 @@
   bodyInput.addEventListener('input', () => {
     prevBody.textContent = bodyInput.value || 'Your message will appear here...';
     bodyCount.textContent = bodyInput.value.length;
+  });
+
+  // --- Image upload handling ---
+  function formatFileSize(bytes) {
+    if (bytes < 1024) return bytes + ' B';
+    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+    return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+  }
+
+  function showImagePreview(file) {
+    if (!file || !file.type.startsWith('image/')) return;
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      // Form preview
+      imagePreviewThumb.src = e.target.result;
+      imageInfo.textContent = `${file.name.substring(0, 20)}${file.name.length > 20 ? '…' : ''} • ${formatFileSize(file.size)}`;
+      imagePreviewCont.style.display = 'block';
+      imageUploadArea.style.display = 'none';
+
+      // Notification preview
+      previewImage.src = e.target.result;
+      previewImageWrap.style.display = 'block';
+    };
+    reader.readAsDataURL(file);
+  }
+
+  function clearImagePreview() {
+    imageInput.value = '';
+    imagePreviewThumb.src = '';
+    imagePreviewCont.style.display = 'none';
+    imageUploadArea.style.display = 'block';
+    previewImage.src = '';
+    previewImageWrap.style.display = 'none';
+  }
+
+  imageInput.addEventListener('change', () => {
+    if (imageInput.files && imageInput.files[0]) {
+      const file = imageInput.files[0];
+      if (file.size > 5 * 1024 * 1024) {
+        alert('Image too large. Maximum 5MB allowed.');
+        imageInput.value = '';
+        return;
+      }
+      showImagePreview(file);
+    }
+  });
+
+  imageRemoveBtn.addEventListener('click', clearImagePreview);
+
+  // Drag and drop
+  imageUploadArea.addEventListener('dragover', (e) => {
+    e.preventDefault();
+    imageUploadArea.classList.add('dragover');
+  });
+  imageUploadArea.addEventListener('dragleave', () => {
+    imageUploadArea.classList.remove('dragover');
+  });
+  imageUploadArea.addEventListener('drop', (e) => {
+    e.preventDefault();
+    imageUploadArea.classList.remove('dragover');
+    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+      imageInput.files = e.dataTransfer.files;
+      showImagePreview(e.dataTransfer.files[0]);
+    }
   });
 
   // Confirm before broadcasting to all
