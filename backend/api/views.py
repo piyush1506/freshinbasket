@@ -141,6 +141,65 @@ class DeleteAccountView(APIView):
             )
 
 
+class UniversalAccountDeleteAPIView(APIView):
+    """
+    A unified, pure-JSON API endpoint for permanently deleting a user account.
+    Designed to be used by both the Web Frontend (React/Next.js) and Mobile App (Flutter/iOS/Android).
+    Contains no HTML rendering. Compliant with Apple App Store Guideline 5.1.1(v).
+    """
+    permission_classes = [permissions.IsAuthenticated]
+
+    def delete(self, request):
+        user = request.user
+        phone = user.phone_number
+        user_id = user.id
+
+        try:
+            # 1. Blacklist all outstanding refresh tokens to forcefully logout across all devices
+            outstanding_tokens = OutstandingToken.objects.filter(user=user)
+            for token in outstanding_tokens:
+                try:
+                    BlacklistedToken.objects.get_or_create(token=token)
+                except Exception:
+                    pass
+
+            # 2. Delete all personal associated data
+            Cart.objects.filter(user=user).delete()
+            WishlistItem.objects.filter(user=user).delete()
+            Review.objects.filter(user=user).delete()
+            ContactQuery.objects.filter(user=user).delete()
+            OTPVerification.objects.filter(phone_number=phone).delete()
+
+            # 3. Anonymize past orders for accounting/tax compliance (do not delete)
+            Order.objects.filter(user=user).update(
+                delivery_address='[DELETED]',
+                delivery_latitude=None,
+                delivery_longitude=None,
+            )
+
+            # 4. Permanently delete the user model
+            user.delete()
+
+            logger.info('Unified Account Deletion Successful - user_id=%s phone=%s ip=%s', user_id, phone, request.META.get('REMOTE_ADDR'))
+
+            return Response(
+                {
+                    'success': True,
+                    'message': 'Your account and all associated personal data have been permanently deleted.'
+                },
+                status=status.HTTP_200_OK
+            )
+        except Exception as e:
+            logger.error('Unified Account Deletion Failed - user_id=%s error=%s', user_id, str(e))
+            return Response(
+                {
+                    'success': False,
+                    'error': 'Failed to delete account. Please try again later.'
+                },
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+
 class AccountPageView(APIView):
     """
     Serves a self-contained HTML page for iOS app users.
