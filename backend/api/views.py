@@ -83,63 +83,6 @@ class LogoutView(APIView):
             )
 
 
-class DeleteAccountView(APIView):
-    """
-    Permanently delete the authenticated user's account and all associated data.
-    Apple App Store Guideline 5.1.1(v) compliant.
-    """
-    permission_classes = [permissions.IsAuthenticated]
-
-    def delete(self, request):
-        user = request.user
-        phone = user.phone_number
-        user_id = user.id
-
-        try:
-            # Blacklist all outstanding refresh tokens for this user
-            outstanding_tokens = OutstandingToken.objects.filter(user=user)
-            for token in outstanding_tokens:
-                try:
-                    BlacklistedToken.objects.get_or_create(token=token)
-                except Exception:
-                    pass
-
-            # Delete associated data
-            Cart.objects.filter(user=user).delete()
-            WishlistItem.objects.filter(user=user).delete()
-            Review.objects.filter(user=user).delete()
-            ContactQuery.objects.filter(user=user).delete()
-            OTPVerification.objects.filter(phone_number=phone).delete()
-
-            # Anonymize orders instead of deleting (for business records)
-            Order.objects.filter(user=user).update(
-                delivery_address='[DELETED]',
-                delivery_latitude=None,
-                delivery_longitude=None,
-            )
-
-            # Delete the user account permanently
-            user.delete()
-
-            logger.info(
-                'Account deleted user_id=%s phone=%s ip=%s',
-                user_id, phone, request.META.get('REMOTE_ADDR')
-            )
-
-            return Response(
-                {'message': 'Your account and all associated data have been permanently deleted.'},
-                status=status.HTTP_200_OK
-            )
-        except Exception as e:
-            logger.error(
-                'Account deletion failed user_id=%s error=%s',
-                user_id, str(e)
-            )
-            return Response(
-                {'error': 'Failed to delete account. Please try again or contact support.'},
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR
-            )
-
 
 class UniversalAccountDeleteAPIView(APIView):
     """
@@ -153,6 +96,12 @@ class UniversalAccountDeleteAPIView(APIView):
         user = request.user
         phone = user.phone_number
         user_id = user.id
+
+        if user.is_staff or user.role in ['ADMIN', 'DELIVERY']:
+            return Response(
+                {'error': 'Staff and delivery accounts cannot be deleted via the app. Please contact the system administrator.'}, 
+                status=status.HTTP_403_FORBIDDEN
+            )
 
         try:
             # 1. Blacklist all outstanding refresh tokens to forcefully logout across all devices
@@ -171,14 +120,23 @@ class UniversalAccountDeleteAPIView(APIView):
             OTPVerification.objects.filter(phone_number=phone).delete()
 
             # 3. Anonymize past orders for accounting/tax compliance (do not delete)
-            Order.objects.filter(user=user).update(
+            Order.objects.filter(customer=user).update(
                 delivery_address='[DELETED]',
                 delivery_latitude=None,
                 delivery_longitude=None,
             )
 
-            # 4. Permanently delete the user model
-            user.delete()
+            # 4. Soft Delete: Scramble PII and permanently disable the account
+            import uuid
+            random_suffix = str(uuid.uuid4())[:8]
+            user.phone_number = f"DEL_{user.id}_{random_suffix}"
+            user.username = f"Deleted User {user.id}"
+            user.email = None
+            user.address = None
+            user.avatar = None
+            user.is_active = False # Permanently disables login
+            user.set_unusable_password()
+            user.save()
 
             logger.info('Unified Account Deletion Successful - user_id=%s phone=%s ip=%s', user_id, phone, request.META.get('REMOTE_ADDR'))
 
@@ -828,9 +786,13 @@ class UserViewSet(viewsets.ModelViewSet):
                 except Exception as e:
                     return Response({'phone_number': [f'Failed to verify OTP: {str(e)}']}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
+        data = request.data.copy() if hasattr(request.data, 'copy') else dict(request.data)
+        if new_phone and 'new_phone_clean' in locals():
+            data['phone_number'] = new_phone_clean
+
         serializer = UserUpdateSerializer(
             user,
-            data=request.data,
+            data=data,
             partial=True,
             context={'request': request}
         )
