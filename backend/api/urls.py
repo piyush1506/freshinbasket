@@ -13,7 +13,7 @@ from .views import (
 )
 from orders.views import CreateRazorpayOrderView, VerifyPaymentView, CreateCODOrderView, RazorpayConfigView, GenerateUPIQRView, CheckQRStatusView, RazorpayWebhookView
 from django.views.decorators.csrf import csrf_exempt
-from notifications.views import RegisterFCMTokenView
+from notifications.views import RegisterFCMTokenView, RegisterDeviceView
 from .import_views import ProductImportView, ProductTemplateDownloadView
 from orders.delivery_views import (
     DeliveryDashboardView,
@@ -97,6 +97,7 @@ urlpatterns = [
 
     # Push Notifications — FCM token registration
     path('notifications/register-token/', RegisterFCMTokenView.as_view(), name='register_fcm_token'),
+    path('notifications/register-device/', RegisterDeviceView.as_view(), name='register_device'),
 
     # Router URLs
     path('', include(router.urls)),

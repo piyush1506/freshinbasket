@@ -82,30 +82,38 @@ class SendNotificationView(View):
         failed_count = 0
 
         if target == 'all':
-            # Broadcast to all users with FCM tokens
-            users = User.objects.filter(fcm_tokens__isnull=False).distinct()
-            for user in users:
-                count = send_push_to_user(
-                    user=user,
+            # 1. Send to all registered DeviceTokens (which includes guests)
+            from .models import DeviceToken
+            device_tokens = list(DeviceToken.objects.filter(is_active=True).values_list('token', flat=True))
+            
+            # 2. Also get any FCMTokens just in case (legacy)
+            legacy_tokens = list(FCMToken.objects.values_list('token', flat=True))
+            
+            # Combine unique tokens
+            all_tokens = list(set(device_tokens + legacy_tokens))
+            
+            if all_tokens:
+                count = send_push(
                     title=title,
                     body=body,
                     data={'channel': channel, 'route': 'home'},
+                    tokens=all_tokens,
                     image_url=image_url,
                 )
                 if count > 0:
-                    sent_count += 1
+                    sent_count += count
                 else:
-                    failed_count += 1
-
+                    failed_count += len(all_tokens)
+            
             if sent_count > 0:
                 messages.success(
                     request,
-                    f'✅ Notification sent to {sent_count} user(s).'
-                    + (f' {failed_count} skipped (no token).' if failed_count else '')
+                    f'✅ Notification sent to {sent_count} device(s).'
+                    + (f' {failed_count} failed.' if failed_count else '')
                     + (' 📷 With image.' if image_url else '')
                 )
             else:
-                messages.warning(request, 'No users with registered devices found.')
+                messages.warning(request, 'No registered devices found or sending failed.')
 
         else:
             # Send to a specific user
