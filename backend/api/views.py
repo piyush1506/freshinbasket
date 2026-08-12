@@ -1253,7 +1253,7 @@ class CartViewSet(viewsets.ModelViewSet):
         cart = Cart.objects.prefetch_related('items__product').get(id=cart.id)
         return Response(CartSerializer(cart).data, status=status.HTTP_200_OK)
 
-    @action(detail=False, methods=['DELETE'])
+    @action(detail=False, methods=['DELETE', 'POST'])
     def remove_item(self, request):
         cart = self.get_object()
         product_id = request.data.get('product_id')
@@ -1299,7 +1299,7 @@ class CartViewSet(viewsets.ModelViewSet):
         cart = Cart.objects.prefetch_related('items__product').get(id=cart.id)
         return Response(CartSerializer(cart).data, status=status.HTTP_200_OK)
 
-    @action(detail=False, methods=['DELETE'])
+    @action(detail=False, methods=['DELETE', 'POST'])
     def clear(self, request):
         cart = self.get_object()
         CartItem.objects.filter(cart=cart).delete()
@@ -1316,7 +1316,7 @@ class WishlistViewSet(viewsets.ModelViewSet):
     def perform_create(self, serializer):
         serializer.save(user=self.request.user)
 
-    @action(detail=False, methods=['DELETE'])
+    @action(detail=False, methods=['DELETE', 'POST'])
     def remove(self, request):
         product_id = request.data.get('product_id')
         if not product_id:
