@@ -1228,6 +1228,11 @@ class CartViewSet(viewsets.ModelViewSet):
         cart, created = Cart.objects.get_or_create(user=self.request.user)
         return cart
 
+    def list(self, request, *args, **kwargs):
+        CartItem.objects.filter(cart__user=self.request.user, product__is_active=False).delete()
+        cart, _ = Cart.objects.prefetch_related('items__product').get_or_create(user=self.request.user)
+        return Response(CartSerializer(cart).data)
+
     def retrieve(self, request, *args, **kwargs):
         CartItem.objects.filter(cart__user=self.request.user, product__is_active=False).delete()
         cart = Cart.objects.prefetch_related('items__product').get(user=self.request.user)
