@@ -863,30 +863,47 @@ class IsAdminRole(permissions.BasePermission):
 class SlideViewSet(viewsets.ModelViewSet):
     queryset = Slide.objects.all()
     serializer_class = SlideSerializer
-    permission_classes = [IsAdminRole]
+
+    def get_permissions(self):
+        if self.action in ['list', 'retrieve']:
+            return [permissions.AllowAny()]
+        return [IsAdminRole()]
 
     def list(self, request, *args, **kwargs):
-        cache_key = 'slides_list'
+        is_admin = request.user and request.user.is_authenticated and (getattr(request.user, 'is_staff', False) or getattr(request.user, 'role', '') == 'ADMIN')
+        cache_key = 'slides_list_admin' if is_admin else 'slides_list_public'
         cached = cache.get(cache_key)
         if cached is not None:
             return Response(cached)
-        response = super().list(request, *args, **kwargs)
-        cache.set(cache_key, response.data, timeout=600)
-        return response
+        
+        queryset = self.filter_queryset(self.get_queryset())
+        if not is_admin:
+            queryset = queryset.filter(is_active=True)
+            
+        serializer = self.get_serializer(queryset, many=True)
+        data = serializer.data
+        cache.set(cache_key, data, timeout=600)
+        return Response(data)
 
     def perform_create(self, serializer):
         super().perform_create(serializer)
         cache.delete('slides_list')
+        cache.delete('slides_list_admin')
+        cache.delete('slides_list_public')
         cache.delete('home_page')
 
     def perform_update(self, serializer):
         super().perform_update(serializer)
         cache.delete('slides_list')
+        cache.delete('slides_list_admin')
+        cache.delete('slides_list_public')
         cache.delete('home_page')
 
     def perform_destroy(self, instance):
         super().perform_destroy(instance)
         cache.delete('slides_list')
+        cache.delete('slides_list_admin')
+        cache.delete('slides_list_public')
         cache.delete('home_page')
 
 class ContactRateThrottle(AnonRateThrottle):
@@ -1220,9 +1237,10 @@ class CartViewSet(viewsets.ModelViewSet):
     def add_item(self, request):
         from decimal import Decimal, InvalidOperation
         cart = self.get_object()
-        product_id = request.data.get('product_id')
+        data = request.data if isinstance(request.data, dict) else {}
+        product_id = data.get('product_id') or data.get('product') or request.query_params.get('product_id')
         try:
-            quantity = Decimal(str(request.data.get('quantity', 1)))
+            quantity = Decimal(str(data.get('quantity', 1)))
         except (InvalidOperation, TypeError, ValueError):
             return Response({'error': 'Invalid quantity'}, status=status.HTTP_400_BAD_REQUEST)
 
@@ -1233,6 +1251,8 @@ class CartViewSet(viewsets.ModelViewSet):
         except Product.DoesNotExist:
             return Response({'error': 'Product not found'}, status=status.HTTP_404_NOT_FOUND)
 
+        is_absolute = data.get('is_absolute', False) or data.get('override', False)
+
         cart_item, created = CartItem.objects.get_or_create(
             cart=cart,
             product=product,
@@ -1240,14 +1260,19 @@ class CartViewSet(viewsets.ModelViewSet):
         )
 
         if not created:
-            # If item exists, we add the delta. 
-            # If the resulting quantity is <= 0, we remove the item.
-            new_quantity = cart_item.quantity + quantity
-            if new_quantity <= 0:
-                cart_item.delete()
+            if is_absolute:
+                if quantity <= 0:
+                    cart_item.delete()
+                else:
+                    cart_item.quantity = quantity
+                    cart_item.save()
             else:
-                cart_item.quantity = new_quantity
-                cart_item.save()
+                new_quantity = cart_item.quantity + quantity
+                if new_quantity <= 0:
+                    cart_item.delete()
+                else:
+                    cart_item.quantity = new_quantity
+                    cart_item.save()
 
         # Re-fetch with prefetch for an efficient response
         cart = Cart.objects.prefetch_related('items__product').get(id=cart.id)
@@ -1256,8 +1281,27 @@ class CartViewSet(viewsets.ModelViewSet):
     @action(detail=False, methods=['DELETE', 'POST'])
     def remove_item(self, request):
         cart = self.get_object()
-        product_id = request.data.get('product_id')
-        CartItem.objects.filter(cart=cart, product_id=product_id).delete()
+        data = request.data if isinstance(request.data, dict) else {}
+
+        product_id = (
+            data.get('product_id') or
+            data.get('product') or
+            request.query_params.get('product_id') or
+            request.query_params.get('product')
+        )
+        item_id = (
+            data.get('id') or
+            data.get('cart_item_id') or
+            data.get('item_id') or
+            request.query_params.get('id') or
+            request.query_params.get('cart_item_id')
+        )
+
+        if product_id is not None:
+            CartItem.objects.filter(cart=cart, product_id=product_id).delete()
+        if item_id is not None:
+            CartItem.objects.filter(cart=cart, id=item_id).delete()
+
         # Re-fetch with prefetch for an efficient response
         cart = Cart.objects.prefetch_related('items__product').get(id=cart.id)
         return Response(CartSerializer(cart).data)

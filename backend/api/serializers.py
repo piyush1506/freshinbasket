@@ -375,6 +375,7 @@ class DeliveryAssignmentSerializer(serializers.ModelSerializer):
 
 
 class CartItemSerializer(serializers.ModelSerializer):
+    product_id = serializers.ReadOnlyField(source='product.id')
     name = serializers.ReadOnlyField(source='product.name')
     price = serializers.ReadOnlyField(source='product.price')
     image = serializers.SerializerMethodField()
@@ -390,7 +391,7 @@ class CartItemSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = CartItem
-        fields = ('id', 'product', 'name', 'price', 'image', 'quantity', 'unit', 'mrp', 'discount_percentage', 'total_price', 'tax_percentage', 'order_step', 'min_order_qty', 'stock')
+        fields = ('id', 'product', 'product_id', 'name', 'price', 'image', 'quantity', 'unit', 'mrp', 'discount_percentage', 'total_price', 'tax_percentage', 'order_step', 'min_order_qty', 'stock')
 
     def get_image(self, obj):
         if obj.product.image_url and hasattr(obj.product.image_url, 'url'):
@@ -470,28 +471,40 @@ class SlideSerializer(serializers.ModelSerializer):
         read_only_fields = ('created_at',)
 
     def get_image_url(self, obj):
-        return get_transformed_cloudinary_url(obj.image_url, quality='original')
+        if not obj.image_url:
+            return None
+        url = obj.image_url
+        request = self.context.get('request')
+        if request and not (url.startswith('http://') or url.startswith('https://')):
+            url = request.build_absolute_uri(url)
+        return get_transformed_cloudinary_url(url, quality='original')
 
     def create(self, validated_data):
         image = validated_data.pop('image', None)
         if image:
-            upload_result = cloudinary.uploader.upload(
-                image, folder='freshinbasket/slides',
-                resource_type='image',
-                allowed_formats=['jpg', 'png', 'webp', 'gif'],
-            )
-            validated_data['image_url'] = upload_result['secure_url']
+            try:
+                upload_result = cloudinary.uploader.upload(
+                    image, folder='freshinbasket/slides',
+                    resource_type='image',
+                    allowed_formats=['jpg', 'png', 'webp', 'gif'],
+                )
+                validated_data['image_url'] = upload_result['secure_url']
+            except Exception as e:
+                raise serializers.ValidationError({'image': f'Cloudinary upload failed: {str(e)}'})
         return super().create(validated_data)
 
     def update(self, instance, validated_data):
         image = validated_data.pop('image', None)
         if image:
-            upload_result = cloudinary.uploader.upload(
-                image, folder='freshinbasket/slides',
-                resource_type='image',
-                allowed_formats=['jpg', 'png', 'webp', 'gif'],
-            )
-            validated_data['image_url'] = upload_result['secure_url']
+            try:
+                upload_result = cloudinary.uploader.upload(
+                    image, folder='freshinbasket/slides',
+                    resource_type='image',
+                    allowed_formats=['jpg', 'png', 'webp', 'gif'],
+                )
+                validated_data['image_url'] = upload_result['secure_url']
+            except Exception as e:
+                raise serializers.ValidationError({'image': f'Cloudinary upload failed: {str(e)}'})
         return super().update(instance, validated_data)
 
 
