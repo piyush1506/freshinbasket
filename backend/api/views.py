@@ -127,9 +127,9 @@ class UniversalAccountDeleteAPIView(APIView):
             )
 
             # 4. Soft Delete: Scramble PII and permanently disable the account
-            import uuid
-            random_suffix = str(uuid.uuid4())[:8]
-            user.phone_number = f"DEL_{user.id}_{random_suffix}"
+            # phone_number MUST be exactly 10 digits due to models.CharField(max_length=10) & regex validator
+            # We use 00 prefix + 8 digit padded user ID (e.g., 0000000123) which is unique and invalid as a real phone.
+            user.phone_number = f"00{str(user.id).zfill(8)}"
             user.username = f"Deleted User {user.id}"
             user.email = None
             user.address = None
