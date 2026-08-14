@@ -1256,6 +1256,8 @@ class CartViewSet(viewsets.ModelViewSet):
         except Product.DoesNotExist:
             return Response({'error': 'Product not found'}, status=status.HTTP_404_NOT_FOUND)
 
+        is_absolute = data.get('is_absolute', False) or data.get('override', False)
+
         cart_item, created = CartItem.objects.get_or_create(
             cart=cart,
             product=product,
@@ -1263,35 +1265,6 @@ class CartViewSet(viewsets.ModelViewSet):
         )
 
         if not created:
-            # Determine if client wants absolute (set) or incremental (add)
-            if 'is_absolute' in data:
-                # Client explicitly specified — respect it
-                is_absolute = bool(data['is_absolute'])
-            elif 'override' in data:
-                is_absolute = bool(data['override'])
-            else:
-                # Smart auto-detection for apps that don't send a flag:
-                #
-                # +/- buttons send the NEW total quantity (absolute).
-                #   e.g. current=2, user taps +, app sends quantity=3
-                #   e.g. current=3, user taps -, app sends quantity=2
-                #   These always differ from current by exactly one order_step.
-                #
-                # Add-to-cart / reorder sends the AMOUNT to add (incremental).
-                #   e.g. reorder 5 items, app sends quantity=5
-                #   e.g. add initial qty, app sends quantity=order_step or min_order_qty
-                #   These typically do NOT equal current ± one step.
-                #
-                # Detection: if incoming qty == current ± order_step, it's a
-                # +/- button press → absolute. Otherwise → incremental.
-                step = product.order_step if product.order_step else Decimal('1')
-                tolerance = Decimal('0.001')
-                is_step_change = (
-                    abs(quantity - (cart_item.quantity + step)) < tolerance or
-                    abs(quantity - (cart_item.quantity - step)) < tolerance
-                )
-                is_absolute = is_step_change
-
             if is_absolute:
                 if quantity <= 0:
                     cart_item.delete()
