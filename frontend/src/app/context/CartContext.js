@@ -183,7 +183,7 @@ export function CartProvider({ children }) {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${token}`
           },
-          body: JSON.stringify({ product_id: item.id, quantity: qty })
+          body: JSON.stringify({ product_id: item.id, quantity: qty, is_absolute: false })
         });
 
         // 400 = product inactive or invalid — skip silently, don't retry
@@ -251,6 +251,7 @@ export function CartProvider({ children }) {
             product_id: product.id,
             sub_product_id: product.subProductId || null,
             quantity: quantityDelta,
+            is_absolute: false,
           })
         });
 
