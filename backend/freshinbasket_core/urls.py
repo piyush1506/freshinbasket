@@ -94,7 +94,11 @@ def custom_get_app_list(request, app_label=None):
 admin.site.get_app_list = custom_get_app_list
 # --- END OF ADMIN REGROUPING PATCH ---
 
+from django.views.generic import TemplateView
+
 urlpatterns = [
+    path('manifest.json', TemplateView.as_view(template_name='manifest.json', content_type='application/json')),
+    path('sw.js', TemplateView.as_view(template_name='sw.js', content_type='application/javascript')),
     path('admin-3a3aw44r34/delivery-dashboard/', DeliveryDashboardView.as_view(), name='admin_delivery_dashboard'),
     path('admin-3a3aw44r34/notifications/send/', SendNotificationView.as_view(), name='admin_send_notification'),
     path('admin-3a3aw44r34/test-order/', CreateTestOrderView.as_view(), name='admin_create_test_order'),
