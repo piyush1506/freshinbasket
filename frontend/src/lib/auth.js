@@ -266,4 +266,27 @@ export const AUTH_API = {
     setUser(result);
     return result;
   },
+
+  async destroyAccount() {
+    const res = await fetch(
+      `${process.env.NEXT_PUBLIC_API_URL}/api/v1/auth/destroy-account/`,
+      {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${getAccessToken()}`
+        },
+      }
+    );
+    if (!res.ok) {
+      let errorMessage = 'Failed to delete account';
+      try {
+        const result = await res.json();
+        if (result.detail) errorMessage = result.detail;
+        else if (result.error) errorMessage = result.error;
+      } catch (e) {}
+      throw new Error(errorMessage);
+    }
+    clearAuth();
+  },
 };

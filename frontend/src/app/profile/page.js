@@ -119,6 +119,23 @@ export default function ProfilePage() {
     router.push('/login');
   };
 
+  const handleDeleteAccount = async () => {
+    if (!window.confirm("Are you sure you want to permanently delete your account? This action cannot be undone.")) {
+      return;
+    }
+    setLoading(true);
+    setError('');
+    setSuccess('');
+    try {
+      await AUTH_API.destroyAccount();
+      setUser(null);
+      router.push('/login');
+    } catch (err) {
+      setError(err.message || 'Failed to delete account.');
+      setLoading(false);
+    }
+  };
+
   if (!isMounted) return null;
 
   return (
@@ -286,8 +303,8 @@ export default function ProfilePage() {
                   <button onClick={handleLogout} className="flex items-center gap-2 px-6 py-2.5 border border-gray-300 rounded-xl text-sm font-medium text-gray-700 hover:bg-gray-50">
                     <LogOut size={16} />Log Out
                   </button>
-                  <button className="flex items-center gap-2 px-6 py-2.5 border border-red-300 rounded-xl text-sm font-medium text-red-600 hover:bg-red-50">
-                    <UserX size={16} />Deactivate Account
+                  <button onClick={handleDeleteAccount} className="flex items-center gap-2 px-6 py-2.5 border border-red-300 rounded-xl text-sm font-medium text-red-600 hover:bg-red-50">
+                    <UserX size={16} />Delete Account
                   </button>
                 </div>
               </>
