@@ -1,7 +1,5 @@
 const CACHE_NAME = 'freshinbasket-admin-v1';
-const urlsToCache = [
-  '/admin-3a3aw44r34/',
-];
+const urlsToCache = []; // Empty to prevent install failures from 302 redirects
 
 self.addEventListener('install', function(event) {
   event.waitUntil(
@@ -11,6 +9,7 @@ self.addEventListener('install', function(event) {
         return cache.addAll(urlsToCache);
       })
   );
+  self.skipWaiting();
 });
 
 self.addEventListener('fetch', function(event) {
