@@ -2,7 +2,7 @@
 document.addEventListener("DOMContentLoaded", function() {
     var link = document.createElement('link');
     link.rel = 'manifest';
-    link.href = '/manifest.json';
+    link.href = '/admin-manifest.json';
     document.head.appendChild(link);
     
     // Also add iOS specific tags
@@ -25,7 +25,7 @@ document.addEventListener("DOMContentLoaded", function() {
 // Register service worker
 if ('serviceWorker' in navigator) {
     window.addEventListener('load', function() {
-        navigator.serviceWorker.register('/sw.js').then(function(registration) {
+        navigator.serviceWorker.register('/admin-sw.js').then(function(registration) {
             console.log('ServiceWorker registration successful with scope: ', registration.scope);
         }, function(err) {
             console.log('ServiceWorker registration failed: ', err);
