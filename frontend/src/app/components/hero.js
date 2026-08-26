@@ -90,7 +90,7 @@ export default function Hero({ slides: initialSlides }) {
         autoplay={{ delay: 5000, disableOnInteraction: false }}
         pagination={{ clickable: true, dynamicBullets: true }}
         onSlideChange={(swiper) => setActiveIndex(swiper.realIndex)}
-        className="w-full aspect-[16/9] sm:aspect-[21/9] lg:aspect-[25/9] max-h-[250px] sm:max-h-[340px] md:max-h-[380px] lg:max-h-[420px]"
+        className="w-full aspect-[16/9] sm:aspect-[16/7] lg:aspect-[16/6] max-h-[260px] sm:max-h-[380px] md:max-h-[420px] lg:max-h-[460px]"
         a11y={{
           prevSlideMessage: 'Previous slide',
           nextSlideMessage: 'Next slide',
@@ -99,12 +99,12 @@ export default function Hero({ slides: initialSlides }) {
       >
         {slides.map((slide, index) => (
           <SwiperSlide key={slide.id}>
-            <section className="relative w-full h-full " aria-label={slide.title || "Hero banner"}>
+            <section className="relative w-full h-full bg-[#133c27]/10" aria-label={slide.title || "Hero banner"}>
               <Image
                 src={slide.image_url}
                 alt={slide.title || "Hero slide"}
                 fill
-                className="object-cover sm:object-contain"
+                className="object-contain w-full h-full"
                 sizes="100vw"
                 priority={index === 0}
                 fetchPriority={index === 0 ? "high" : "auto"}
