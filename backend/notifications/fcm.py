@@ -86,6 +86,71 @@ def send_push(token: str, title: str, body: str, data: dict = None, image_url: s
         return False
 
 
+def send_bulk_push(tokens: list, title: str, body: str, data: dict = None, image_url: str = None) -> tuple[int, int]:
+    """
+    Send a single FCM push notification to multiple device tokens (up to 500 per batch).
+    Returns a tuple of (success_count, failure_count).
+    """
+    app = _get_app()
+    if app is None:
+        return 0, len(tokens)
+
+    if not tokens:
+        return 0, 0
+
+    try:
+        from firebase_admin import messaging
+
+        payload = {k: str(v) for k, v in (data or {}).items()}
+        if image_url:
+            payload['image_url'] = image_url
+
+        success_count = 0
+        failure_count = 0
+
+        # Chunk tokens into batches of 500 (FCM limit)
+        for i in range(0, len(tokens), 500):
+            batch_tokens = tokens[i:i + 500]
+            
+            message = messaging.MulticastMessage(
+                notification=messaging.Notification(
+                    title=title,
+                    body=body,
+                    image=image_url,
+                ),
+                data=payload,
+                android=messaging.AndroidConfig(
+                    priority='high',
+                    notification=messaging.AndroidNotification(
+                        channel_id='order_updates',
+                        sound='default',
+                        image=image_url,
+                    ),
+                ),
+                apns=messaging.APNSConfig(
+                    payload=messaging.APNSPayload(
+                        aps=messaging.Aps(sound='default'),
+                    ),
+                ),
+                tokens=batch_tokens,
+            )
+            
+            # send_each_for_multicast is preferred in v6.5.0+
+            if hasattr(messaging, 'send_each_for_multicast'):
+                response = messaging.send_each_for_multicast(message, app=app)
+            else:
+                response = messaging.send_multicast(message, app=app)
+                
+            success_count += response.success_count
+            failure_count += response.failure_count
+            
+        logger.info(f"FCM bulk push sent: {title} | Success: {success_count}, Failed: {failure_count}")
+        return success_count, failure_count
+    except Exception as e:
+        logger.error(f"FCM bulk push failed: {e}")
+        return 0, len(tokens)
+
+
 def send_push_to_user(user, title: str, body: str, data: dict = None, image_url: str = None) -> int:
     """
     Send a push notification to ALL active tokens of a user.
@@ -95,20 +160,29 @@ def send_push_to_user(user, title: str, body: str, data: dict = None, image_url:
     Args:
         image_url: Optional public HTTPS URL for a rich notification image.
     """
-    from .models import FCMToken
+    from .models import FCMToken, DeviceToken
     from firebase_admin import messaging as fb_messaging
 
-    tokens = FCMToken.objects.filter(user=user)
-    if not tokens.exists():
-        logger.debug(f"No FCM tokens for user {user.id} — skipping push")
+    fcm_tokens = list(FCMToken.objects.filter(user=user))
+    device_tokens = list(DeviceToken.objects.filter(user=user, is_active=True))
+
+    if not fcm_tokens and not device_tokens:
+        logger.debug(f"No FCM or Device tokens for user {user.id} — skipping push")
         return 0
 
-    sent = 0
-    stale_tokens = []
+    all_token_strings = {}
+    for t in fcm_tokens:
+        all_token_strings[t.token] = ('fcm', t)
+    for t in device_tokens:
+        all_token_strings[t.token] = ('device', t)
 
-    for fcm_token in tokens:
+    sent = 0
+    stale_fcm_tokens = []
+    stale_device_tokens = []
+
+    for token_str, (token_type, token_obj) in all_token_strings.items():
         try:
-            success = send_push(fcm_token.token, title, body, data, image_url=image_url)
+            success = send_push(token_str, title, body, data, image_url=image_url)
             if success:
                 sent += 1
         except Exception as e:
@@ -119,11 +193,18 @@ def send_push_to_user(user, title: str, body: str, data: dict = None, image_url:
                 'invalid-registration-token',
                 'Requested entity was not found',
             ]):
-                stale_tokens.append(fcm_token.id)
+                if token_type == 'fcm':
+                    stale_fcm_tokens.append(token_obj.id)
+                else:
+                    stale_device_tokens.append(token_obj.id)
 
-    if stale_tokens:
-        FCMToken.objects.filter(id__in=stale_tokens).delete()
-        logger.info(f"Removed {len(stale_tokens)} stale FCM tokens for user {user.id}")
+    if stale_fcm_tokens:
+        FCMToken.objects.filter(id__in=stale_fcm_tokens).delete()
+        logger.info(f"Removed {len(stale_fcm_tokens)} stale FCM tokens for user {user.id}")
+
+    if stale_device_tokens:
+        DeviceToken.objects.filter(id__in=stale_device_tokens).update(is_active=False)
+        logger.info(f"Deactivated {len(stale_device_tokens)} stale Device tokens for user {user.id}")
 
     return sent
 

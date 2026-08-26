@@ -24,12 +24,15 @@ class SendNotificationView(View):
     template_name = 'notifications/send_notification.html'
 
     def get(self, request):
+        from django.db.models import Q
+        from .models import DeviceToken
+        
         # Get users who have FCM tokens (can receive notifications)
         users_with_tokens = User.objects.filter(
-            fcm_tokens__isnull=False
+            Q(fcm_tokens__isnull=False) | Q(device_tokens__isnull=False)
         ).distinct().order_by('phone_number')
 
-        total_tokens = FCMToken.objects.count()
+        total_tokens = FCMToken.objects.count() + DeviceToken.objects.count()
 
         context = {
             **admin.site.each_context(request),
@@ -93,17 +96,16 @@ class SendNotificationView(View):
             all_tokens = list(set(device_tokens + legacy_tokens))
             
             if all_tokens:
-                count = send_push(
+                from .fcm import send_bulk_push
+                s_count, f_count = send_bulk_push(
+                    tokens=all_tokens,
                     title=title,
                     body=body,
                     data={'channel': channel, 'route': 'home'},
-                    tokens=all_tokens,
                     image_url=image_url,
                 )
-                if count > 0:
-                    sent_count += count
-                else:
-                    failed_count += len(all_tokens)
+                sent_count += s_count
+                failed_count += f_count
             
             if sent_count > 0:
                 messages.success(
