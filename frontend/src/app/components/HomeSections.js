@@ -33,12 +33,12 @@ export default function HomeSections({ sections = [], children }) {
       <Hero slides={activeSlides} />
 
       {/* Category Navigation for the active section with top margin */}
-      <div className="mt-6 sm:mt-8">
+      <div className="mt-2 sm:mt-4">
         <CategoryNav initialCategories={activeCategories} sectionName={activeSection?.name} />
       </div>
 
       {/* Product carousels for the active section with top margin */}
-      <div className="mt-4">
+      <div className="mt-2">
         <Vegetables initialSections={activeCategories} sectionName={activeSection?.name} />
       </div>
     </>

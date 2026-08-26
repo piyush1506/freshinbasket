@@ -35,7 +35,7 @@ function AnimatedContent({ slide }) {
         </span>
       )}
       <h1
-        className="text-2xl sm:text-4xl md:text-6xl font-extrabold z-10 leading-tight mb-2 sm:mb-4 drop-shadow-lg whitespace-pre-line animate-hero-title"
+        className="text-xl sm:text-3xl md:text-4xl lg:text-5xl font-extrabold z-10 leading-tight mb-1 sm:mb-3 drop-shadow-lg whitespace-pre-line animate-hero-title"
         style={
           slide.text_color
             ? { color: slide.text_color }
@@ -50,7 +50,7 @@ function AnimatedContent({ slide }) {
         {slide.title}
       </h1>
       <p
-        className="text-xs sm:text-sm md:text-lg mb-4 sm:mb-8 max-w-lg drop-shadow-md font-medium animate-hero-subtitle line-clamp-2 sm:line-clamp-none"
+        className="text-xs sm:text-sm md:text-base mb-3 sm:mb-6 max-w-lg drop-shadow-md font-medium animate-hero-subtitle line-clamp-2"
         style={slide.text_color ? { color: slide.text_color } : { color: "#d4f5b0" }}
       >
         {slide.subtitle}
@@ -59,7 +59,7 @@ function AnimatedContent({ slide }) {
         {slide.link && (
           <Link
             href={slide.link}
-            className="bg-[#B4F044] hover:bg-[#a1d63d] text-green-900 font-bold px-4 py-2 sm:px-8 sm:py-4 rounded-full flex items-center transition-all transform hover:scale-105 text-xs sm:text-sm md:text-base shadow-xl"
+            className="bg-[#B4F044] hover:bg-[#a1d63d] text-green-900 font-bold px-3.5 py-1.5 sm:px-6 sm:py-3 rounded-full flex items-center transition-all transform hover:scale-105 text-xs sm:text-sm md:text-base shadow-xl"
           >
             {slide.button_text || "Shop Now"} <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5 ml-1 sm:ml-2" aria-hidden="true" />
           </Link>
@@ -67,7 +67,7 @@ function AnimatedContent({ slide }) {
         {slide.link_two && (
           <Link
             href={slide.link_two}
-            className="bg-white/20 hover:bg-white/30 backdrop-blur-md text-white font-bold px-4 py-2 sm:px-8 sm:py-4 rounded-full transition-all text-xs sm:text-sm md:text-base border border-white/40 shadow-xl"
+            className="bg-white/20 hover:bg-white/30 backdrop-blur-md text-white font-bold px-3.5 py-1.5 sm:px-6 sm:py-3 rounded-full transition-all text-xs sm:text-sm md:text-base border border-white/40 shadow-xl"
           >
             {slide.button_text_two || "View Offers"}
           </Link>
@@ -90,7 +90,7 @@ export default function Hero({ slides: initialSlides }) {
         autoplay={{ delay: 5000, disableOnInteraction: false }}
         pagination={{ clickable: true, dynamicBullets: true }}
         onSlideChange={(swiper) => setActiveIndex(swiper.realIndex)}
-        className="w-full aspect-[16/9] max-h-[700px]"
+        className="w-full aspect-[16/9] sm:aspect-[21/9] lg:aspect-[25/9] max-h-[250px] sm:max-h-[340px] md:max-h-[380px] lg:max-h-[420px]"
         a11y={{
           prevSlideMessage: 'Previous slide',
           nextSlideMessage: 'Next slide',
