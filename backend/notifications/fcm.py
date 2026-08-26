@@ -86,7 +86,7 @@ def send_push(token: str, title: str, body: str, data: dict = None, image_url: s
         return False
 
 
-def send_bulk_push(tokens: list, title: str, body: str, data: dict = None, image_url: str = None) -> tuple[int, int]:
+def send_bulk_push(tokens: list, title: str, body: str, data: dict = None, image_url: str = None):
     """
     Send a single FCM push notification to multiple device tokens (up to 500 per batch).
     Returns a tuple of (success_count, failure_count).
