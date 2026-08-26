@@ -104,7 +104,7 @@ export default function Hero({ slides: initialSlides }) {
                 src={slide.image_url}
                 alt={slide.title || "Hero slide"}
                 fill
-                style={{ objectFit: "cover" }}
+                className="object-cover sm:object-contain"
                 sizes="100vw"
                 priority={index === 0}
                 fetchPriority={index === 0 ? "high" : "auto"}
