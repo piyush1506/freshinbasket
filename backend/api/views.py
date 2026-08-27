@@ -1425,13 +1425,16 @@ class StoreSettingsView(APIView):
     def get(self, request):
         from store.models import StoreSettings
         from .serializers import StoreSettingsSerializer
-        cache_key = 'store_settings'
+        is_auth = bool(request.user and request.user.is_authenticated)
+        cache_key = f'store_settings_{is_auth}'
         cached = cache.get(cache_key)
         if cached is not None:
             return Response(cached)
         settings_obj = StoreSettings.get_settings()
         serializer = StoreSettingsSerializer(settings_obj)
         data = serializer.data
+        if not is_auth and settings_obj.free_delivery_first_order:
+            data['delivery_charge'] = '0.00'
         cache.set(cache_key, data, timeout=300)
         return Response(data)
 
