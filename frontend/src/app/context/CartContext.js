@@ -1,3 +1,4 @@
+
 "use client";
 import { createContext, useContext, useEffect, useState } from "react";
 import { Toaster, toast } from "react-hot-toast";
@@ -330,10 +331,15 @@ export function CartProvider({ children }) {
       : parseFloat(storeSettings?.free_delivery_threshold) || 100;
       
   const deliveryChargeValue = parseFloat(storeSettings?.delivery_charge) || 50;
+  const isGuestFirstOrderOffer = Boolean(!user && storeSettings?.free_delivery_first_order);
   
   const deliveryCharge = backendTotals?.delivery_charge !== undefined
       ? parseFloat(backendTotals.delivery_charge)
-      : ((subtotal > 0 && subtotal <= freeDeliveryThreshold) ? deliveryChargeValue : 0);
+      : (
+          (subtotal > 0 && isGuestFirstOrderOffer)
+            ? 0
+            : ((subtotal > 0 && subtotal <= freeDeliveryThreshold) ? deliveryChargeValue : 0)
+        );
       
   const taxAmount = cartItems.reduce((sum, item) => {
     const pct = Number(item.tax_percentage) || 0;
@@ -367,7 +373,7 @@ export function CartProvider({ children }) {
       cartItems, addToCart, removeFromCart, clearCart, cartCount,
       loadingItems, mergeCart, user, setUser, storeSettings,
       subtotal, deliveryCharge, grandTotal, freeDeliveryThreshold,
-      taxAmount, hasTaxableItems,
+      taxAmount, hasTaxableItems, isGuestFirstOrderOffer,
       wishlistIds, toggleWishlist, fetchWishlistIds,
       isFreeDhaniyaEligible, fetchCart
     }}>

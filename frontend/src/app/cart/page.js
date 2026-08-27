@@ -13,7 +13,7 @@ import "leaflet/dist/leaflet.css";
 
 export default function CartPage() {
   const router = useRouter()
-  const { cartItems, removeFromCart, addToCart, clearCart, user, subtotal, deliveryCharge, grandTotal, storeSettings, taxAmount, hasTaxableItems, isFreeDhaniyaEligible, fetchCart } = useCart();
+  const { cartItems, removeFromCart, addToCart, clearCart, user, subtotal, deliveryCharge, grandTotal, storeSettings, taxAmount, hasTaxableItems, isGuestFirstOrderOffer, isFreeDhaniyaEligible, fetchCart } = useCart();
   const [deliverySlot, setDeliverySlot] = useState({ display_label: "7 AM - 12 PM", is_next_day: false });
   const [slotLoading, setSlotLoading] = useState(true);
 
@@ -769,7 +769,13 @@ export default function CartPage() {
                         </div>
 
                         <div className="flex justify-between text-gray-600">
-                          <span>Delivery Charge {deliveryCharge === 0 ? `(Orders above ₹${parseInt(storeSettings?.free_delivery_threshold || 100)})` : ''}</span>
+                          <span>
+                            Delivery Charge {deliveryCharge === 0 
+                              ? (isGuestFirstOrderOffer 
+                                  ? '(1st Order Special)' 
+                                  : `(Orders above ₹${parseInt(storeSettings?.free_delivery_threshold || 100)})`) 
+                              : ''}
+                          </span>
                           <span className={deliveryCharge === 0 ? "font-semibold text-green-700" : "font-semibold text-gray-900"}>
                             {deliveryCharge === 0 ? "FREE" : `₹${parseInt(deliveryCharge)}`}
                           </span>
@@ -793,6 +799,13 @@ export default function CartPage() {
                           <span className="text-lg font-bold text-gray-900">Total</span>
                           <span className="text-2xl font-bold text-gray-900">₹{parseInt(grandTotal)}</span>
                         </div>
+
+                        {isGuestFirstOrderOffer && (
+                          <div className="bg-emerald-50 text-emerald-800 text-xs p-3 rounded-lg font-medium border border-emerald-200 flex gap-2 items-start mt-4">
+                            <span className="text-lg leading-none">🎉</span>
+                            <span><strong>1st Order FREE Delivery</strong> preview applied! Log in or sign up to complete your order.</span>
+                          </div>
+                        )}
 
                         {storeSettings?.is_free_dhaniya_active && !isFreeDhaniyaEligible && (
                           <div className="bg-amber-50 text-amber-800 text-xs p-3 rounded-lg font-medium border border-amber-200 flex gap-2 items-start mt-4">
