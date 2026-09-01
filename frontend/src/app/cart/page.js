@@ -158,7 +158,7 @@ export default function CartPage() {
     markerRef.current = marker;
   };
 
-  // Load Leaflet from npm when address form opens
+  // Load Leaflet from npm and auto-fetch live location when address form opens
   useEffect(() => {
     if (!showAddressForm) return;
     let mounted = true;
@@ -166,6 +166,7 @@ export default function CartPage() {
       const L = await import("leaflet");
       if (!mounted) return;
       initMap(L);
+      useCurrentLocation(true);
     })();
     return () => {
       mounted = false;
@@ -175,6 +176,7 @@ export default function CartPage() {
       }
     };
   }, [showAddressForm]);
+
   const waitforMap = () => new Promise((resolve) => {
     if (mapInstance.current && markerRef.current) return resolve()
     const interval = setInterval(() => {
@@ -190,11 +192,14 @@ export default function CartPage() {
     }, 5000);
   })
 
-  const useCurrentLocation = () => {
-    if (!navigator.geolocation) return toast.error('geolocation is not support by your browser');
+  const useCurrentLocation = (isSilent = false) => {
+    if (!navigator.geolocation) {
+      if (!isSilent) toast.error('Geolocation is not supported by your browser');
+      return;
+    }
 
     setIsFetchingLocation(true);
-    const toastId = toast.loading("Fetching live location...");
+    const toastId = isSilent ? null : toast.loading("Fetching live location...");
 
     navigator.geolocation.getCurrentPosition(
       async (pos) => {
@@ -207,21 +212,25 @@ export default function CartPage() {
           mapInstance.current.setView([latitude, longitude], 14);
         }
         await reverseGeocode(latitude, longitude);
-        toast.success("Location fetched!", { id: toastId });
+        if (toastId) {
+          toast.success("Location fetched!", { id: toastId });
+        }
         setIsFetchingLocation(false);
       },
 
       (err) => {
-        const messages = {
-          1: "Location permission denied. Please allow access in your browser settings.",
-          2: "Location unavailable. Check your device settings.",
-          3: "Location request timed out. Try again.",
+        if (toastId) {
+          const messages = {
+            1: "Location permission denied. Please allow access in your browser settings.",
+            2: "Location unavailable. Check your device settings.",
+            3: "Location request timed out. Try again.",
+          }
+          toast.error(messages[err.code] || "Unable to retrieve your location.", { id: toastId })
         }
-        toast.error(messages[err.code] || "Unable to retrieve your location.", { id: toastId })
         console.error('geolocation error', err.message)
         setIsFetchingLocation(false);
       },
-      { timeout: 15000 }
+      { timeout: 15000, enableHighAccuracy: true }
     );
   };
 
