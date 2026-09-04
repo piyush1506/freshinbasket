@@ -72,8 +72,13 @@ def send_push(token: str, title: str, body: str, data: dict = None, image_url: s
                 ),
             ),
             apns=messaging.APNSConfig(
+                headers={'apns-priority': '10'},
                 payload=messaging.APNSPayload(
-                    aps=messaging.Aps(sound='default'),
+                    aps=messaging.Aps(
+                        sound='default',
+                        badge=1,
+                        content_available=True,
+                    ),
                 ),
             ),
             token=token,
@@ -128,8 +133,13 @@ def send_bulk_push(tokens: list, title: str, body: str, data: dict = None, image
                     ),
                 ),
                 apns=messaging.APNSConfig(
+                    headers={'apns-priority': '10'},
                     payload=messaging.APNSPayload(
-                        aps=messaging.Aps(sound='default'),
+                        aps=messaging.Aps(
+                            sound='default',
+                            badge=1,
+                            content_available=True,
+                        ),
                     ),
                 ),
                 tokens=batch_tokens,
