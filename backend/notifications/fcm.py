@@ -56,6 +56,9 @@ def send_push(token: str, title: str, body: str, data: dict = None, image_url: s
         if image_url:
             payload['image_url'] = image_url
 
+        # Use the channel from data payload, default to 'order_updates'
+        channel_id = (data or {}).get('channel', 'order_updates')
+
         message = messaging.Message(
             notification=messaging.Notification(
                 title=title,
@@ -66,7 +69,7 @@ def send_push(token: str, title: str, body: str, data: dict = None, image_url: s
             android=messaging.AndroidConfig(
                 priority='high',
                 notification=messaging.AndroidNotification(
-                    channel_id='order_updates',
+                    channel_id=channel_id,
                     sound='default',
                     image=image_url,  # Android big-picture notification
                 ),
@@ -77,8 +80,11 @@ def send_push(token: str, title: str, body: str, data: dict = None, image_url: s
                     aps=messaging.Aps(
                         sound='default',
                         badge=1,
-                        content_available=True,
+                        mutable_content=True,  # Required for iOS to download & display images
                     ),
+                ),
+                fcm_options=messaging.APNSFCMOptions(
+                    image=image_url,  # iOS rich notification image
                 ),
             ),
             token=token,
@@ -110,6 +116,9 @@ def send_bulk_push(tokens: list, title: str, body: str, data: dict = None, image
         if image_url:
             payload['image_url'] = image_url
 
+        # Use the channel from data payload, default to 'order_updates'
+        channel_id = (data or {}).get('channel', 'order_updates')
+
         success_count = 0
         failure_count = 0
 
@@ -127,7 +136,7 @@ def send_bulk_push(tokens: list, title: str, body: str, data: dict = None, image
                 android=messaging.AndroidConfig(
                     priority='high',
                     notification=messaging.AndroidNotification(
-                        channel_id='order_updates',
+                        channel_id=channel_id,
                         sound='default',
                         image=image_url,
                     ),
@@ -138,8 +147,11 @@ def send_bulk_push(tokens: list, title: str, body: str, data: dict = None, image
                         aps=messaging.Aps(
                             sound='default',
                             badge=1,
-                            content_available=True,
+                            mutable_content=True,  # Required for iOS to download & display images
                         ),
+                    ),
+                    fcm_options=messaging.APNSFCMOptions(
+                        image=image_url,  # iOS rich notification image
                     ),
                 ),
                 tokens=batch_tokens,
