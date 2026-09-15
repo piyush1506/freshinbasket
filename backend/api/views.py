@@ -1256,15 +1256,44 @@ class CartViewSet(viewsets.ModelViewSet):
         except Product.DoesNotExist:
             return Response({'error': 'Product not found'}, status=status.HTTP_404_NOT_FOUND)
 
-        is_absolute = data.get('is_absolute', False) or data.get('override', False)
-
         cart_item, created = CartItem.objects.get_or_create(
             cart=cart,
             product=product,
             defaults={'quantity': max(Decimal('0.001'), quantity)}
         )
 
+        # Check for explicit is_absolute / override flag in body or query params
+        raw_flag = None
+        if 'is_absolute' in data:
+            raw_flag = data.get('is_absolute')
+        elif 'override' in data:
+            raw_flag = data.get('override')
+        elif 'is_absolute' in request.query_params:
+            raw_flag = request.query_params.get('is_absolute')
+        elif 'override' in request.query_params:
+            raw_flag = request.query_params.get('override')
+
         if not created:
+            if raw_flag is not None:
+                if isinstance(raw_flag, str):
+                    is_absolute = raw_flag.lower() in ('true', '1', 'yes', 'override')
+                else:
+                    is_absolute = bool(raw_flag)
+            else:
+                # Smart auto-detection for app versions that don't send a flag:
+                # +/- buttons send the NEW total quantity (absolute).
+                # Add-to-cart / reorder sends the AMOUNT to add (incremental).
+                step = product.order_step if product.order_step else Decimal('1')
+                tolerance = Decimal('0.001')
+                if quantity < 0:
+                    is_absolute = False
+                else:
+                    is_step_change = (
+                        abs(quantity - (cart_item.quantity + step)) < tolerance or
+                        (cart_item.quantity > step and abs(quantity - (cart_item.quantity - step)) < tolerance)
+                    )
+                    is_absolute = is_step_change
+
             if is_absolute:
                 if quantity <= 0:
                     cart_item.delete()
@@ -1278,6 +1307,9 @@ class CartViewSet(viewsets.ModelViewSet):
                 else:
                     cart_item.quantity = new_quantity
                     cart_item.save()
+        else:
+            if quantity <= 0:
+                cart_item.delete()
 
         # Re-fetch with prefetch for an efficient response
         cart = Cart.objects.prefetch_related('items__product').get(id=cart.id)
