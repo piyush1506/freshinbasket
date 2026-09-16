@@ -1613,5 +1613,3 @@ class DeliverySlotViewSet(viewsets.ModelViewSet):
         data['is_next_day'] = is_next_day
         return Response(data)
 
-class SectionViewSet(viewsets.ModelViewSet):
-    pass
