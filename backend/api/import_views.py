@@ -1,4 +1,5 @@
 import openpyxl
+import re
 from io import BytesIO
 from rest_framework.views import APIView
 from rest_framework.response import Response
@@ -186,37 +187,55 @@ class ProductImportView(APIView):
                     )
                 
                 raw_name = str(col(row, 'name') or '').strip()
-                name= re.sub(r'\s+',' ', raw_name)
+                name = re.sub(r'\s+', ' ', raw_name)
 
                 if not name or name.lower() == 'none':
                     skipped_count += 1
                     continue
-                # update_or_create matches existing products case-insensitively:
-                product,created = Product.objects.update_or_create(
-                name_iexact=name,
-                default={
-                    'name':name,
-                    'description':description,
-                    'price':price,
-                    'mrp':mrp,
-                    'stock':stock,
-                    'tax_percentage':tax_pct,
-                    'unit':unit,
-                }
-            )
-                # Create or update product
-                product, created = Product.objects.update_or_create(
-                    name__iexact=name,
-                    defaults={
-                        'name': name,
-                        'description': description,
-                        'price': price,
-                        'mrp': mrp,
-                        'stock': stock,
-                        'tax_percentage': tax_pct,
-                        'unit': unit,
-                    }
-                )
+
+                target_slug = slugify(name)
+                # Strip parenthetical annotations e.g. "banana(kela)" -> "banana"
+                base_name = re.sub(r'\s*[\(\[\{].*?[\)\]\}]', '', name).strip()
+                base_slug = slugify(base_name) if base_name else target_slug
+
+                # Lookup existing product using flexible matching strategy
+                product = Product.objects.filter(name__iexact=name).first()
+                if not product and target_slug:
+                    product = Product.objects.filter(slug=target_slug).first()
+                if not product and base_name:
+                    product = Product.objects.filter(name__iexact=base_name).first()
+                if not product and base_slug:
+                    product = Product.objects.filter(slug=base_slug).first()
+                if not product and base_name:
+                    product = Product.objects.filter(name__istartswith=base_name).first()
+                if not product and base_slug:
+                    product = Product.objects.filter(slug__startswith=base_slug).first()
+
+                if product:
+                    # Update existing product details
+                    if description:
+                        product.description = description
+                    product.price = price
+                    if mrp is not None:
+                        product.mrp = mrp
+                    product.stock = stock
+                    product.tax_percentage = tax_pct
+                    if unit:
+                        product.unit = unit
+                    product.save()
+                    created = False
+                else:
+                    # Create new product
+                    product = Product.objects.create(
+                        name=name,
+                        description=description,
+                        price=price,
+                        mrp=mrp,
+                        stock=stock,
+                        tax_percentage=tax_pct,
+                        unit=unit,
+                    )
+                    created = True
 
                 if category:
                     product.categories.add(category)
