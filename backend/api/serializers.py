@@ -294,6 +294,22 @@ class ProductSerializer(serializers.ModelSerializer):
         if categories is not None:
             product.categories.set(categories)
         return product
+    
+    def validate_name(self,value):
+        name = re.sub(r'\s+',' ',(value or '').strip())
+        if not name:
+            raise serializers.ValidationError('Name cannot be empty.')
+        
+        qs = Product.objects.filter(name__iexact=name)
+        if self.instance:
+            qs = qs.exclude(pk=self.instance.pk)
+
+        if qs.exists():
+            existing = qs.first()
+            raise serializers.ValidationError(
+                f' A product with the name "{existing.name}" already exists.'
+            )
+        return name
 
 
 class SearchProductSerializer(serializers.ModelSerializer):

@@ -184,7 +184,26 @@ class ProductImportView(APIView):
                             'slug': slugify(unit_name)
                         }
                     )
+                
+                raw_name = str(col(row, 'name') or '').strip()
+                name= re.sub(r'\s+',' ', raw_name)
 
+                if not name or name.lower() == 'none':
+                    skipped_count += 1
+                    continue
+                # update_or_create matches existing products case-insensitively:
+                product,created = Product.objects.update_or_create(
+                name_iexact=name,
+                default={
+                    'name':name,
+                    'description':description,
+                    'price':price,
+                    'mrp':mrp,
+                    'stock':stock,
+                    'tax_percentage':tax_pct,
+                    'unit':unit,
+                }
+            )
                 # Create or update product
                 product, created = Product.objects.update_or_create(
                     name__iexact=name,
