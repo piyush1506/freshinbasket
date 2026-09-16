@@ -165,17 +165,13 @@ class ProductImportView(APIView):
                 except (ValueError, TypeError):
                     tax_pct = 0
 
-                # Category (auto-create)
+                # Category lookup (match existing)
                 category_name = str(col(row, 'category') or '').strip()
                 category = None
                 if category_name and category_name.lower() != 'none':
-                    category, _ = Category.objects.get_or_create(
-                        name__iexact=category_name,
-                        defaults={
-                            'name': category_name,
-                            'slug': slugify(category_name)
-                        }
-                    )
+                    category = Category.objects.filter(name__iexact=category_name).first()
+                    if not category:
+                        category = Category.objects.filter(slug=slugify(category_name)).first()
 
                 # Unit (auto-create)
                 unit_name = str(col(row, 'unit') or '').strip()

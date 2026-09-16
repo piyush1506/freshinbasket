@@ -190,6 +190,7 @@ class SubProductSerializer(serializers.ModelSerializer):
 
 class ProductSerializer(serializers.ModelSerializer):
     category_names = serializers.SerializerMethodField()
+    category_id = serializers.SerializerMethodField()
     image = serializers.ImageField(write_only=True, required=False)
     image_url = serializers.SerializerMethodField()
     unit = UnitSerializer(read_only=True)
@@ -216,7 +217,7 @@ class ProductSerializer(serializers.ModelSerializer):
             'section', 'section_id', 'section_name', 'section_slug', 'section_product_label',
             'order_step', 'min_order_qty', 'is_active',
             'image', 'image_url', 'created_at', 'updated_at',
-            'categories', 'category_names', 'subproducts',
+            'categories', 'category_id', 'category_names', 'subproducts',
         )
 
     def get_image_url(self, obj):
@@ -230,6 +231,40 @@ class ProductSerializer(serializers.ModelSerializer):
     def get_category_names(self, obj):
         return [c.name for c in obj.categories.all()]
 
+    def get_category_id(self, obj):
+        first_cat = obj.categories.first()
+        return first_cat.id if first_cat else None
+
+    def to_internal_value(self, data):
+        ret = super().to_internal_value(data)
+        raw_cat_id = data.get('category_id') if hasattr(data, 'get') else None
+        raw_cats = data.get('categories') if hasattr(data, 'get') else None
+
+        cat_ids = []
+        if raw_cat_id is not None and str(raw_cat_id).strip() != '':
+            try:
+                cat_ids.append(int(raw_cat_id))
+            except (ValueError, TypeError):
+                pass
+        elif raw_cats is not None:
+            if isinstance(raw_cats, (int, str)) and str(raw_cats).strip() != '':
+                try:
+                    cat_ids.append(int(raw_cats))
+                except (ValueError, TypeError):
+                    pass
+            elif isinstance(raw_cats, list):
+                for c in raw_cats:
+                    try:
+                        cat_ids.append(int(c))
+                    except (ValueError, TypeError):
+                        pass
+
+        if cat_ids or 'category_id' in data or 'categories' in data:
+            valid_cats = list(Category.objects.filter(id__in=cat_ids))
+            ret['categories'] = valid_cats
+
+        return ret
+
     def create(self, validated_data):
         categories = validated_data.pop('categories', [])
         image = validated_data.pop('image', None)
@@ -241,7 +276,7 @@ class ProductSerializer(serializers.ModelSerializer):
             )
             validated_data['image_url'] = upload_result['secure_url']
         product = super().create(validated_data)
-        if categories:
+        if categories is not None:
             product.categories.set(categories)
         return product
 
