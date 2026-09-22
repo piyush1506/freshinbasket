@@ -112,6 +112,17 @@ def get_transformed_cloudinary_url(url, width=None, quality=None):
     if not url:
         return None
     
+    url = str(url).strip()
+
+    # Unnest if double URL (e.g. https://res.cloudinary.com/.../media/https://...)
+    if url.count('https://') > 1 or url.count('http://') > 1 or '/media/http' in url:
+        last_http = max(url.rfind('https://'), url.rfind('http://'))
+        if last_http > 0:
+            url = url[last_http:]
+
+    if url.startswith('http://res.cloudinary.com'):
+        url = url.replace('http://', 'https://')
+    
     # Add Cloudinary transformations for optimal quality
     if 'cloudinary.com' in url and '/upload/' in url:
         parts = url.split('/upload/', 1)
