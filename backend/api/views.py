@@ -1473,6 +1473,7 @@ class SendOTPView(APIView):
         
         payload = {
             "widgetId": settings.MSG91_WIDGET_ID,
+            "tokenAuth": settings.MSG91_AUTH_KEY,
             "identifier": str(msg91_phone)
         }
         
@@ -1523,6 +1524,7 @@ class VerifyOTPView(APIView):
         }
         payload = {
             "widgetId": settings.MSG91_WIDGET_ID,
+            "tokenAuth": settings.MSG91_AUTH_KEY,
             "reqId": req_id,
             "otp": str(otp_code)
         }
