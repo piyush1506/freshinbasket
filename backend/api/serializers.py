@@ -642,6 +642,8 @@ class CartSerializer(serializers.ModelSerializer):
         return total_weight >= settings_obj.free_dhaniya_threshold_kg
 
 class StoreSettingsSerializer(serializers.ModelSerializer):
+    logo_url = serializers.SerializerMethodField()
+
     class Meta:
         from store.models import StoreSettings
         model = StoreSettings
@@ -649,8 +651,19 @@ class StoreSettingsSerializer(serializers.ModelSerializer):
             'free_delivery_threshold', 'delivery_charge', 'max_delivery_radius',
             'is_announcement_active', 'announcement_message',
             'announcement_bg_color', 'announcement_text_color',
-            'free_delivery_first_order', 'is_free_dhaniya_active', 'free_dhaniya_threshold_kg'
+            'free_delivery_first_order', 'is_free_dhaniya_active', 'free_dhaniya_threshold_kg',
+            'logo', 'logo_url'
         )
+        read_only_fields = ('logo_url',)
+
+    def get_logo_url(self, obj):
+        if not obj.logo:
+            return None
+        url = obj.logo.url if hasattr(obj.logo, 'url') else str(obj.logo)
+        request = self.context.get('request')
+        if request and not (url.startswith('http://') or url.startswith('https://')):
+            url = request.build_absolute_uri(url)
+        return url
 
 
 class WishlistItemSerializer(serializers.ModelSerializer):

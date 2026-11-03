@@ -1,16 +1,39 @@
- "use client";
- import { useState, useEffect, useRef, useCallback } from "react";
- import Link from "next/link";
- import { ArrowRight } from "lucide-react";
- import { useRouter } from "next/navigation";
- 
- export default function Footer() {
+"use client";
+import { useState, useEffect } from "react";
+import Link from "next/link";
+import Image from "next/image";
+import { useCart } from "../context/CartContext";
+import Logo from "../../../public/logo/logo.jpg";
 
-     return (
+export default function Footer() {
+    const { storeSettings } = useCart();
+    const dynamicLogoUrl = storeSettings?.logo_url;
+    const [logoError, setLogoError] = useState(false);
+
+    useEffect(() => {
+        setLogoError(false);
+    }, [dynamicLogoUrl]);
+
+    const currentLogo = (!logoError && dynamicLogoUrl) ? dynamicLogoUrl : Logo;
+
+    return (
  <footer className="border-t border-gray-200 bg-white pt-16 pb-8 px-4 sm:px-8 md:px-16" aria-label="Site footer">
         <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-4 gap-8 mb-12">
           <div>
-            <div className="text-xl font-bold text-green-700 mb-4">Freshinbasket</div>
+            <div className="flex items-center gap-2.5 mb-4">
+              <div className="w-8 h-8 rounded-lg overflow-hidden relative shrink-0 bg-white shadow-xs">
+                <Image 
+                  src={currentLogo} 
+                  alt="Freshinbasket Logo" 
+                  width={36} 
+                  height={36} 
+                  className="object-contain w-full h-full"
+                  onError={() => setLogoError(true)}
+                  unoptimized={typeof currentLogo === 'string'}
+                />
+              </div>
+              <span className="text-xl font-black text-green-700 tracking-tight">Freshinbasket</span>
+            </div>
             <p className="text-gray-600 text-xs leading-relaxed mb-6">
               Sustainable, organic, and direct from our fields to your table. Your health is our harvest.
             </p>

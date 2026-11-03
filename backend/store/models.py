@@ -230,6 +230,13 @@ class SubProduct(models.Model):
 
 
 class StoreSettings(models.Model):
+    logo = models.ImageField(
+        upload_to='store/',
+        max_length=500,
+        blank=True,
+        null=True,
+        help_text='Upload company logo to display dynamically across the website and applications.'
+    )
     free_delivery_threshold = models.DecimalField(
         max_digits=10, decimal_places=2, default=100.00,
         help_text="Orders above this amount get free delivery."
@@ -293,6 +300,9 @@ class StoreSettings(models.Model):
         super().save(*args, **kwargs)
         from django.core.cache import cache
         cache.delete('store_settings')
+        cache.delete('store_settings_True')
+        cache.delete('store_settings_False')
+        cache.delete('home_page')
 
     @classmethod
     def get_settings(cls):

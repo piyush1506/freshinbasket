@@ -5,10 +5,16 @@ import { useRouter } from "next/navigation";
 import { AUTH_API, isAuthenticated, getAccessToken, getUser } from "@/lib/auth";
 import toast from "react-hot-toast";
 import Link from "next/link";
+import Image from "next/image";
+import Logo from "../../../public/logo/logo.jpg";
 import { ArrowRight, CheckCircle2 } from "lucide-react";
 
 export default function AuthPage() {
-  const { setUser, mergeCart } = useCart();
+  const { setUser, mergeCart, storeSettings } = useCart();
+  const dynamicLogoUrl = storeSettings?.logo_url;
+  const [logoError, setLogoError] = useState(false);
+  useEffect(() => { setLogoError(false); }, [dynamicLogoUrl]);
+  const currentLogo = (!logoError && dynamicLogoUrl) ? dynamicLogoUrl : Logo;
   const router = useRouter();
   const [ready, setReady] = useState(false);
   
@@ -137,7 +143,20 @@ export default function AuthPage() {
   return (
     <div className="min-h-screen flex flex-col font-sans text-gray-900 bg-[#FAFAFA]">
       <nav className="flex justify-between items-center px-10 py-6 bg-[#FAFAFA]">
-        <Link href="/" className="text-[28px] font-extrabold text-[#1B3624] tracking-tight">Freshinbasket</Link>
+        <Link href="/" className="flex items-center gap-2.5 text-[28px] font-extrabold text-[#1B3624] tracking-tight">
+          <div className="w-9 h-9 rounded-xl flex items-center justify-center shadow-xs overflow-hidden relative bg-white shrink-0">
+            <Image 
+              src={currentLogo} 
+              alt="Logo" 
+              width={40} 
+              height={40} 
+              className="object-contain w-full h-full" 
+              onError={() => setLogoError(true)}
+              unoptimized={typeof currentLogo === 'string'}
+            />
+          </div>
+          <span>Freshinbasket</span>
+        </Link>
         <div className="flex gap-8 items-center">
           <div className="flex flex-col items-center">
             <button onClick={() => router.push('/')} className="text-gray-800 hover:text-black">

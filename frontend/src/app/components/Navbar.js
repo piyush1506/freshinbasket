@@ -41,7 +41,15 @@ const getLocalSuggestions = (products, query) => {
 };
 
 export default function Navbar({ item, hideCategories = false, sectionTabs = null, customCategories = null }) {
-    const { cartCount, user: contextUser, setUser, wishlistIds } = useCart();
+    const { cartCount, user: contextUser, setUser, wishlistIds, storeSettings } = useCart();
+    const dynamicLogoUrl = storeSettings?.logo_url;
+    const [logoError, setLogoError] = useState(false);
+
+    useEffect(() => {
+        setLogoError(false);
+    }, [dynamicLogoUrl]);
+
+    const currentLogo = (!logoError && dynamicLogoUrl) ? dynamicLogoUrl : Logo;
     const router = useRouter();
     const [mounted, setMounted] = useState(false);
     const user = mounted ? (contextUser ?? getUser()) : null;
@@ -225,8 +233,18 @@ export default function Navbar({ item, hideCategories = false, sectionTabs = nul
                 {/* Logo Section */}
                 <div className="flex items-center shrink-0">
                     <Link href="/" className="flex items-center gap-2 shrink-0">
-                        <div className="w-8 h-8 md:w-10 md:h-10 rounded-xl flex items-center justify-center shadow-sm overflow-hidden relative">
-                            <Image src={Logo} alt="Logo" width={100} height={100} quality={100} className="object-contain w-full h-full" />
+                        <div className="w-8 h-8 md:w-10 md:h-10 rounded-xl flex items-center justify-center shadow-sm overflow-hidden relative bg-white">
+                            <Image 
+                                src={currentLogo} 
+                                alt="Logo" 
+                                width={100} 
+                                height={100} 
+                                quality={100} 
+                                className="object-contain w-full h-full" 
+                                onError={() => setLogoError(true)}
+                                priority
+                                unoptimized={typeof currentLogo === 'string'}
+                            />
                         </div>
                         <span className="hidden md:block text-2xl font-black text-[#216140] tracking-tighter">Freshinbasket</span>
                     </Link>

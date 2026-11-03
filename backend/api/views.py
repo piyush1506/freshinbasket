@@ -1436,7 +1436,7 @@ class StoreSettingsView(APIView):
         if cached is not None:
             return Response(cached)
         settings_obj = StoreSettings.get_settings()
-        serializer = StoreSettingsSerializer(settings_obj)
+        serializer = StoreSettingsSerializer(settings_obj, context={'request': request})
         data = serializer.data
         if not is_auth and settings_obj.free_delivery_first_order:
             data['delivery_charge'] = '0.00'

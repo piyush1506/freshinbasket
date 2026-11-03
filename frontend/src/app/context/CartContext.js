@@ -1,6 +1,6 @@
 
 "use client";
-import { createContext, useContext, useEffect, useState } from "react";
+import { createContext, useContext, useEffect, useState, useCallback } from "react";
 import { Toaster, toast } from "react-hot-toast";
 import confetti from "canvas-confetti";
 import { getAccessToken, isAuthenticated, getUser, authFetch, setUser as saveUserLocal } from "@/lib/auth";
@@ -18,6 +18,22 @@ export function CartProvider({ children }) {
   });
   const [backendTotals, setBackendTotals] = useState(null);
   const [wishlistIds, setWishlistIds] = useState([]);
+
+  const fetchStoreSettings = useCallback(async () => {
+    try {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/store-info/`, {
+        cache: 'no-store'
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data && (data.free_delivery_threshold !== undefined || data.logo_url !== undefined)) {
+          setStoreSettings(data);
+        }
+      }
+    } catch (err) {
+      console.error("Failed to fetch store settings", err);
+    }
+  }, []);
 
   const fetchWishlistIds = async () => {
     const token = getAccessToken();
@@ -131,14 +147,7 @@ export function CartProvider({ children }) {
         });
     }
 
-    fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/store-info/`)
-      .then((res) => res.json())
-      .then((data) => {
-        if (data.free_delivery_threshold !== undefined) {
-          setStoreSettings(data);
-        }
-      })
-      .catch((err) => console.error("Failed to fetch store settings", err));
+    fetchStoreSettings();
 
     // If authenticated, load cart and wishlist from backend
     fetchCart();
@@ -375,7 +384,7 @@ export function CartProvider({ children }) {
       subtotal, deliveryCharge, grandTotal, freeDeliveryThreshold,
       taxAmount, hasTaxableItems, isGuestFirstOrderOffer,
       wishlistIds, toggleWishlist, fetchWishlistIds,
-      isFreeDhaniyaEligible, fetchCart
+      isFreeDhaniyaEligible, fetchCart, refreshStoreSettings: fetchStoreSettings, setStoreSettings
     }}>
       <Toaster position="top-right"
         toastOptions={{

@@ -254,14 +254,55 @@ class SubProductAdmin(admin.ModelAdmin):
 @admin.register(StoreSettings)
 class StoreSettingsAdmin(admin.ModelAdmin):
     change_list_template = "admin/store/storesettings/change_list.html"
-    list_display = ('__str__', 'admin_notification_email', 'admin_notification_phone', 'free_delivery_threshold', 'delivery_charge', 'max_delivery_radius', 'free_delivery_first_order', 'is_free_dhaniya_active')
+    list_display = (
+        '__str__',
+        'logo_preview',
+        'admin_notification_email',
+        'admin_notification_phone',
+        'free_delivery_threshold',
+        'delivery_charge',
+        'max_delivery_radius',
+        'free_delivery_first_order',
+        'is_free_dhaniya_active'
+    )
     list_editable = ('admin_notification_email', 'admin_notification_phone', 'is_free_dhaniya_active')
-    
+    readonly_fields = ('logo_preview',)
+
+    fieldsets = (
+        ('Brand & Company Logo', {
+            'fields': ('logo', 'logo_preview'),
+            'description': 'Upload your company logo here. It will immediately and dynamically update across the website header, footer, auth page, and apps.'
+        }),
+        ('Delivery Configuration', {
+            'fields': ('free_delivery_threshold', 'delivery_charge', 'max_delivery_radius', 'free_delivery_first_order')
+        }),
+        ('Free Dhaniya Offer', {
+            'fields': ('is_free_dhaniya_active', 'free_dhaniya_threshold_kg')
+        }),
+        ('Announcement Banner', {
+            'fields': ('is_announcement_active', 'announcement_message', 'announcement_bg_color', 'announcement_text_color')
+        }),
+        ('Admin Notifications', {
+            'fields': ('admin_notification_email', 'admin_notification_phone')
+        }),
+    )
+
+    def logo_preview(self, obj):
+        if obj and obj.logo and hasattr(obj.logo, 'url'):
+            return format_html(
+                '<div style="display:inline-block; padding: 6px; background: #ffffff; border: 1px solid #d1d5db; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">'
+                '<img src="{}" alt="Company Logo" style="max-height: 50px; max-width: 140px; object-fit: contain; display: block;" />'
+                '</div>',
+                obj.logo.url
+            )
+        return format_html('<span style="color: #6b7280; font-style: italic;">No custom logo (Default logo is active)</span>')
+    logo_preview.short_description = 'Company Logo'
+
     def has_add_permission(self, request):
         # Prevent adding more than one instance
         if StoreSettings.objects.exists():
             return False
         return super().has_add_permission(request)
-    
+
     def has_delete_permission(self, request, obj=None):
         return False
