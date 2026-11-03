@@ -288,14 +288,19 @@ class StoreSettingsAdmin(admin.ModelAdmin):
     )
 
     def logo_preview(self, obj):
-        if obj and obj.logo and hasattr(obj.logo, 'url'):
-            return format_html(
-                '<div style="display:inline-block; padding: 6px; background: #ffffff; border: 1px solid #d1d5db; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">'
-                '<img src="{}" alt="Company Logo" style="max-height: 50px; max-width: 140px; object-fit: contain; display: block;" />'
-                '</div>',
-                obj.logo.url
-            )
-        return format_html('<span style="color: #6b7280; font-style: italic;">No custom logo (Default logo is active)</span>')
+        try:
+            if obj and hasattr(obj, 'logo') and obj.logo:
+                url = obj.logo.url if hasattr(obj.logo, 'url') else str(obj.logo)
+                if url:
+                    return format_html(
+                        '<div style="display:inline-block; padding: 4px; background: #ffffff; border: 1px solid #d1d5db; border-radius: 6px;">'
+                        '<img src="{}" alt="Company Logo" style="max-height: 45px; max-width: 120px; object-fit: contain; display: block;" />'
+                        '</div>',
+                        url
+                    )
+        except Exception:
+            pass
+        return format_html('<span style="color: #6b7280; font-style: italic;">No custom logo (Default active)</span>')
     logo_preview.short_description = 'Company Logo'
 
     def has_add_permission(self, request):
