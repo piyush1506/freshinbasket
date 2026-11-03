@@ -1,5 +1,6 @@
 from django.contrib import admin
 from django.utils.html import format_html
+from django.utils.safestring import mark_safe
 from django.utils.timezone import now
 from django import forms
 import cloudinary.uploader
@@ -300,7 +301,7 @@ class StoreSettingsAdmin(admin.ModelAdmin):
                     )
         except Exception:
             pass
-        return format_html('<span style="color: #6b7280; font-style: italic;">No custom logo (Default active)</span>')
+        return mark_safe('<span style="color: #6b7280; font-style: italic;">No custom logo (Default active)</span>')
     logo_preview.short_description = 'Company Logo'
 
     def has_add_permission(self, request):
