@@ -6,9 +6,9 @@ import { TrendingUp, ShoppingBag, MapPin, Clock, ArrowRight } from "lucide-react
 export const revalidate = 3600;
 
 export const metadata = {
-  title: "Bhilwara Mandi Bhav Today (Aaj Ka Mandi Bhav) — Fruits & Sabzi Rates",
+  title: "Aaj Ka Mandi Bhav Bhilwara | Bhilwara Mandi Rates Today",
   description:
-    "Check aajka mandi bhav and today's Bhilwara mandi fresh fruit & vegetable rates. Order farm-fresh produce online across Bhilwara on Freshinbasket.",
+    "Freshinbasket fruits and vegetable bhav in Bhilwara — check today's fresh fruit & sabzi rates aligned with aaj ka Bhilwara mandi bhav.",
   keywords: [
     "aajka mandi bhav",
     "aaj ka mandi bhav",
@@ -24,9 +24,9 @@ export const metadata = {
     canonical: `${SITE_URL}/bhilwara-mandi-bhav`,
   },
   openGraph: {
-    title: "Aaj Ka Bhilwara Mandi Bhav | Freshinbasket Live Rates",
+    title: "Aaj Ka Mandi Bhav Bhilwara | Bhilwara Mandi Rates Today",
     description:
-      "Today's Bhilwara Mandi vegetable and fruit price guide with doorstep delivery in Bhilwara.",
+      "Freshinbasket fruits and vegetable bhav in Bhilwara — today's live fresh fruit & vegetable rates.",
     type: "website",
     url: `${SITE_URL}/bhilwara-mandi-bhav`,
   },
@@ -120,11 +120,11 @@ export default async function BhilwaraMandiBhavPage() {
           </div>
 
           <h1 className="text-3xl sm:text-4xl md:text-5xl font-extrabold tracking-tight mb-4">
-            Bhilwara Mandi — Aaj Ka Mandi Bhav &amp; Daily Fresh Rates
+            Bhilwara Mandi — Aaj Ka Mandi Bhav Today
           </h1>
           <p className="text-green-100 text-sm sm:text-base md:text-lg max-w-2xl leading-relaxed">
-            Check <strong>aaj ka mandi bhav</strong> and live <strong>Bhilwara mandi</strong> fruit &amp;
-            vegetable rates with doorstep delivery across Bhilwara.
+            Freshinbasket&apos;s daily fruits and vegetable bhav in Bhilwara — fresh farm-direct
+            rates aligned with <strong>aaj ka Bhilwara mandi bhav</strong>.
           </p>
 
           <div className="mt-6 flex flex-wrap gap-4 text-xs sm:text-sm text-green-100">
@@ -144,10 +144,10 @@ export default async function BhilwaraMandiBhavPage() {
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
             <div>
               <h2 className="text-2xl font-bold text-gray-900">
-                Today&apos;s Fresh Produce Rates in Bhilwara
+                Aaj Ka Bhilwara Mandi Bhav — Fruits &amp; Vegetables
               </h2>
               <p className="text-sm text-gray-600 mt-1">
-                Live Freshinbasket store rates sourced fresh from Bhilwara farms and mandi lots.
+                Below are today&apos;s Freshinbasket fruits and vegetable bhav (rates) in Bhilwara.
               </p>
             </div>
             <Link
@@ -167,7 +167,7 @@ export default async function BhilwaraMandiBhavPage() {
                     <tr className="bg-gray-50 border-b border-gray-200 text-xs uppercase text-gray-600">
                       <th className="py-3.5 px-4 font-bold">Item Name</th>
                       <th className="py-3.5 px-4 font-bold">Unit</th>
-                      <th className="py-3.5 px-4 font-bold">Freshinbasket Price</th>
+                      <th className="py-3.5 px-4 font-bold">Today&apos;s Rate (Bhav)</th>
                       <th className="py-3.5 px-4 font-bold text-right">Action</th>
                     </tr>
                   </thead>
