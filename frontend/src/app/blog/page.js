@@ -2,18 +2,16 @@ import Link from "next/link";
 import Image from "next/image";
 import Navbar from "../components/Navbar";
 import { BLOG_POSTS, SITE_URL } from "@/data/blogs";
-import { Calendar, Clock, ArrowRight, BookOpen, TrendingUp } from "lucide-react";
+import { Calendar, Clock, ArrowRight, BookOpen } from "lucide-react";
 
 export const metadata = {
-  title: "Blog — Bhilwara Mandi Bhav, Fresh Fruits & Sabzi Guides",
+  title: "Blog — Fresh Fruits in Bhilwara & Produce Guides",
   description:
-    "Read Freshinbasket guides on aajka mandi bhav, Bhilwara mandi rates, fresh fruits near me, and seasonal produce in Bhilwara.",
+    "Read Freshinbasket guides on fresh fruits near me, fruits in Bhilwara, and seasonal farm-fresh produce.",
   keywords: [
     "fresh fruits near me",
     "fruits in bhilwara",
-    "aajka mandi bhav",
-    "bhilwara mandi",
-    "bhilwara mandi bhav",
+    "fresh fruits in bhilwara",
     "freshinbasket blog",
     "fresh vegetables in bhilwara",
   ],
@@ -21,9 +19,9 @@ export const metadata = {
     canonical: `${SITE_URL}/blog`,
   },
   openGraph: {
-    title: "Freshinbasket Blog — Bhilwara Mandi Bhav & Fresh Fruits Guides",
+    title: "Freshinbasket Blog — Fresh Fruits & Produce Guides",
     description:
-      "Daily insights on aajka mandi bhav, Bhilwara mandi produce trends, and buying fresh fruits in Bhilwara.",
+      "Helpful guides on fresh fruits near me, buying fruits in Bhilwara, and farm-fresh vegetables.",
     type: "website",
     url: `${SITE_URL}/blog`,
   },
@@ -54,7 +52,7 @@ export default function BlogIndexPage() {
     "@type": "Blog",
     name: "Freshinbasket Blog",
     description:
-      "Local guides on fresh fruits in Bhilwara, aaj ka Bhilwara mandi bhav, and healthy farm-to-door groceries.",
+      "Local guides on fresh fruits in Bhilwara, fresh fruits near me, and healthy farm-to-door groceries.",
     url: `${SITE_URL}/blog`,
     publisher: {
       "@type": "Organization",
@@ -101,28 +99,21 @@ export default function BlogIndexPage() {
 
           <div className="inline-flex items-center gap-2 bg-white/10 border border-white/20 px-3 py-1 rounded-full text-xs font-semibold mb-4">
             <BookOpen className="w-3.5 h-3.5" />
-            Freshinbasket Guides &amp; Bhilwara Mandi Updates
+            Freshinbasket Guides &amp; Bhilwara Updates
           </div>
 
           <h1 className="text-3xl sm:text-4xl md:text-5xl font-extrabold tracking-tight mb-4">
-            Bhilwara Mandi Bhav &amp; Fresh Produce Blog
+            Fresh Fruits &amp; Produce Blog
           </h1>
           <p className="text-green-100 text-sm sm:text-base md:text-lg max-w-2xl leading-relaxed">
-            Guides on <strong>aaj ka mandi bhav</strong>, <strong>Bhilwara mandi</strong> rates, and{" "}
-            <strong>fresh fruits near me</strong> in Bhilwara.
+            Local guides on <strong>fresh fruits near me</strong>,{" "}
+            <strong>fruits in Bhilwara</strong>, and farm-fresh seasonal vegetables.
           </p>
 
           <div className="mt-6 flex flex-wrap gap-3">
             <Link
-              href="/bhilwara-mandi-bhav"
-              className="inline-flex items-center gap-2 bg-white text-[#1B3624] font-bold text-sm px-5 py-2.5 rounded-full shadow-md hover:bg-green-50 transition-all"
-            >
-              <TrendingUp className="w-4 h-4" />
-              View Today&apos;s Bhilwara Mandi Rates
-            </Link>
-            <Link
               href="/"
-              className="inline-flex items-center gap-2 bg-white/10 hover:bg-white/20 text-white border border-white/30 font-semibold text-sm px-5 py-2.5 rounded-full transition-all"
+              className="inline-flex items-center gap-2 bg-white text-[#1B3624] font-bold text-sm px-5 py-2.5 rounded-full shadow-md hover:bg-green-50 transition-all"
             >
               Shop Fresh Fruits &amp; Vegetables
             </Link>

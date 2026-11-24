@@ -32,7 +32,7 @@ export default async function Home() {
   return (
     <div className="min-h-screen bg-[#FDFDFD] text-[#1A1A1A] font-sans">
       {/* SEO H1 — visually hidden, meaningful for crawlers */}
-      <h1 className="sr-only">Freshinbasket — Fresh Fruits Near Me, Fruits in Bhilwara, Vegetables &amp; Bhilwara Mandi Delivery</h1>
+      <h1 className="sr-only">Freshinbasket — Fresh Fruits Near Me, Fruits in Bhilwara &amp; Vegetables Delivery</h1>
 
       {/* Section Tabs + Category Nav + Products (Client Component handles tab state) */}
       <HomeSections sections={sections}>
@@ -57,26 +57,14 @@ export default async function Home() {
             </h2>
             <p className="text-gray-600 text-sm sm:text-base leading-relaxed">
               <strong>Freshinbasket</strong> delivers <strong>fresh fruits near you</strong>, seasonal{" "}
-              <strong>fruits in Bhilwara</strong>, and daily vegetables from local farms &amp;{" "}
-              <strong>Bhilwara mandi</strong> (<strong>aaj ka mandi bhav</strong>) daily from 7 AM to 9 PM.
+              <strong>fruits in Bhilwara</strong>, and daily farm-fresh vegetables straight to your
+              doorstep daily from 7 AM to 9 PM.
             </p>
           </div>
 
           <nav aria-label="Featured Freshinbasket Links" className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             <Link
-              href="/bhilwara-mandi-bhav"
-              className="group p-4 rounded-2xl border border-gray-100 bg-gray-50/70 hover:bg-green-50/70 hover:border-green-200 transition-all"
-            >
-              <h3 className="font-bold text-gray-900 group-hover:text-[#216140] text-sm mb-1">
-                Aaj Ka Mandi Bhav (Bhilwara)
-              </h3>
-              <p className="text-xs text-gray-600 leading-relaxed">
-                Check today&apos;s Bhilwara mandi produce prices &amp; live fresh rates.
-              </p>
-            </Link>
-
-            <Link
-              href="/blog/fresh-fruits-near-me-in-bhilwara"
+              href="/category/fruits"
               className="group p-4 rounded-2xl border border-gray-100 bg-gray-50/70 hover:bg-green-50/70 hover:border-green-200 transition-all"
             >
               <h3 className="font-bold text-gray-900 group-hover:text-[#216140] text-sm mb-1">
@@ -88,6 +76,18 @@ export default async function Home() {
             </Link>
 
             <Link
+              href="/category/vegetables"
+              className="group p-4 rounded-2xl border border-gray-100 bg-gray-50/70 hover:bg-green-50/70 hover:border-green-200 transition-all"
+            >
+              <h3 className="font-bold text-gray-900 group-hover:text-[#216140] text-sm mb-1">
+                Fresh Vegetables Online
+              </h3>
+              <p className="text-xs text-gray-600 leading-relaxed">
+                Shop crisp daily sabzi &amp; organic leafy greens harvested fresh.
+              </p>
+            </Link>
+
+            <Link
               href="/blog"
               className="group p-4 rounded-2xl border border-gray-100 bg-gray-50/70 hover:bg-green-50/70 hover:border-green-200 transition-all"
             >
@@ -95,7 +95,7 @@ export default async function Home() {
                 Freshinbasket Blog &amp; Guides
               </h3>
               <p className="text-xs text-gray-600 leading-relaxed">
-                Read Bhilwara mandi insights, seasonal calendars &amp; freshness tips.
+                Read local fruit guides, seasonal calendars &amp; freshness tips.
               </p>
             </Link>
 

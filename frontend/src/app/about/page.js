@@ -4,14 +4,12 @@ import Navbar from "../components/Navbar";
 export const metadata = {
   title: "About Freshinbasket — Farm Fresh Fruits & Sabzi in Bhilwara",
   description:
-    "Freshinbasket delivers fresh fruits in Bhilwara and daily vegetables straight from local farms and Bhilwara mandi to your doorstep.",
+    "Freshinbasket delivers fresh fruits in Bhilwara and daily vegetables straight from local farms to your doorstep.",
   keywords: [
     "about freshinbasket",
     "freshinbasket bhilwara",
     "fresh fruits near me",
     "fruits in bhilwara",
-    "bhilwara mandi",
-    "aajka mandi bhav",
   ],
   openGraph: {
     title: "About Freshinbasket — Farm Fresh Delivered in Bhilwara",

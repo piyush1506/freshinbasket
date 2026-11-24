@@ -14,7 +14,6 @@ export default async function sitemap() {
   // /search, /login, /cart, /profile, /order, /wishlist are excluded (noindex / private)
   const staticRoutes = [
     { route: "", changeFrequency: "daily", priority: 1.0 },
-    { route: "/bhilwara-mandi-bhav", changeFrequency: "daily", priority: 0.9 },
     { route: "/blog", changeFrequency: "weekly", priority: 0.85 },
     { route: "/about", changeFrequency: "monthly", priority: 0.75 },
     { route: "/contact", changeFrequency: "monthly", priority: 0.75 },

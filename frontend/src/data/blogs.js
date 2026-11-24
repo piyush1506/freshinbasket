@@ -2,82 +2,6 @@ export const SITE_URL = "https://www.freshinbasket.com";
 
 export const BLOG_POSTS = [
   {
-    slug: "aaj-ka-bhilwara-mandi-bhav-guide",
-    title: "Aaj Ka Bhilwara Mandi Bhav & Fresh Produce Price Guide",
-    metaTitle: "Aaj Ka Mandi Bhav Bhilwara | Bhilwara Mandi Fruits & Sabzi Rates",
-    metaDescription:
-      "Check aajka mandi bhav & daily Bhilwara mandi fruit and vegetable rates. Order farm-fresh produce online in Bhilwara via Freshinbasket.",
-    keywords: [
-      "aajka mandi bhav",
-      "aaj ka mandi bhav",
-      "bhilwara mandi",
-      "bhilwara mandi bhav",
-      "bhilwara aaj ki mandi ka bhav",
-      "bhilwara sabzi mandi rate today",
-      "freshinbasket",
-      "fruits in bhilwara",
-    ],
-    category: "Bhilwara Mandi",
-    publishedAt: "2026-11-10",
-    updatedAt: "2026-11-24",
-    readTime: "4 min read",
-    author: "Freshinbasket Editorial Team",
-    image:
-      "https://images.unsplash.com/photo-1488459716781-31db52582fe9?auto=format&fit=crop&w=1200&q=80",
-    excerpt:
-      "Understand daily Bhilwara Mandi price movements, seasonal fruit & vegetable arrivals, and how Freshinbasket brings transparent mandi-level prices straight to your home.",
-    highlights: [
-      "Updated insights on Bhilwara Krishi Upaj Mandi seasonal arrivals",
-      "How weather, harvest cycles, and transport affect aajka mandi bhav",
-      "Direct farm-to-kitchen delivery in Bhilwara without middleman markups",
-    ],
-    sections: [
-      {
-        heading: "How Aaj Ka Mandi Bhav Works in Bhilwara Mandi",
-        paragraphs: [
-          "Every morning around 5:00 AM, farmers and traders from across Bhilwara district—including Mandalgarh, Shahpura, Jahazpur, Gulabpura, and nearby Rajasthan belts—bring fresh harvests to the Bhilwara Krishi Upaj Mandi. Daily auction bids decide aajka mandi bhav based on crop quality, morning arrival volume, and local demand.",
-          "Staples like aloo (potato), pyaz (onion), tamatar (tomato), green chilli, ginger, and seasonal leafy greens fluctuate depending on weather and highway supply. Fruits in Bhilwara such as apples, bananas, pomegranates, papayas, and citrus also shift in price based on peak harvest seasons.",
-        ],
-      },
-      {
-        heading: "Why Retail Store Prices Often Exceed Bhilwara Mandi Rates",
-        paragraphs: [
-          "By the time produce passes through wholesale brokers, sub-dealers, and neighbourhood carts, retail prices can rise 30% to 50% above the actual Bhilwara mandi bhav—while vegetables lose crispness sitting in open sun.",
-          "Freshinbasket bridges this gap directly. Our sourcing team procures Grade-A fresh fruits and vegetables straight from local Bhilwara growers and morning mandi lots, keeping rates fair, transparent, and close to daily mandi trends.",
-        ],
-        list: [
-          "Early-morning harvest sourcing for crisp leafy greens and vine-ripened produce",
-          "Accurate digital weighing—you receive every gram you pay for",
-          "Live daily pricing visible upfront on Freshinbasket website and Android app",
-          "Free doorstep delivery on qualifying orders across Bhilwara city",
-        ],
-      },
-      {
-        heading: "Check Today's Freshinbasket Rates vs. Bhilwara Mandi",
-        paragraphs: [
-          "Instead of driving through crowded morning traffic to check aaj ka mandi bhav in person, you can view live updated retail rates right on our Bhilwara Mandi Bhav page or browse seasonal categories directly on Freshinbasket.",
-        ],
-      },
-    ],
-    faqs: [
-      {
-        question: "Where can I check aajka mandi bhav for Bhilwara vegetables and fruits?",
-        answer:
-          "You can visit Freshinbasket's dedicated Bhilwara Mandi Bhav page to view today's live produce rates for Bhilwara households, updated regularly from morning farm and mandi sourcing.",
-      },
-      {
-        question: "Does Freshinbasket deliver at Bhilwara Mandi quality and fair pricing?",
-        answer:
-          "Yes. Freshinbasket sources directly from Bhilwara farmers and early-morning mandi auctions, eliminating extra middlemen so you get top-grade freshness at fair daily rates.",
-      },
-      {
-        question: "Which areas in Bhilwara get doorstep delivery?",
-        answer:
-          "Freshinbasket delivers across Bhilwara including Shastri Nagar, Azad Nagar, Subhash Nagar, R.K. Colony, Bapu Nagar, Kashipuri, Pur Road, and nearby localities.",
-      },
-    ],
-  },
-  {
     slug: "fresh-fruits-near-me-in-bhilwara",
     title: "Fresh Fruits Near Me in Bhilwara: Farm-Fresh Delivery Guide",
     metaTitle: "Fresh Fruits Near Me & Fruits in Bhilwara | Order Online — Freshinbasket",
@@ -150,7 +74,7 @@ export const BLOG_POSTS = [
     title: "About Freshinbasket: Bhilwara's Farm-to-Door Fruits & Sabzi Store",
     metaTitle: "Freshinbasket Bhilwara — Brief Overview, Delivery & Farm Sourcing",
     metaDescription:
-      "Brief overview of Freshinbasket — Bhilwara's farm-to-door online store for fresh fruits and vegetables at fair Bhilwara mandi prices.",
+      "Brief overview of Freshinbasket — Bhilwara's farm-to-door online store for fresh fruits and daily vegetables delivered straight from local farms.",
     keywords: [
       "freshinbasket",
       "fresh in basket",
@@ -171,24 +95,24 @@ export const BLOG_POSTS = [
     highlights: [
       "Local Bhilwara farm-to-door fresh grocery platform",
       "Available on web (freshinbasket.com) and Google Play Store",
-      "Transparent pricing aligned with Bhilwara Mandi standards",
+      "Transparent farm-direct pricing and careful quality checks",
     ],
     sections: [
       {
         heading: "What is Freshinbasket?",
         paragraphs: [
-          "Freshinbasket is a Bhilwara-based online fresh vegetables and fruits delivery service built to bring farm-fresh, hygienic produce straight from local growers and morning mandi harvests to your doorstep.",
+          "Freshinbasket is a Bhilwara-based online fresh vegetables and fruits delivery service built to bring farm-fresh, hygienic produce straight from local growers to your doorstep.",
           "Instead of relying on days-old warehouse stock, Freshinbasket focuses on daily turnover—meaning your spinach, coriander, tomatoes, potatoes, and fresh fruits arrive crisp, clean, and ready to cook.",
         ],
       },
       {
         heading: "Key Benefits of Shopping with Freshinbasket",
         paragraphs: [
-          "Designed for busy households, working professionals, and seniors across Bhilwara, Freshinbasket combines local mandi fairness with modern convenience:",
+          "Designed for busy households, working professionals, and seniors across Bhilwara, Freshinbasket combines farm freshness with modern convenience:",
         ],
         list: [
           "Wide selection of daily Indian vegetables, leafy greens, exotic produce, and fresh fruits in Bhilwara",
-          "Fair pricing informed by aaj ka Bhilwara mandi bhav",
+          "Fair, transparent daily pricing with zero hidden charges",
           "Easy payments via UPI, Razorpay, cards, or Cash on Delivery (COD)",
           "Dedicated customer support via WhatsApp (+91-94618-77701) and live order tracking",
         ],
@@ -210,14 +134,13 @@ export const BLOG_POSTS = [
   {
     slug: "seasonal-fruits-and-vegetables-bhilwara-guide",
     title: "Seasonal Fruits & Vegetables Calendar for Bhilwara Households",
-    metaTitle: "Seasonal Fruits & Vegetables in Bhilwara | Freshness & Mandi Guide",
+    metaTitle: "Seasonal Fruits & Vegetables in Bhilwara | Freshness Guide",
     metaDescription:
-      "Discover seasonal fruits in Bhilwara and winter, summer & monsoon vegetables for peak freshness and the best aajka mandi bhav rates.",
+      "Discover seasonal fruits in Bhilwara and winter, summer & monsoon vegetables for peak freshness, flavor, and nutrition.",
     keywords: [
       "fruits in bhilwara",
       "fresh fruits near me",
-      "bhilwara mandi",
-      "aajka mandi bhav",
+      "seasonal fruits bhilwara",
       "seasonal vegetables bhilwara",
       "freshinbasket",
     ],
@@ -229,17 +152,17 @@ export const BLOG_POSTS = [
     image:
       "https://images.unsplash.com/photo-1573246123716-6b1782bfc499?auto=format&fit=crop&w=1200&q=80",
     excerpt:
-      "Buying in-season produce gives you peak flavor, higher nutrition, and the lowest aajka mandi bhav in Bhilwara. Here is your quick seasonal guide.",
+      "Buying in-season produce gives you peak flavor, higher nutrition, and great everyday value in Bhilwara. Here is your quick seasonal guide.",
     highlights: [
       "Winter, summer, and monsoon produce picks for Rajasthan",
-      "How seasonality helps you save on Bhilwara Mandi prices",
+      "How eating seasonal produce maximizes freshness and nutrition",
       "Simple storage tips to keep fruits and greens fresh longer",
     ],
     sections: [
       {
-        heading: "Why Eating Seasonal Produce Saves Money & Tastes Better",
+        heading: "Why Eating Seasonal Produce Tastes Better & Saves Money",
         paragraphs: [
-          "When fruits and vegetables are harvested in their natural season around Bhilwara and Rajasthan, supply in the Bhilwara mandi is abundant—which naturally lowers aajka mandi bhav while maximizing natural sweetness and vitamin content.",
+          "When fruits and vegetables are harvested in their natural season around Bhilwara and Rajasthan, local supply is abundant—giving families peak sweetness, higher vitamin content, and great everyday prices.",
         ],
       },
       {
@@ -256,9 +179,9 @@ export const BLOG_POSTS = [
     ],
     faqs: [
       {
-        question: "Which fruits are cheapest and freshest during winter in Bhilwara?",
+        question: "Which fruits are freshest during winter in Bhilwara?",
         answer:
-          "During winter, Kinnow oranges, Bhilwara-region guavas, papayas, and fresh Himalayan apples are abundant in Bhilwara Mandi, offering crisp flavor at great rates.",
+          "During winter, Kinnow oranges, local guavas, papayas, and crisp Himalayan apples offer the best natural sweetness and freshness in Bhilwara.",
       },
     ],
   },

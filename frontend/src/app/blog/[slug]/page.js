@@ -263,10 +263,10 @@ export default async function BlogDetailPage({ params }) {
               Shop Now
             </Link>
             <Link
-              href="/bhilwara-mandi-bhav"
+              href="/about"
               className="inline-flex items-center gap-2 bg-white/15 text-white border border-white/25 font-semibold text-sm px-5 py-3 rounded-full hover:bg-white/25 transition-colors"
             >
-              Mandi Rates
+              About Freshinbasket
             </Link>
           </div>
         </div>

@@ -18,11 +18,11 @@ const plusJakarta = Plus_Jakarta_Sans({
 
 export const metadata = {
   title: {
-    default: "Freshinbasket — Fresh Fruits Near Me, Vegetables & Bhilwara Mandi Delivery",
+    default: "Freshinbasket — Fresh Fruits Near Me & Vegetables in Bhilwara",
     template: "%s | Freshinbasket",
   },
   description:
-    "Freshinbasket delivers fresh fruits near you & organic vegetables in Bhilwara at fair Bhilwara mandi (aaj ka mandi bhav) rates. Order farm-fresh online.",
+    "Freshinbasket delivers fresh fruits near you, fruits in Bhilwara, and farm-fresh organic vegetables directly to your doorstep.",
   keywords: [
     "Freshinbasket",
     "fresh in basket",
@@ -31,11 +31,6 @@ export const metadata = {
     "fresh fruits near me",
     "fruits in bhilwara",
     "fresh fruits in bhilwara",
-    "aajka mandi bhav",
-    "aaj ka mandi bhav",
-    "bhilwara mandi",
-    "bhilwara mandi bhav",
-    "bhilwara aaj ki mandi ka bhav",
     "organic vegetables",
     "fresh fruits",
     "vegetables in bhilwara",
@@ -51,9 +46,9 @@ export const metadata = {
     canonical: "https://www.freshinbasket.com",
   },
   openGraph: {
-    title: "Freshinbasket — Fresh Fruits Near Me & Bhilwara Mandi Delivery",
+    title: "Freshinbasket — Fresh Fruits Near Me & Vegetables in Bhilwara",
     description:
-      "Order fresh fruits in Bhilwara and farm-fresh vegetables at fair Bhilwara Mandi rates with doorstep delivery.",
+      "Order fresh fruits in Bhilwara and farm-fresh vegetables with doorstep delivery from local farms.",
     type: "website",
     url: "https://www.freshinbasket.com",
     locale: "en_IN",
@@ -71,7 +66,7 @@ export const metadata = {
     card: "summary_large_image",
     title: "Freshinbasket — Fresh Fruits & Vegetables Delivered in Bhilwara",
     description:
-      "Freshinbasket delivers fresh fruits near you & daily vegetables in Bhilwara at Bhilwara Mandi rates.",
+      "Freshinbasket delivers fresh fruits near you & daily vegetables in Bhilwara.",
     images: ["https://www.freshinbasket.com/logo/logo.jpg"],
   },
   icons: {
@@ -109,7 +104,7 @@ export default function RootLayout({ children }) {
     "@type": "GroceryStore",
     "name": "Freshinbasket",
     "alternateName": "Fresh in Basket",
-    "description": "Farm-fresh fruits in Bhilwara and organic vegetables delivered daily at fair Bhilwara mandi rates.",
+    "description": "Farm-fresh fruits in Bhilwara and organic vegetables delivered daily to your doorstep.",
     "url": "https://www.freshinbasket.com",
     "telephone": "+919461877701",
     "email": "support@freshinbasket.com",
@@ -164,41 +159,34 @@ export default function RootLayout({ children }) {
       {
         "@type": "SiteNavigationElement",
         "position": 1,
-        "name": "Bhilwara Mandi Bhav Today",
-        "description": "Check aaj ka mandi bhav and daily Bhilwara fresh fruit & vegetable rates.",
-        "url": "https://www.freshinbasket.com/bhilwara-mandi-bhav"
-      },
-      {
-        "@type": "SiteNavigationElement",
-        "position": 2,
         "name": "Fresh Fruits in Bhilwara",
         "description": "Order fresh seasonal fruits near you delivered across Bhilwara.",
         "url": "https://www.freshinbasket.com/category/fruits"
       },
       {
         "@type": "SiteNavigationElement",
-        "position": 3,
+        "position": 2,
         "name": "Vegetables in Bhilwara",
         "description": "Buy farm-fresh vegetables and organic sabzi online in Bhilwara.",
         "url": "https://www.freshinbasket.com/category/vegetables"
       },
       {
         "@type": "SiteNavigationElement",
-        "position": 4,
+        "position": 3,
         "name": "Freshinbasket Blog",
-        "description": "Guides on Bhilwara mandi rates, fresh fruits near me, and seasonal nutrition.",
+        "description": "Guides on fresh fruits near me, fruits in Bhilwara, and seasonal nutrition.",
         "url": "https://www.freshinbasket.com/blog"
       },
       {
         "@type": "SiteNavigationElement",
-        "position": 5,
+        "position": 4,
         "name": "About Freshinbasket",
         "description": "Brief detail about Freshinbasket, our local Bhilwara farmer network, and doorstep delivery.",
         "url": "https://www.freshinbasket.com/about"
       },
       {
         "@type": "SiteNavigationElement",
-        "position": 6,
+        "position": 5,
         "name": "Contact Support",
         "description": "Get customer support via phone, WhatsApp, or email.",
         "url": "https://www.freshinbasket.com/contact"

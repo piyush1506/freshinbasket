@@ -36,7 +36,7 @@ export default function Footer() {
               <span className="text-xl font-black text-green-700 tracking-tight">Freshinbasket</span>
             </div>
             <p className="text-gray-600 text-xs leading-relaxed mb-6">
-              Fresh fruits near you and farm-fresh vegetables in Bhilwara at fair mandi rates.
+              Fresh fruits near you and farm-fresh vegetables delivered across Bhilwara.
             </p>
             <h3 className="font-bold text-gray-900 mb-3 text-sm uppercase">Download Our App</h3>
             <div className="flex flex-col sm:flex-row gap-3">
@@ -72,7 +72,6 @@ export default function Footer() {
             <h3 className="font-bold text-gray-900 mb-4 text-sm uppercase">Quick Links</h3>
             <ul className="space-y-2 text-sm text-gray-600">
               <li><a href="https://play.google.com/store/apps/details?id=in.freshinbasket.app&pcampaignid=web_share" target="_blank" rel="noopener noreferrer" className="hover:text-green-600 transition-colors font-semibold text-green-700 flex items-center gap-1.5">📱 Download Android App</a></li>
-              <li><Link href="/bhilwara-mandi-bhav" className="hover:text-green-600 transition-colors">Bhilwara Mandi Bhav</Link></li>
               <li><Link href="/blog" className="hover:text-green-600 transition-colors">Blog &amp; Produce Guides</Link></li>
               <li><Link href="/about" className="hover:text-green-600 transition-colors">About Freshinbasket</Link></li>
               <li><Link href="/contact" className="hover:text-green-600 transition-colors">Contact</Link></li>
