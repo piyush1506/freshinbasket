@@ -345,26 +345,33 @@ def send_status_notification(order) -> None:
 def send_admin_email_alert(order) -> None:
     """
     Send an HTML email alert to the admin with full order details.
+    Checks StoreSettings.admin_notification_email first, then ADMIN_EMAIL env var.
     """
     try:
         import os
         from django.core.mail import send_mail
         from django.conf import settings
         from store.models import StoreSettings
-        
-        store_settings = StoreSettings.get_settings()
-        if not store_settings.admin_notification_email:
-            logger.debug("admin_notification_email not set in DB — skipping admin email alert")
-            return
-            
-        admin_emails = [e.strip() for e in store_settings.admin_notification_email.split(',') if e.strip()]
+
+        admin_emails = []
+        try:
+            store_settings = StoreSettings.get_settings()
+            if store_settings and store_settings.admin_notification_email:
+                admin_emails = [e.strip() for e in store_settings.admin_notification_email.split(',') if e.strip()]
+        except Exception as e:
+            logger.warning(f"Could not load admin_notification_email from StoreSettings: {e}")
+
+        # Fallback to ADMIN_EMAIL environment variable
+        if not admin_emails and os.getenv('ADMIN_EMAIL'):
+            admin_emails = [e.strip() for e in os.getenv('ADMIN_EMAIL').split(',') if e.strip()]
+
         if not admin_emails:
-            logger.debug("No valid admin emails found — skipping admin email alert")
+            logger.warning("No admin notification email configured in StoreSettings or ADMIN_EMAIL env — skipping admin email alert")
             return
 
         customer_name = order.customer.username or order.customer.phone_number
         customer_phone = order.customer.phone_number
-        
+
         items = order.items.all()
         items_html = "<ul>"
         for item in items:
@@ -373,7 +380,7 @@ def send_admin_email_alert(order) -> None:
 
         subject = f"🔔 New Order #{order.order_number} Received!"
         message_plain = f"New order #{order.order_number} from {customer_name}. Total: ₹{order.total_amount}."
-        
+
         message_html = f"""
         <html>
         <body style="font-family: Arial, sans-serif; color: #333; line-height: 1.6;">
@@ -397,14 +404,16 @@ def send_admin_email_alert(order) -> None:
         </html>
         """
 
+        from_email = getattr(settings, 'DEFAULT_FROM_EMAIL', None) or getattr(settings, 'EMAIL_HOST_USER', None) or 'noreply@freshinbasket.com'
+
         send_mail(
             subject=subject,
             message=message_plain,
-            from_email=settings.DEFAULT_FROM_EMAIL,
+            from_email=from_email,
             recipient_list=admin_emails,
             fail_silently=False,
             html_message=message_html
         )
-        logger.info(f"Admin email alert sent to {admin_email} for order {order.order_number}")
+        logger.info(f"Admin email alert sent to {admin_emails} for order {order.order_number}")
     except Exception as e:
-        logger.error(f"send_admin_email_alert failed for order {order.id}: {e}")
+        logger.error(f"send_admin_email_alert failed for order {order.id}: {e}", exc_info=True)

@@ -43,16 +43,35 @@ def _fire_and_forget_post_order(order_id):
                     import time
                     time.sleep(2 * attempt)  # Backoff: 2s, 4s
 
-        # ── Send FCM notification and Email ──
+        # ── Fetch Order for Notifications ──
         try:
             from orders.models import Order
-            from notifications.fcm import send_order_notification, send_admin_new_order_alert, send_admin_email_alert
             order = Order.objects.get(id=order_id)
-            send_order_notification(order)
-            send_admin_new_order_alert(order)
-            send_admin_email_alert(order)
         except Exception as e:
-            logger.warning("FCM notification failed for order %s: %s", order_id, e)
+            logger.error("Could not fetch order %s for notifications: %s", order_id, e)
+            order = None
+
+        if order:
+            # ── 1. Customer Notification (isolated) ──
+            try:
+                from notifications.fcm import send_order_notification
+                send_order_notification(order)
+            except Exception as e:
+                logger.warning("send_order_notification failed for order %s: %s", order_id, e)
+
+            # ── 2. Admin Push Notification (isolated) ──
+            try:
+                from notifications.fcm import send_admin_new_order_alert
+                send_admin_new_order_alert(order)
+            except Exception as e:
+                logger.warning("send_admin_new_order_alert failed for order %s: %s", order_id, e)
+
+            # ── 3. Admin Email Alert (isolated & guaranteed) ──
+            try:
+                from notifications.fcm import send_admin_email_alert
+                send_admin_email_alert(order)
+            except Exception as e:
+                logger.error("send_admin_email_alert failed for order %s: %s", order_id, e, exc_info=True)
 
     thread = threading.Thread(target=_run, daemon=True)
     thread.start()
