@@ -8,7 +8,7 @@ export const revalidate = 3600;
 export const metadata = {
   title: "Bhilwara Mandi Bhav Today (Aaj Ka Mandi Bhav) — Fruits & Sabzi Rates",
   description:
-    "Check Aaj Ka Bhilwara Mandi Bhav and today's fresh fruit & vegetable prices in Bhilwara. Compare Bhilwara Mandi rates and order farm-fresh produce online via Freshinbasket.",
+    "Check aajka mandi bhav and today's Bhilwara mandi fresh fruit & vegetable rates. Order farm-fresh produce online across Bhilwara on Freshinbasket.",
   keywords: [
     "aajka mandi bhav",
     "aaj ka mandi bhav",
@@ -122,10 +122,9 @@ export default async function BhilwaraMandiBhavPage() {
           <h1 className="text-3xl sm:text-4xl md:text-5xl font-extrabold tracking-tight mb-4">
             Bhilwara Mandi — Aaj Ka Mandi Bhav &amp; Daily Fresh Rates
           </h1>
-          <p className="text-green-100 text-sm sm:text-base md:text-lg max-w-3xl leading-relaxed">
-            Stay updated with <strong>aaj ka mandi bhav</strong> and today&apos;s fresh vegetable
-            and fruit rates in <strong>Bhilwara</strong>. Freshinbasket sources directly from local
-            farmers and morning Bhilwara mandi arrivals to deliver top quality right to your kitchen.
+          <p className="text-green-100 text-sm sm:text-base md:text-lg max-w-2xl leading-relaxed">
+            Check <strong>aaj ka mandi bhav</strong> and live <strong>Bhilwara mandi</strong> fruit &amp;
+            vegetable rates with doorstep delivery across Bhilwara.
           </p>
 
           <div className="mt-6 flex flex-wrap gap-4 text-xs sm:text-sm text-green-100">

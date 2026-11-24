@@ -36,7 +36,7 @@ export default function Footer() {
               <span className="text-xl font-black text-green-700 tracking-tight">Freshinbasket</span>
             </div>
             <p className="text-gray-600 text-xs leading-relaxed mb-6">
-              Freshinbasket is Bhilwara&apos;s farm-to-door produce delivery store for fresh fruits near you, organic sabzi, and daily Bhilwara Mandi harvests.
+              Fresh fruits near you and farm-fresh vegetables in Bhilwara at fair mandi rates.
             </p>
             <h3 className="font-bold text-gray-900 mb-3 text-sm uppercase">Download Our App</h3>
             <div className="flex flex-col sm:flex-row gap-3">

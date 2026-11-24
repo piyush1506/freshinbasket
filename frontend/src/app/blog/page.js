@@ -7,7 +7,7 @@ import { Calendar, Clock, ArrowRight, BookOpen, TrendingUp } from "lucide-react"
 export const metadata = {
   title: "Blog — Bhilwara Mandi Bhav, Fresh Fruits & Sabzi Guides",
   description:
-    "Read Freshinbasket guides on Aaj Ka Bhilwara Mandi Bhav, finding fresh fruits near me in Bhilwara, seasonal produce calendars, and farm-to-door delivery.",
+    "Read Freshinbasket guides on aajka mandi bhav, Bhilwara mandi rates, fresh fruits near me, and seasonal produce in Bhilwara.",
   keywords: [
     "fresh fruits near me",
     "fruits in bhilwara",
@@ -107,10 +107,9 @@ export default function BlogIndexPage() {
           <h1 className="text-3xl sm:text-4xl md:text-5xl font-extrabold tracking-tight mb-4">
             Bhilwara Mandi Bhav &amp; Fresh Produce Blog
           </h1>
-          <p className="text-green-100 text-sm sm:text-base md:text-lg max-w-3xl leading-relaxed">
-            Explore helpful local guides on <strong>aaj ka mandi bhav</strong>,{" "}
-            <strong>Bhilwara mandi</strong> rates, finding <strong>fresh fruits near me</strong>, and
-            how Freshinbasket delivers farm-fresh fruits and vegetables across Bhilwara.
+          <p className="text-green-100 text-sm sm:text-base md:text-lg max-w-2xl leading-relaxed">
+            Guides on <strong>aaj ka mandi bhav</strong>, <strong>Bhilwara mandi</strong> rates, and{" "}
+            <strong>fresh fruits near me</strong> in Bhilwara.
           </p>
 
           <div className="mt-6 flex flex-wrap gap-3">

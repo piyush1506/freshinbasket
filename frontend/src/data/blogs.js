@@ -6,7 +6,7 @@ export const BLOG_POSTS = [
     title: "Aaj Ka Bhilwara Mandi Bhav & Fresh Produce Price Guide",
     metaTitle: "Aaj Ka Mandi Bhav Bhilwara | Bhilwara Mandi Fruits & Sabzi Rates",
     metaDescription:
-      "Check how Aaj Ka Bhilwara Mandi Bhav works for daily vegetables and fruits. Compare Bhilwara Mandi rates and order farm-fresh produce online via Freshinbasket.",
+      "Check aajka mandi bhav & daily Bhilwara mandi fruit and vegetable rates. Order farm-fresh produce online in Bhilwara via Freshinbasket.",
     keywords: [
       "aajka mandi bhav",
       "aaj ka mandi bhav",
@@ -82,7 +82,7 @@ export const BLOG_POSTS = [
     title: "Fresh Fruits Near Me in Bhilwara: Farm-Fresh Delivery Guide",
     metaTitle: "Fresh Fruits Near Me & Fruits in Bhilwara | Order Online — Freshinbasket",
     metaDescription:
-      "Searching for fresh fruits near me or the best fruits in Bhilwara? Discover how Freshinbasket delivers crisp apples, bananas, pomegranates, mangoes, and seasonal fruits to your doorstep.",
+      "Looking for fresh fruits near me or fruits in Bhilwara? Order crisp apples, bananas, pomegranates & seasonal fruits online from Freshinbasket.",
     keywords: [
       "fresh fruits near me",
       "fruits in bhilwara",
@@ -150,7 +150,7 @@ export const BLOG_POSTS = [
     title: "About Freshinbasket: Bhilwara's Farm-to-Door Fruits & Sabzi Store",
     metaTitle: "Freshinbasket Bhilwara — Brief Overview, Delivery & Farm Sourcing",
     metaDescription:
-      "Everything about Freshinbasket: Bhilwara's online vegetable and fruit delivery platform connecting local farmers with households at fair Bhilwara Mandi prices.",
+      "Brief overview of Freshinbasket — Bhilwara's farm-to-door online store for fresh fruits and vegetables at fair Bhilwara mandi prices.",
     keywords: [
       "freshinbasket",
       "fresh in basket",
@@ -212,7 +212,7 @@ export const BLOG_POSTS = [
     title: "Seasonal Fruits & Vegetables Calendar for Bhilwara Households",
     metaTitle: "Seasonal Fruits & Vegetables in Bhilwara | Freshness & Mandi Guide",
     metaDescription:
-      "Know which fruits and vegetables are in peak season in Bhilwara, Rajasthan to enjoy the best taste, nutrition, and aaj ka mandi bhav.",
+      "Discover seasonal fruits in Bhilwara and winter, summer & monsoon vegetables for peak freshness and the best aajka mandi bhav rates.",
     keywords: [
       "fruits in bhilwara",
       "fresh fruits near me",

@@ -56,12 +56,9 @@ export default async function Home() {
               Farm-Fresh Fruits &amp; Vegetables Delivered in Bhilwara
             </h2>
             <p className="text-gray-600 text-sm sm:text-base leading-relaxed">
-              <strong>Freshinbasket</strong> is Bhilwara&apos;s dedicated online produce store delivering{" "}
-              <strong>fresh fruits near you</strong>, hand-picked seasonal{" "}
-              <strong>fruits in Bhilwara</strong>, and daily vegetables sourced directly from local farms
-              and morning <strong>Bhilwara mandi</strong> harvests. Check{" "}
-              <strong>aaj ka mandi bhav</strong> rates, compare transparent pricing, and enjoy quick
-              doorstep delivery daily from 7:00 AM to 9:00 PM.
+              <strong>Freshinbasket</strong> delivers <strong>fresh fruits near you</strong>, seasonal{" "}
+              <strong>fruits in Bhilwara</strong>, and daily vegetables from local farms &amp;{" "}
+              <strong>Bhilwara mandi</strong> (<strong>aaj ka mandi bhav</strong>) daily from 7 AM to 9 PM.
             </p>
           </div>
 

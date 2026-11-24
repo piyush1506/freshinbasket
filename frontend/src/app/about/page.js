@@ -4,7 +4,7 @@ import Navbar from "../components/Navbar";
 export const metadata = {
   title: "About Freshinbasket — Farm Fresh Fruits & Sabzi in Bhilwara",
   description:
-    "Freshinbasket is Bhilwara's trusted farm-fresh grocery delivery service. We source directly from local farmers and Bhilwara mandi to deliver fresh fruits near you and daily vegetables to your doorstep.",
+    "Freshinbasket delivers fresh fruits in Bhilwara and daily vegetables straight from local farms and Bhilwara mandi to your doorstep.",
   keywords: [
     "about freshinbasket",
     "freshinbasket bhilwara",
