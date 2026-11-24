@@ -36,7 +36,7 @@ export default function Footer() {
               <span className="text-xl font-black text-green-700 tracking-tight">Freshinbasket</span>
             </div>
             <p className="text-gray-600 text-xs leading-relaxed mb-6">
-              Sustainable, organic, and direct from our fields to your table. Your health is our harvest.
+              Freshinbasket is Bhilwara&apos;s farm-to-door produce delivery store for fresh fruits near you, organic sabzi, and daily Bhilwara Mandi harvests.
             </p>
             <h3 className="font-bold text-gray-900 mb-3 text-sm uppercase">Download Our App</h3>
             <div className="flex flex-col sm:flex-row gap-3">
@@ -72,7 +72,9 @@ export default function Footer() {
             <h3 className="font-bold text-gray-900 mb-4 text-sm uppercase">Quick Links</h3>
             <ul className="space-y-2 text-sm text-gray-600">
               <li><a href="https://play.google.com/store/apps/details?id=in.freshinbasket.app&pcampaignid=web_share" target="_blank" rel="noopener noreferrer" className="hover:text-green-600 transition-colors font-semibold text-green-700 flex items-center gap-1.5">📱 Download Android App</a></li>
-              <li><Link href="/about" className="hover:text-green-600 transition-colors">About Us</Link></li>
+              <li><Link href="/bhilwara-mandi-bhav" className="hover:text-green-600 transition-colors">Bhilwara Mandi Bhav</Link></li>
+              <li><Link href="/blog" className="hover:text-green-600 transition-colors">Blog &amp; Produce Guides</Link></li>
+              <li><Link href="/about" className="hover:text-green-600 transition-colors">About Freshinbasket</Link></li>
               <li><Link href="/contact" className="hover:text-green-600 transition-colors">Contact</Link></li>
               <li><Link href="/contact#support" aria-label="Get customer support" className="hover:text-green-600 transition-colors">Support</Link></li>
               <li><Link href="/refund-policy" className="hover:text-green-600 transition-colors">Refund & Return Policy</Link></li>

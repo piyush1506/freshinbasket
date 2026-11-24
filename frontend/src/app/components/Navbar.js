@@ -286,6 +286,18 @@ export default function Navbar({ item, hideCategories = false, sectionTabs = nul
 
                 {/* Right Side Icons */}
                 <div className="flex items-center gap-6 shrink-0">
+                    {/* Quick Desktop SEO & Navigation Links */}
+                    <div className="hidden lg:flex items-center gap-5 mr-1">
+                        <Link href="/bhilwara-mandi-bhav" className="text-[13px] font-semibold text-gray-700 hover:text-[#216140] transition-colors whitespace-nowrap">
+                            Mandi Bhav
+                        </Link>
+                        <Link href="/blog" className="text-[13px] font-semibold text-gray-700 hover:text-[#216140] transition-colors whitespace-nowrap">
+                            Blog
+                        </Link>
+                        <Link href="/about" className="text-[13px] font-semibold text-gray-700 hover:text-[#216140] transition-colors whitespace-nowrap">
+                            About
+                        </Link>
+                    </div>
                     
                     {/* Wishlist */}
                     <Link href='/wishlist' aria-label="Go to wishlist" className="hidden md:flex flex-col items-center gap-1 hover:text-[#216140] transition-colors relative group">
@@ -417,6 +429,18 @@ export default function Navbar({ item, hideCategories = false, sectionTabs = nul
                                     <Link href="/order" onClick={() => setIsOpen(false)} className="flex items-center gap-3 px-4 py-3.5 text-[15px] font-semibold text-gray-700 hover:bg-gray-50 rounded-xl transition-colors">
                                         <Leaf className="w-5 h-5 text-gray-400" />
                                         My Orders
+                                    </Link>
+                                    <Link href="/bhilwara-mandi-bhav" onClick={() => setIsOpen(false)} className="flex items-center gap-3 px-4 py-3.5 text-[15px] font-semibold text-gray-700 hover:bg-gray-50 rounded-xl transition-colors">
+                                        <Leaf className="w-5 h-5 text-gray-400" />
+                                        Bhilwara Mandi Bhav
+                                    </Link>
+                                    <Link href="/blog" onClick={() => setIsOpen(false)} className="flex items-center gap-3 px-4 py-3.5 text-[15px] font-semibold text-gray-700 hover:bg-gray-50 rounded-xl transition-colors">
+                                        <Bookmark className="w-5 h-5 text-gray-400" />
+                                        Blog &amp; Guides
+                                    </Link>
+                                    <Link href="/about" onClick={() => setIsOpen(false)} className="flex items-center gap-3 px-4 py-3.5 text-[15px] font-semibold text-gray-700 hover:bg-gray-50 rounded-xl transition-colors">
+                                        <User className="w-5 h-5 text-gray-400" />
+                                        About Freshinbasket
                                     </Link>
                                     <Link href="/contact" onClick={() => setIsOpen(false)} className="flex items-center gap-3 px-4 py-3.5 text-[15px] font-semibold text-gray-700 hover:bg-gray-50 rounded-xl transition-colors">
                                         <Heart className="w-5 h-5 text-gray-400" />

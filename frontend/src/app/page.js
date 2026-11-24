@@ -32,7 +32,7 @@ export default async function Home() {
   return (
     <div className="min-h-screen bg-[#FDFDFD] text-[#1A1A1A] font-sans">
       {/* SEO H1 — visually hidden, meaningful for crawlers */}
-      <h1 className="sr-only">Freshinbasket — Fresh Vegetables &amp; Fruits Delivery in Bhilwara</h1>
+      <h1 className="sr-only">Freshinbasket — Fresh Fruits Near Me, Fruits in Bhilwara, Vegetables &amp; Bhilwara Mandi Delivery</h1>
 
       {/* Section Tabs + Category Nav + Products (Client Component handles tab state) */}
       <HomeSections sections={sections}>
@@ -44,6 +44,78 @@ export default async function Home() {
 
       {/* How it Works Section */}
       <HowItWorks />
+
+      {/* Brief Freshinbasket Overview & Sitelinks Hub */}
+      <section className="px-4 sm:px-8 md:px-16 mt-10 max-w-7xl mx-auto" aria-label="Freshinbasket Bhilwara Overview and Quick Links">
+        <div className="rounded-3xl bg-white border border-gray-100 shadow-sm p-6 sm:p-10">
+          <div className="max-w-3xl mb-8">
+            <span className="inline-block text-xs font-bold uppercase tracking-wider text-[#216140] bg-green-50 px-3 py-1 rounded-full mb-3">
+              Freshinbasket Bhilwara
+            </span>
+            <h2 className="text-2xl md:text-3xl font-bold text-gray-900 tracking-tight mb-3">
+              Farm-Fresh Fruits &amp; Vegetables Delivered in Bhilwara
+            </h2>
+            <p className="text-gray-600 text-sm sm:text-base leading-relaxed">
+              <strong>Freshinbasket</strong> is Bhilwara&apos;s dedicated online produce store delivering{" "}
+              <strong>fresh fruits near you</strong>, hand-picked seasonal{" "}
+              <strong>fruits in Bhilwara</strong>, and daily vegetables sourced directly from local farms
+              and morning <strong>Bhilwara mandi</strong> harvests. Check{" "}
+              <strong>aaj ka mandi bhav</strong> rates, compare transparent pricing, and enjoy quick
+              doorstep delivery daily from 7:00 AM to 9:00 PM.
+            </p>
+          </div>
+
+          <nav aria-label="Featured Freshinbasket Links" className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <Link
+              href="/bhilwara-mandi-bhav"
+              className="group p-4 rounded-2xl border border-gray-100 bg-gray-50/70 hover:bg-green-50/70 hover:border-green-200 transition-all"
+            >
+              <h3 className="font-bold text-gray-900 group-hover:text-[#216140] text-sm mb-1">
+                Aaj Ka Mandi Bhav (Bhilwara)
+              </h3>
+              <p className="text-xs text-gray-600 leading-relaxed">
+                Check today&apos;s Bhilwara mandi produce prices &amp; live fresh rates.
+              </p>
+            </Link>
+
+            <Link
+              href="/blog/fresh-fruits-near-me-in-bhilwara"
+              className="group p-4 rounded-2xl border border-gray-100 bg-gray-50/70 hover:bg-green-50/70 hover:border-green-200 transition-all"
+            >
+              <h3 className="font-bold text-gray-900 group-hover:text-[#216140] text-sm mb-1">
+                Fresh Fruits in Bhilwara
+              </h3>
+              <p className="text-xs text-gray-600 leading-relaxed">
+                Order fresh fruits near me—apples, bananas, anaar &amp; seasonal fruits.
+              </p>
+            </Link>
+
+            <Link
+              href="/blog"
+              className="group p-4 rounded-2xl border border-gray-100 bg-gray-50/70 hover:bg-green-50/70 hover:border-green-200 transition-all"
+            >
+              <h3 className="font-bold text-gray-900 group-hover:text-[#216140] text-sm mb-1">
+                Freshinbasket Blog &amp; Guides
+              </h3>
+              <p className="text-xs text-gray-600 leading-relaxed">
+                Read Bhilwara mandi insights, seasonal calendars &amp; freshness tips.
+              </p>
+            </Link>
+
+            <Link
+              href="/about"
+              className="group p-4 rounded-2xl border border-gray-100 bg-gray-50/70 hover:bg-green-50/70 hover:border-green-200 transition-all"
+            >
+              <h3 className="font-bold text-gray-900 group-hover:text-[#216140] text-sm mb-1">
+                About &amp; Contact Support
+              </h3>
+              <p className="text-xs text-gray-600 leading-relaxed">
+                Learn how Freshinbasket delivers farm-to-kitchen across Bhilwara.
+              </p>
+            </Link>
+          </nav>
+        </div>
+      </section>
 
       {/* Assistance Banner */}
       <section className="px-4 sm:px-8 md:px-16 mt-10 pb-18 max-w-7xl mx-auto">
